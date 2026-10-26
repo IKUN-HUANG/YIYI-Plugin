@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Memes/list.css'}}">
+</head>
+<body>
+<div class="meme-card">
+  <div class="meme-bg">
+    <span class="meme-glow meme-glow--1"></span>
+    <span class="meme-glow meme-glow--2"></span>
+    <span class="meme-glow meme-glow--3"></span>
+  </div>
+
+  <div class="meme-content">
+    <div class="meme-header">
+      <div class="meme-header-main">
+        <div class="meme-title">{{title}}</div>
+        <div class="meme-subtitle">{{subtitle}}</div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="meme-grid meme-grid--{{cols}}" style="grid-template-columns: repeat({{cols}}, 1fr)">
+      {{each items}}
+        <div class="meme-item">
+          <div class="meme-thumb">
+            {{if $value.thumb}}
+              <img src="{{$value.thumb}}" alt="">
+            {{else}}
+              <span class="meme-thumb-text">{{$value.title}}</span>
+            {{/if}}
+            {{if $value.kind === 'text'}}<span class="meme-kind meme-kind--text">{{$value.kindText}}</span>{{/if}}
+          </div>
+          <div class="meme-name">{{$value.title}}</div>
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="meme-footer">
+      <div class="meme-page">
+        <span class="meme-page-now">第 {{page}} / {{pages}} 页</span>
+        <span class="meme-page-total">{{totalText}}</span>
+      </div>
+      <div class="meme-hint">{{hint}}</div>
+    </div>
+
+    <div class="meme-progress">
+      <div class="meme-progress-bar" style="width: {{percent}}%"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

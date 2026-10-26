@@ -1,0 +1,261 @@
+@import url('badge.css');
+
+@font-face {
+  font-family: 'SourceHan';
+  src: url('../Font/SourceHanSansSC-subset.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'NotoSansMath';
+  src: url('../Font/NotoSansMath-Regular.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Symbola';
+  src: url('../Font/Symbola.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Noto Color Emoji';
+  src: url('../Font/NotoColorEmoji.woff2') format('woff2');
+  font-display: block;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  width: 1080px;
+  background: transparent;
+}
+
+body {
+  font-family: 'SourceHan', 'NotoSansMath', 'Symbola', 'Noto Color Emoji', "Microsoft YaHei", "PingFang SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.set-card {
+  width: 1080px;
+  min-height: 405px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  isolation: isolate;
+  background: #eef3f8;
+}
+
+.set-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.set-card.is-blur .set-header,
+.set-card.is-blur .set-group {
+  backdrop-filter: blur(6px) saturate(130%);
+  -webkit-backdrop-filter: blur(6px) saturate(130%);
+}
+
+.set-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 49px;
+  color: #24313f;
+}
+
+.set-header {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 38px 43px;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 27px;
+  box-shadow: 0 11px 38px rgba(50, 70, 120, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  margin-bottom: 27px;
+}
+.set-header-main {
+  flex: 1;
+  min-width: 0;
+}
+.set-title {
+  font-size: 41px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #3C82CE;
+  line-height: 1.2;
+}
+
+.set-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.set-group {
+  margin-bottom: 0;
+  padding: 30px 27px 19px;
+  background: rgba(255, 255, 255, 0.66);
+  border-radius: 27px;
+  box-shadow: 0 11px 38px rgba(50, 70, 120, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+.set-group-title {
+  font-size: 21px;
+  font-weight: 600;
+  color: #3C82CE;
+  margin-bottom: 22px;
+  padding-left: 16px;
+  position: relative;
+}
+.set-group-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 22px;
+  background: linear-gradient(180deg, #4A90D9, #87CEFA);
+  border-radius: 2px;
+}
+
+.set-items {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.set-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 16px;
+  background: rgba(255, 255, 255, 0.58);
+  border-radius: 19px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+.set-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.set-item-label {
+  font-size: 19px;
+  font-weight: 600;
+  color: #24313f;
+  line-height: 1.4;
+}
+.set-item-desc {
+  font-size: 16px;
+  color: #5b687c;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.set-item-cmd {
+  font-size: 15px;
+  color: #7b8798;
+  margin-top: 6px;
+  line-height: 1.4;
+  word-break: break-all;
+}
+.help-cmd {
+  color: #3C82CE;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.set-value {
+  flex: 0 0 auto;
+  max-width: 190px;
+  text-align: center;
+  padding: 9px 14px;
+  border-radius: 13px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.set-value--on {
+  color: #2f8f5b;
+  background: rgba(110, 200, 140, 0.18);
+}
+.set-value--off {
+  color: #b8574f;
+  background: rgba(255, 138, 138, 0.18);
+}
+.set-value--text {
+  color: #3C82CE;
+  background: rgba(74, 144, 217, 0.14);
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.set-tip {
+  margin-top: 4px;
+  padding: 18px 26px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 19px;
+  font-size: 17px;
+  color: #5b687c;
+  text-align: center;
+}
+
+/* 分组入口卡（#伊伊设置）：三条分组命令各一张大卡，右侧挂该组项数 */
+.set-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.set-entry {
+  display: flex;
+  align-items: center;
+  padding: 26px 30px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  box-shadow: 0 11px 38px rgba(50, 70, 120, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+.set-entry-main {
+  flex: 1;
+  min-width: 0;
+}
+.set-entry-cmd {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.set-entry-cmd .help-cmd {
+  font-size: 24px;
+}
+.set-entry-count {
+  flex: 0 0 auto;
+  padding: 5px 15px;
+  border-radius: 999px;
+  background: rgba(74, 144, 217, 0.14);
+  color: #3C82CE;
+  font-size: 16px;
+  font-weight: 600;
+}
+.set-entry-desc {
+  margin-top: 9px;
+  font-size: 17px;
+  color: #5b687c;
+  line-height: 1.45;
+}
+.set-entries + .set-tip {
+  margin-top: 22px;
+}

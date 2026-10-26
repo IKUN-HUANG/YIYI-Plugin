@@ -1,0 +1,38 @@
+/* 帮助页 / 版本页共用的徽章样式：运行框架角标 + 插件版本 */
+.page-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-top: 6px;
+}
+.page-version {
+  font-size: 16px;
+  color: #3C82CE;
+  font-weight: 600;
+  padding: 5px 16px;
+  background: rgba(74, 144, 217, 0.14);
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+/* 一行排布（版本页用）：框架角标在左、插件版本在右 */
+.page-badges--row {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding-top: 0;
+}
+
+/* 框架角标：Yunzai-Bot / Miao-Yunzai / TRSS-Yunzai —— 不分色，统一蓝底（跟插件版本角标一套） */
+.env-tag {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 4px 13px;
+  border-radius: 100px;
+  white-space: nowrap;
+  color: #3C82CE;
+  background: rgba(74, 144, 217, 0.14);
+}

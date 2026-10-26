@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body class="k-body-narrow">
+<div class="k-card is-narrow">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          {{if sub}}<span class="k-badge">{{sub}}</span>{{/if}}
+          {{if genTime}}<span class="k-time">{{genTime}}</span>{{/if}}
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    {{each sections}}
+      {{if $value.title}}<div class="k-sect">{{$value.title}}</div>{{/if}}
+      {{if $value.rows.length}}
+        <div class="k-push">
+          {{each $value.rows row}}
+            <div class="k-push-row">
+              {{if row.no || row.result || row.mode}}
+              <div class="k-push-side">
+                {{if row.no}}<div class="k-push-no">{{row.no}}</div>{{/if}}
+                {{if row.result}}<div class="k-push-result is-{{row.result.tone}}">{{row.result.text}}</div>{{/if}}
+                {{if row.mode}}<div class="k-push-mode">{{row.mode}}</div>{{/if}}
+              </div>
+              {{/if}}
+              <div class="k-push-face">{{if row.face}}<img src="{{row.face}}">{{/if}}</div>
+              <div class="k-push-main">
+                <div class="k-push-title"{{if row.titleSize}} style="font-size:{{row.titleSize}}px"{{/if}}><span class="k-push-nick">{{row.nick || row.name}}</span>&#8203;{{if row.nick}}<span class="k-push-qq">({{row.qqText}})</span>{{/if}}{{if row.medal}}<img class="k-push-medal" src="{{row.medal}}">{{/if}}</div>
+                {{if row.who || row.line2}}
+                <div class="k-push-line"{{if row.line2Size}} style="font-size:{{row.line2Size}}px"{{/if}}>
+                  {{if row.who}}<span class="k-push-role">{{row.who}}</span>{{/if}}
+                  {{if row.who && row.line2}}<span class="k-push-sep"></span>{{/if}}
+                  {{if row.line2}}<span class="k-push-text">{{row.line2}}</span>{{/if}}
+                </div>
+                {{/if}}
+                {{if row.line3}}<div class="k-push-line is-sub"{{if row.line3Size}} style="font-size:{{row.line3Size}}px"{{/if}}>{{each row.line3Parts part}}{{if $index}}<span class="k-push-sep is-sub"></span>{{/if}}<span class="k-push-part">{{part}}</span>{{/each}}</div>{{/if}}
+              </div>
+              {{if row.chip}}<div class="k-push-chip is-{{row.chip.tone}}">{{row.chip.text}}</div>{{/if}}
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+    {{/each}}
+
+    {{if note}}<div class="k-note">{{note}}</div>{{/if}}
+  </div>
+</div>
+</body>
+</html>

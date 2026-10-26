@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">数据都来自王者营地</span>
+          <span class="k-time">黄 = 这一项更高，浅蓝 = 低一些</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-cmp-head">
+      <div class="k-cmp-side">
+        <div class="k-cmp-face">{{if left.avatar}}<img src="{{left.avatar}}">{{/if}}</div>
+        <div class="k-cmp-who">
+          <div class="k-cmp-name">{{left.roleName}}</div>
+          <div class="k-cmp-sub">
+            {{if left.tag}}<span class="k-cmp-tag">{{left.tag}}</span>{{/if}}
+            {{if left.serverName}}<span>{{left.serverName}}</span>{{/if}}
+          </div>
+        </div>
+      </div>
+      <div class="k-cmp-vs">VS</div>
+      <div class="k-cmp-side is-right">
+        <div class="k-cmp-face">{{if right.avatar}}<img src="{{right.avatar}}">{{/if}}</div>
+        <div class="k-cmp-who">
+          <div class="k-cmp-name">{{right.roleName}}</div>
+          <div class="k-cmp-sub">
+            {{if right.tag}}<span class="k-cmp-tag">{{right.tag}}</span>{{/if}}
+            {{if right.serverName}}<span>{{right.serverName}}</span>{{/if}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="k-cmp-rows">
+      {{each rows item}}
+        <div class="k-cmp-row">
+          <div class="k-cmp-cell {{item.better === 'left' ? 'is-better' : ''}}">{{item.left}}</div>
+          <div class="k-cmp-label">{{item.label}}</div>
+          <div class="k-cmp-cell is-right {{item.better === 'right' ? 'is-better' : ''}}">{{item.right}}</div>
+          <div class="k-cmp-track">
+            {{if item.bar}}<span class="k-cmp-fill {{item.bar.leftTone}}" style="flex-basis: {{item.bar.leftPct}}%"></span><span class="k-cmp-fill {{item.bar.rightTone}}" style="flex-basis: {{item.bar.rightPct}}%"></span>{{/if}}
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+    {{if rows.length}}
+      <div class="k-cmp-foot">段位和星数算法不同，不比较谁更好</div>
+    {{/if}}
+
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

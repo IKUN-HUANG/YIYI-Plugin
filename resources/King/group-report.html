@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card k-rept">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">{{rangeText}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-rep-sum">
+      <div class="k-rep-sum-item">
+        <b>{{summary.battles}}</b>
+        <span>总场次</span>
+      </div>
+      <div class="k-rep-sum-item">
+        <b>{{summary.members}}</b>
+        <span>参与人数</span>
+      </div>
+      <div class="k-rep-sum-item">
+        <b>{{summary.wins}}</b>
+        <span>胜</span>
+      </div>
+      <div class="k-rep-sum-item">
+        <b>{{summary.losses}}</b>
+        <span>负</span>
+      </div>
+      <div class="k-rep-sum-item">
+        <b>{{summary.rateText}}</b>
+        <span>胜率</span>
+      </div>
+      <div class="k-rep-sum-item">
+        <b>{{summary.mvp}}</b>
+        <span>MVP</span>
+      </div>
+    </div>
+
+    {{if summary.topHero && summary.topHero.name}}
+      <div class="k-rep-hero">
+        {{if summary.topHero.icon}}<img class="k-rep-hero-icon" src="{{summary.topHero.icon}}">{{/if}}
+        <div class="k-rep-hero-main">
+          <div class="k-rep-hero-name">{{summary.topHero.name}}</div>
+          <div class="k-rep-hero-meta">本群热门英雄 · {{summary.topHero.player}} · {{summary.topHero.count}} 场</div>
+        </div>
+        <div class="k-rep-hero-count">{{summary.topHero.count}}<i>场</i></div>
+      </div>
+    {{/if}}
+
+    {{if awards.length}}
+      <div class="k-rep-sect">本期称号</div>
+      <div class="k-rep-awards">
+        {{each awards item}}
+          <div class="k-rep-award">
+            <div class="k-rep-award-title">{{item.title}}</div>
+            <div class="k-rep-award-name">{{item.name}}</div>
+            <div class="k-rep-award-value">{{item.valueText}}</div>
+            <div class="k-rep-award-detail">{{item.detail}}</div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{if rows.length}}
+      <div class="k-rep-sect">成员明细</div>
+      <div class="k-rep-table">
+        <div class="k-rep-tr is-head">
+          <div class="k-rep-td c-no">#</div>
+          <div class="k-rep-td c-name">玩家</div>
+          <div class="k-rep-td c-num">场次</div>
+          <div class="k-rep-td c-num">胜负</div>
+          <div class="k-rep-td c-num">胜率</div>
+          <div class="k-rep-td c-num">MVP</div>
+          <div class="k-rep-td c-hero">常用英雄</div>
+        </div>
+        {{each rows item}}
+          <div class="k-rep-tr">
+            <div class="k-rep-td c-no">{{item.rank}}</div>
+            <div class="k-rep-td c-name">
+              <div class="k-rep-face">{{if item.avatar}}<img src="{{item.avatar}}">{{/if}}</div>
+              <div class="k-rep-who">
+                <div class="k-rep-who-name">{{item.name}}</div>
+                <div class="k-rep-who-qq">{{item.qq}}</div>
+              </div>
+            </div>
+            <div class="k-rep-td c-num">{{item.total}}</div>
+            <div class="k-rep-td c-num"><span class="k-rep-win">{{item.wins}}</span><i class="k-rep-slash">/</i><span class="k-rep-lose">{{item.losses}}</span></div>
+            <div class="k-rep-td c-num">{{item.rateText}}</div>
+            <div class="k-rep-td c-num">{{item.mvp}}</div>
+            <div class="k-rep-td c-hero">
+              {{if item.heroTop && item.heroTop.name}}
+                <div class="k-rep-hero-top">
+                  {{if item.heroTop.icon}}<img src="{{item.heroTop.icon}}">{{/if}}
+                  <span>{{item.heroTop.name}}</span>
+                </div>
+                <div class="k-rep-hero-top-num">{{item.heroTop.count}} 场</div>
+              {{else}}
+                <div class="k-rep-hero-none">—</div>
+              {{/if}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <div class="k-empty">{{emptyText}}</div>
+    {{/if}}
+
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

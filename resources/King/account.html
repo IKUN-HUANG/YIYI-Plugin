@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>王者荣耀 · 我的角色与账号</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">共 {{roles.length}} 个角色</span>
+          <span class="k-badge">共 {{total}} 个营地账号</span>
+          <span class="k-time">{{genTime}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-acc-sum">
+      <span class="k-acc-badge">可用 {{usable}} 个</span>
+      {{if expired}}<span class="k-acc-badge is-bad">要重扫 {{expired}} 个</span>{{/if}}
+      {{if defaultNo}}<span class="k-acc-badge is-star">★ 默认 {{defaultNo}} 号</span>{{/if}}
+      <span class="k-acc-sum-tip">角色编号与「#王者切换角色n」对得上，账号编号与「#王者切换账号 n」对得上</span>
+    </div>
+
+    <div class="k-camp-roles">
+      <div class="k-camp-roles-head">{{rolesHead || '你名下存着的角色'}}</div>
+      {{if roles.length}}
+      <div class="k-camp-roles-grid is-cols-{{roles.length > 4 ? 4 : roles.length}}">
+        {{each roles}}
+        <div class="k-camp-role"{{if $value.current}} data-current="1"{{/if}}>
+          <span class="k-camp-role-num">{{$value.index}}</span>
+          {{if $value.avatar}}<img class="k-camp-role-face" src="{{$value.avatar}}">{{/if}}
+          <div class="k-camp-role-name">{{$value.roleName}}</div>
+          <div class="k-camp-role-meta">{{$value.serverName || '—'}}{{if $value.roleLevel}} · {{$value.roleLevel}} 级{{/if}}</div>
+          <div class="k-camp-role-id">#{{$value.roleId}}</div>
+        </div>
+        {{/each}}
+      </div>
+      {{else}}
+      <div class="k-camp-roles-empty">{{rolesEmpty || '角色都被收起来了，发「#王者隐藏角色」看藏了哪些'}}</div>
+      {{/if}}
+      {{if rolesNote}}<div class="k-camp-roles-note">{{rolesNote}}</div>{{/if}}
+    </div>
+
+    <div class="k-sect">营地账号</div>
+    <div class="k-acc-list">
+      {{each rows}}
+      <div class="k-acc-row"{{if $value.isDefault}} data-default="1"{{/if}}>
+        <div class="k-acc-no">{{$value.index}}</div>
+        <div class="k-acc-face">
+          {{if $value.avatar}}<img src="{{$value.avatar}}">{{else}}<span class="k-acc-initial">{{$value.initial}}</span>{{/if}}
+          {{if $value.isDefault}}<span class="k-acc-star">★</span>{{/if}}
+        </div>
+        <div class="k-acc-main">
+          <div class="k-acc-id">{{$value.id}}{{if $value.nick}}<span class="k-acc-nick">{{$value.nick}}</span>{{/if}}</div>
+          <div class="k-acc-meta">{{$value.roleText}}{{if $value.roleCount}} · 名下 {{$value.roleCount}} 个角色{{/if}}</div>
+          <div class="k-acc-owner">{{if $value.ownerText}}{{$value.ownerText}} · {{/if}}{{$value.storeText}}{{if $value.loginText}} · {{$value.loginText}}{{/if}}</div>
+        </div>
+        <div class="k-acc-state{{if $value.stateOk}} is-ok{{else}} is-bad{{/if}}">{{$value.state}}</div>
+      </div>
+      {{/each}}
+    </div>
+
+    {{if statusLines && statusLines.length}}
+    <div class="k-sect">绑定与登录状态</div>
+    <div class="k-account-cols">
+      <div class="k-account-box">
+        <div class="k-account-head">绑定与登录</div>
+        {{each statusLines}}<div class="k-account-line">{{$value}}</div>{{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

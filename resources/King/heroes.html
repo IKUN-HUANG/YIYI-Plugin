@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">{{filter}}</span>
+          <span class="k-time">共 {{total}} 位 · 第 {{page}}/{{pages}} 页</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    {{if heroes.length}}
+      <div class="k-grid">
+        {{each heroes}}
+          <div class="k-cell">
+            {{if $value.avatar}}<img class="k-face" src="{{$value.avatar}}">{{/if}}
+            <div class="k-cell-main">
+              <div class="k-cell-name">{{$value.name}}</div>
+              <div class="k-cell-sub">{{$value.typeText}}</div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <div class="k-empty">没有找到英雄</div>
+    {{/if}}
+
+    <div class="k-note">发送「#王者英雄 名字」看详情（皮肤海报也在英雄卡里）</div>
+  </div>
+</div>
+</body>
+</html>

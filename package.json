@@ -1,0 +1,70 @@
+{
+  "name": "yiyi-plugin",
+  "version": "1.0.0",
+  "description": "Yunzai-Bot 的多功能插件：王者荣耀营地卡 / 战绩 / 图鉴 / 推送，四个平台的分享链接解析，表情包制作与网易云点歌。",
+  "keywords": [
+    "yunzai",
+    "yunzai-bot",
+    "trss",
+    "chatbot",
+    "plugin",
+    "king-of-glory",
+    "honor-of-kings",
+    "game-card",
+    "card-render",
+    "bilibili",
+    "douyin",
+    "kuaishou",
+    "xiaohongshu",
+    "meme",
+    "netease-music"
+  ],
+  "homepage": "https://github.com/IKUN-HUANG/YIYI-Plugin#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IKUN-HUANG/YIYI-Plugin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/IKUN-HUANG/YIYI-Plugin/issues",
+    "email": "2608259582@qq.com"
+  },
+  "author": {
+    "name": "煌",
+    "url": "https://github.com/IKUN-HUANG"
+  },
+  "contributors": [],
+  "license": "GPL-3.0",
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "apps/",
+    "components/",
+    "config/default_config/",
+    "models/",
+    "utils/",
+    "resources/",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "check": "node --check index.js"
+  },
+  "dependencies": {
+    "mediabunny": "^1.61.3",
+    "sharp": "^0.33.5"
+  },
+  "imports": {
+    "#yiyi.utils": "./utils/index.js",
+    "#yiyi.models": "./models/index.js",
+    "#yiyi.link": "./models/Link/index.js",
+    "#yiyi.king": "./models/King/index.js",
+    "#yiyi.components": "./components/index.js"
+  },
+  "qqGroup": "695596638",
+  "qq": "2608259582"
+}

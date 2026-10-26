@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Help/settings.css'}}">
+</head>
+<body>
+<div class="set-card{{if bgBlur}} is-blur{{/if}}">
+  {{if bgSrc}}<div class="set-bg" style="background-image:url('{{bgSrc}}')"></div>{{/if}}
+
+  <div class="set-content">
+    <div class="set-header">
+      <div class="set-header-main">
+        <div class="set-title">{{title}}</div>
+      </div>
+      <div class="page-badges page-badges--row">
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+        <span class="page-version">{{pluginTitle}} v{{version}}</span>
+      </div>
+    </div>
+
+    {{if index}}
+      <div class="set-entries">
+        {{each entries}}
+          <div class="set-entry">
+            <div class="set-entry-main">
+              <div class="set-entry-cmd">{{@_hl($value.cmd)}}<span class="set-entry-count">{{$value.count}} 项</span></div>
+              <div class="set-entry-desc">{{$value.desc}}</div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+      <div class="set-tip">改的时候也可以直接发「#伊伊设置」+ 项目 + 值（例：#伊伊设置抖音关），分组名可以省</div>
+    {{else}}
+      <div class="set-groups">
+        {{each groups}}
+          <div class="set-group">
+            <div class="set-group-title">{{$value.group}}</div>
+            <div class="set-items">
+              {{each $value.list}}
+                <div class="set-item">
+                  <div class="set-item-info">
+                    <div class="set-item-label">{{$value.label}}</div>
+                    {{if $value.desc}}
+                      <div class="set-item-desc">{{$value.desc}}</div>
+                    {{/if}}
+                    <div class="set-item-cmd">{{@_hl($value.cmd)}}{{$value.next}}</div>
+                  </div>
+                  <div class="set-value set-value--{{$value.state}}">{{$value.value}}</div>
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+  </div>
+</div>
+</body>
+</html>

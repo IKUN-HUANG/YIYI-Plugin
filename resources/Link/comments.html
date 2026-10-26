@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Link/card.css'}}">
+</head>
+<body>
+<div class="card cmt">
+  <div class="cmt-content">
+    <div class="cmt-head">
+      {{if icon}}<img class="cmt-badge" src="{{icon}}" referrerpolicy="no-referrer">{{/if}}
+      <span class="cmt-title">{{title}}</span>
+      {{if link}}<span class="cmt-link ellipsis">{{link}}</span>{{/if}}
+    </div>
+
+    <div class="cmt-list">
+      {{each comments}}
+        <div class="cmt-item">
+          {{if $value.avatarSrc}}<img class="cmt-avatar" src="{{$value.avatarSrc}}" referrerpolicy="no-referrer">{{/if}}
+          <div class="cmt-main">
+            <div class="cmt-row">
+              <span class="cmt-nick ellipsis">{{$value.nick}}</span>
+              {{if $value.likeFmt}}
+                <span class="cmt-like">
+                  {{if $value.likeIcon}}<img src="{{$value.likeIcon}}" alt="like">{{/if}}
+                  <span>{{$value.likeFmt}}</span>
+                </span>
+              {{/if}}
+            </div>
+            <div class="cmt-text">{{$value.text}}</div>
+            {{if $value.more}}<div class="cmt-more">{{$value.more}}</div>{{/if}}
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="copyright-bar">{{@copyright}}</div>
+  </div>
+</div>
+</body>
+</html>

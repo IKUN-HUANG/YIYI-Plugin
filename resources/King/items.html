@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body class="k-body-narrow">
+<div class="k-card is-narrow">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>王者装备</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">{{typeName}}</span>
+          <span class="k-time">{{if detail}}命中 {{total}} 件{{else}}共 {{total}} 件{{/if}}</span>
+          {{if pages > 1}}<span class="k-time">第 {{page}}/{{pages}} 页</span>{{/if}}
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    {{if items.length}}
+      {{if detail}}
+        <div class="k-item-details">
+          {{each items item}}
+            <div class="k-item-detail">
+              <div class="k-item-detail-main">
+                {{if item.icon}}<img class="k-item-detail-icon" src="{{item.icon}}">{{/if}}
+                <div class="k-item-detail-info">
+                  <div class="k-item-detail-head">
+                    <span class="k-item-detail-name">{{item.name}}</span>
+                    <span class="k-item-detail-type">{{item.type}}</span>
+                  </div>
+                  <div class="k-item-detail-prices">
+                    {{if item.totalPrice}}<span class="k-item-price">总价 {{item.totalPrice}}</span>{{/if}}
+                    {{if item.price}}<span class="k-item-price is-sub">合成价 {{item.price}}</span>{{/if}}
+                  </div>
+                </div>
+              </div>
+              {{if item.attrs.length}}
+                <div class="k-item-attrs">
+                  {{each item.attrs attr}}<div class="k-item-attr">{{attr}}</div>{{/each}}
+                </div>
+              {{/if}}
+              {{if item.intro.length}}
+                <div class="k-item-intro">
+                  {{each item.intro line}}<div class="k-item-intro-line">{{line}}</div>{{/each}}
+                </div>
+              {{/if}}
+            </div>
+          {{/each}}
+        </div>
+      {{else}}
+        <div class="k-item-grid">
+          {{each items item}}
+            <div class="k-item-cell">
+              <div class="k-item-icon-wrap">
+                {{if item.icon}}<img class="k-item-icon" src="{{item.icon}}">{{/if}}
+              </div>
+              <div class="k-item-name">{{item.name}}</div>
+              <div class="k-item-meta">
+                <span class="k-item-type">{{item.type}}</span>
+                <span class="k-item-price">{{item.totalPrice || item.price}}</span>
+              </div>
+              {{if item.attrs.length}}
+                <div class="k-item-attrs">
+                  {{each item.attrs attr}}<div class="k-item-attr">{{attr}}</div>{{/each}}
+                </div>
+              {{/if}}
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+    {{else}}
+      <div class="k-empty">没有找到装备</div>
+    {{/if}}
+
+  </div>
+</div>
+</body>
+</html>

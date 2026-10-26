@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>王者荣耀 · 战绩</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">营地 {{campId}}</span>
+          <span class="k-badge">{{optionName}}</span>
+          <span class="k-time">{{genTime}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-battle-sum">
+      <div class="k-battle-sum-item"><b>{{items.length}}</b><span>本页场次</span></div>
+      <div class="k-battle-sum-item is-win"><b>{{wins}}</b><span>胜</span></div>
+      <div class="k-battle-sum-item is-lose"><b>{{loses}}</b><span>负</span></div>
+      <div class="k-battle-sum-item"><b>{{page}}/{{pages}}</b><span>页码</span></div>
+    </div>
+
+    <div class="k-battles">
+      {{if gaming}}
+        <div class="k-battle is-gaming">
+          <div class="k-battle-no is-gaming">0</div>
+          <div class="k-battle-face">
+            {{if gaming.heroIcon}}<img src="{{gaming.heroIcon}}">{{/if}}
+          </div>
+          <div class="k-battle-main">
+            <div class="k-battle-kda">
+              <span class="k-battle-hero">{{gaming.heroName}}</span>
+              <span class="k-battle-mode">{{gaming.mapName}}</span>
+            </div>
+            {{if gaming.timeText}}<div class="k-battle-meta"><span>{{gaming.timeText}}</span></div>{{/if}}
+          </div>
+          <div class="k-battle-result">对局中</div>
+        </div>
+      {{/if}}
+      {{each items}}
+        <div class="k-battle{{if $value.win}} is-win{{else}} is-lose{{/if}}">
+          <div class="k-battle-no">{{$value.index}}</div>
+          <div class="k-battle-face">
+            {{if $value.heroIcon}}<img src="{{$value.heroIcon}}">{{/if}}
+          </div>
+          <div class="k-battle-main">
+            <div class="k-battle-kda">
+              {{if $value.heroName}}<span class="k-battle-hero">{{$value.heroName}}</span>{{/if}}
+              <span class="k-battle-mode">{{$value.gameType}}</span>
+              <b>{{$value.killCnt}}</b>/<i>{{$value.deadCnt}}</i>/<em>{{$value.assistCnt}}</em>
+              {{if $value.gradeGame}}<span class="k-battle-grade">评分 {{$value.gradeGame}}</span>{{/if}}
+              {{if $value.mvp.icon}}<img class="k-battle-mvp-icon" src="{{$value.mvp.icon}}">{{else if $value.mvp.label}}<span class="k-battle-mvp">{{$value.mvp.label}}</span>{{/if}}
+              {{if $value.evaluate.icon}}<img class="k-battle-eval-icon" src="{{$value.evaluate.icon}}">{{else if $value.evaluate.label}}<span class="k-battle-eval">{{$value.evaluate.label}}</span>{{/if}}
+            </div>
+            <div class="k-battle-meta">
+              <span>{{$value.gameTime}}</span>
+              {{if $value.gameDuration}}<span>{{$value.gameDuration}}</span>{{/if}}
+              {{if $value.desc}}<span>{{$value.desc}}</span>{{/if}}
+              {{each $value.killTags tag}}<span class="k-battle-tag">{{tag.text}}</span>{{/each}}
+            </div>
+          </div>
+          <div class="k-battle-result">{{$value.resultText}}</div>
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="k-note">翻页发「#王者战绩 页码」，看某一局发「#王者战绩详情 编号」</div>
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

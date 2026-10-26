@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">{{segmentLabel}}</span>
+          <span class="k-badge">{{positionLabel}}</span>
+          {{if updateTime}}<span class="k-time">更新于 {{updateTime}}</span>{{/if}}
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-facts">
+      <div class="k-fact">
+        <div class="k-fact-label">上榜英雄</div>
+        <div class="k-fact-value">{{heroCount}} 个</div>
+        <div class="k-fact-sub">按 T0 → T3 排</div>
+      </div>
+      <div class="k-fact">
+        <div class="k-fact-label">范围</div>
+        <div class="k-fact-value is-small">{{segmentLabel}}</div>
+        <div class="k-fact-sub">{{positionLabel}}</div>
+      </div>
+    </div>
+
+    {{each groups group}}
+      <div class="k-tier-sec">
+        <div class="k-tier-head">
+          <span class="k-tier-name">{{group.tier}}</span>
+          <span class="k-panel-sub">{{group.rows.length}} 个英雄</span>
+        </div>
+        <div class="k-tier-cols">
+          {{each group.rows item}}
+            <div class="k-tier-item">
+              {{if item.icon}}<div class="k-tier-face"><img src="{{item.icon}}"></div>{{/if}}
+              <div class="k-tier-main">
+                <div class="k-tier-nm">{{item.name}}{{if item.banRate}}<span class="k-tier-ban">Ban {{item.banRate}}</span>{{/if}}</div>
+                <div class="k-tier-meta">胜 {{item.winRate || '—'}} · 出 {{item.showRate || '—'}}</div>
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    {{/each}}
+
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,261 @@
+@import url('../Help/badge.css');
+
+@font-face {
+  font-family: 'SourceHan';
+  src: url('../Font/SourceHanSansSC-subset.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'NotoSansMath';
+  src: url('../Font/NotoSansMath-Regular.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Symbola';
+  src: url('../Font/Symbola.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Noto Color Emoji';
+  src: url('../Font/NotoColorEmoji.woff2') format('woff2');
+  font-display: block;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  width: 1080px;
+  background: transparent;
+}
+
+body {
+  font-family: 'SourceHan', 'NotoSansMath', 'Symbola', 'Noto Color Emoji', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* ── 卡片 ── */
+
+.meme-card {
+  position: relative;
+  width: 1080px;
+  border-radius: 32px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #eaf3fd 0%, #d8e8fb 52%, #e6f1fd 100%);
+  box-shadow: 0 10px 30px rgba(59, 108, 168, 0.18);
+}
+
+.meme-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.meme-glow {
+  position: absolute;
+  border-radius: 50%;
+  display: block;
+}
+
+.meme-glow--1 {
+  width: 620px;
+  height: 620px;
+  top: -260px;
+  left: -160px;
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.5) 0%, rgba(147, 197, 253, 0) 70%);
+}
+
+.meme-glow--2 {
+  width: 720px;
+  height: 720px;
+  top: 320px;
+  right: -280px;
+  background: radial-gradient(circle, rgba(125, 211, 252, 0.42) 0%, rgba(125, 211, 252, 0) 70%);
+}
+
+.meme-glow--3 {
+  width: 640px;
+  height: 640px;
+  bottom: -300px;
+  left: 220px;
+  background: radial-gradient(circle, rgba(191, 219, 254, 0.6) 0%, rgba(191, 219, 254, 0) 70%);
+}
+
+.meme-content {
+  position: relative;
+  padding: 26px 26px 22px;
+}
+
+/* ── 头部 ── */
+
+.meme-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 22px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(120deg, rgba(199, 221, 246, 0.95) 0%, rgba(169, 205, 242, 0.95) 100%);
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(59, 108, 168, 0.14);
+}
+
+.meme-header-main {
+  min-width: 0;
+  padding-left: 18px;
+  border-left: 6px solid #2f6fd0;
+}
+
+.meme-title {
+  font-size: 44px;
+  font-weight: 700;
+  color: #0f2a5c;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.meme-subtitle {
+  margin-top: 6px;
+  font-size: 19px;
+  color: #4467a0;
+}
+
+/* ── 网格 ── */
+
+.meme-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+.meme-item {
+  padding: 8px 8px 6px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(184, 212, 242, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(59, 108, 168, 0.1);
+}
+
+.meme-thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f7fe 100%);
+  overflow: hidden;
+}
+
+.meme-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.meme-thumb-text {
+  padding: 0 8px;
+  font-size: 17px;
+  color: #5171a5;
+  text-align: center;
+  word-break: break-all;
+}
+
+.meme-kind {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.meme-kind--text {
+  color: #b45309;
+  background: rgba(254, 243, 199, 0.95);
+}
+
+.meme-name {
+  margin-top: 6px;
+  height: 26px;
+  font-size: 17px;
+  font-weight: 500;
+  color: #1e3a8a;
+  text-align: center;
+  line-height: 26px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 底部 ── */
+
+/* 结果只有一两个时格子大，名字也别太小；只有一个时给图限高，别撑成一张巨图 */
+.meme-grid--1 .meme-name,
+.meme-grid--2 .meme-name {
+  font-size: 22px;
+}
+
+.meme-grid--1 .meme-thumb {
+  aspect-ratio: auto;
+  height: 540px;
+}
+
+.meme-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(184, 212, 242, 0.95);
+  border-radius: 18px;
+}
+
+.meme-page {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.meme-page-now {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f2a5c;
+}
+
+.meme-page-total {
+  font-size: 17px;
+  color: #5171a5;
+}
+
+.meme-hint {
+  font-size: 17px;
+  color: #3c82ce;
+  font-weight: 600;
+}
+
+.meme-progress {
+  height: 6px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+}
+
+.meme-progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>缺皮肤{{if heroName}} · {{heroName}}{{/if}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">{{scopeText}}</span>
+          {{if ownerText}}<span class="k-badge is-other">{{ownerText}}</span>{{/if}}
+          {{if worthText}}<span class="k-time">{{worthText}}</span>{{/if}}
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-skin-bar">
+      <span class="k-skin-bar-fill" style="width: {{pct}}%"></span>
+    </div>
+    <div class="k-lack-head">
+      <span>全收集度 <b>{{pct}}%</b></span>
+      <span>还差 <b>{{missing}}</b> / {{total}} 款</span>
+    </div>
+
+    {{if tiers.length}}
+      <div class="k-lack-tiers">
+        {{each tiers}}
+          <div class="k-lack-tier">
+            <span class="k-lack-tier-label">{{$value.label}}</span>
+            <span class="k-lack-tier-num">{{$value.has}} / {{$value.has + $value.lack}}</span>
+            <span class="k-lack-tier-bar"><span style="width: {{$value.pct}}%"></span></span>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{if heroTop.length}}
+      <div class="k-lack-sub">缺得最多的英雄</div>
+      <div class="k-lack-chips">
+        {{each heroTop}}
+          <span class="k-lack-chip">{{$value.hero}} <b>{{$value.num}}</b></span>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    <div class="k-lack-sub">{{skinTitle}}</div>
+    {{if skinTip}}<div class="k-lack-tip">{{skinTip}}</div>{{/if}}
+
+    {{if skins.length}}
+      <div class="k-skin-grid">
+        {{each skins}}
+          <div class="k-skin-cell{{if !$value.owned}} is-lack{{/if}}">
+            <div class="k-skin-pic">
+              {{if $value.image}}<img src="{{$value.image}}">{{else}}<span class="k-skin-nopic">{{$value.name}}</span>{{/if}}
+              {{if $value.owned}}<span class="k-skin-flag">已有</span>{{else}}<span class="k-skin-flag is-lack">缺</span>{{/if}}
+            </div>
+            <div class="k-skin-meta">
+              <div class="k-skin-name">{{$value.name}}</div>
+              <div class="k-skin-tags">
+                {{if $value.heroName}}<span class="k-skin-tag">{{$value.heroName}}</span>{{/if}}
+                {{if $value.tierText}}<span class="k-skin-tag is-tier">{{$value.tierText}}</span>{{/if}}
+                {{if $value.priceText}}<span class="k-skin-tag is-price">{{$value.priceText}}</span>{{/if}}
+              </div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <div class="k-empty">没有可展示的皮肤</div>
+    {{/if}}
+
+    {{if more > 0}}<div class="k-lack-more">还有 {{more}} 款没列出来</div>{{/if}}
+
+    <div class="k-note">{{footText}}</div>
+    {{if hintText}}<div class="k-note is-tip">{{hintText}}</div>{{/if}}
+  </div>
+</div>
+</body>
+</html>
