@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Memes/detail.css'}}">
+</head>
+<body>
+<div class="meme-card meme-card--detail">
+  <div class="meme-bg">
+    <span class="meme-glow meme-glow--1"></span>
+    <span class="meme-glow meme-glow--2"></span>
+    <span class="meme-glow meme-glow--3"></span>
+  </div>
+
+  <div class="meme-content">
+    <div class="meme-header">
+      <div class="meme-header-main">
+        <div class="meme-title">{{title}}</div>
+        <div class="meme-subtitle">代码 {{code}} · {{kindText}}表情包</div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="meme-detail">
+      <div class="meme-detail-pic">
+        <div class="meme-thumb">
+          {{if thumb}}
+            <img src="{{thumb}}" alt="">
+          {{else}}
+            <span class="meme-thumb-text">{{title}}</span>
+          {{/if}}
+        </div>
+        <div class="meme-detail-tip">{{picLabel}}</div>
+      </div>
+
+      <div class="meme-detail-side">
+        <div class="meme-params">
+          <div class="meme-param">
+            <span class="meme-param-k">关键词</span>
+            <span class="meme-param-v">{{keywordsText}}</span>
+          </div>
+          <div class="meme-param">
+            <span class="meme-param-k">需要图片</span>
+            <span class="meme-param-v">{{imagesText}}</span>
+          </div>
+          <div class="meme-param">
+            <span class="meme-param-k">需要文字</span>
+            <span class="meme-param-v">{{textsText}}</span>
+          </div>
+          {{if defaultTextsText}}
+            <div class="meme-param">
+              <span class="meme-param-k">默认文字</span>
+              <span class="meme-param-v">{{defaultTextsText}}</span>
+            </div>
+          {{/if}}
+        </div>
+
+        {{if options.length}}
+          <div class="meme-options">
+            <div class="meme-options-title">可调参数</div>
+            {{each options}}
+              <div class="meme-option">
+                <div class="meme-option-head">
+                  <span class="meme-option-name">{{$value.name}}</span>
+                  <span class="meme-option-cmd">{{@_hl($value.example)}}</span>
+                </div>
+                {{if $value.desc}}
+                  <div class="meme-option-help">{{$value.desc}}</div>
+                {{/if}}
+                {{if $value.values}}
+                  <div class="meme-option-values">可选：{{$value.values}}</div>
+                {{/if}}
+              </div>
+            {{/each}}
+            <div class="meme-options-tip">参数直接跟在名字后面，用 # 连起来最省事，如「#像素化#20」</div>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="meme-footer">
+      <div class="meme-page">
+        <span class="meme-page-now">用法</span>
+        <span class="meme-page-total">{{usage}}</span>
+      </div>
+      <div class="meme-hint">发送「{{title}}」即可制作</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

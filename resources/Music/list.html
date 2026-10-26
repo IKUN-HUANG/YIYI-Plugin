@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Music/list.css'}}">
+</head>
+<body>
+<div class="music-card{{if bgSrc}} has-bg{{/if}}">
+  <div class="music-bg">
+    {{if bgSrc}}<div class="music-photo" style="background-image:url('{{bgSrc}}')"></div>{{/if}}
+  </div>
+
+  <div class="music-content">
+    <div class="music-header">
+      <div class="music-header-main">
+        <div class="music-title">{{title}}</div>
+        <div class="music-subtitle">{{subtitle}}</div>
+      </div>
+      <div class="page-badges page-badges--row">
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+        <span class="page-version">{{pluginTitle}} v{{version}}</span>
+      </div>
+    </div>
+
+    <div class="music-list">
+      {{each items}}
+        <div class="music-item">
+          <div class="music-index{{if $value.top3}} music-index--top{{/if}}">{{$value.index}}</div>
+          <div class="music-cover">
+            {{if $value.cover}}
+              <img src="{{$value.cover}}" alt="">
+            {{else}}
+              <span class="music-cover-note">♪</span>
+            {{/if}}
+          </div>
+          <div class="music-meta">
+            <div class="music-name-row">
+              <span class="music-name">{{$value.name}}</span>
+              {{if $value.vip}}<span class="music-tag">VIP</span>{{/if}}
+            </div>
+            <div class="music-artist">{{$value.artistText}}</div>
+          </div>
+          <div class="music-album">
+            {{if $value.album}}<div class="music-album-name">{{$value.album}}</div>{{/if}}
+            {{if $value.albumAt}}<div class="music-album-date">{{$value.albumAt}}</div>{{/if}}
+          </div>
+          <div class="music-tail">
+            <div class="music-stat">
+              {{if $value.likeText}}
+                <span class="music-like">
+                  <svg class="music-heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                  <span class="music-like-count">{{$value.likeText}}</span>
+                </span>
+              {{/if}}
+              <span class="music-time">{{$value.durationText}}</span>
+            </div>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="music-footer">
+      <div class="music-page">
+        <span class="music-page-now">第 {{page}} / {{pages}} 页</span>
+        <span class="music-page-total">{{totalText}}</span>
+      </div>
+      <div class="music-hint">{{@hint}}</div>
+    </div>
+
+    <div class="music-progress">
+      <div class="music-progress-bar" style="width: {{percent}}%"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

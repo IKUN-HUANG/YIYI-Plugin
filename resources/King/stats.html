@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">纯本地</span>
+          {{if genTime}}<span class="k-time">统计于 {{genTime}}</span>{{/if}}
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-stats">
+      {{each cards item}}
+        <div class="k-stat">
+          <div class="k-label">{{item.label}}</div>
+          <div class="k-value">{{item.value}}</div>
+        </div>
+      {{/each}}
+    </div>
+
+    {{if pushRows.length}}
+      <div class="k-sect">推送</div>
+      <div class="k-line-rows" style="margin-top:10px">
+        {{each pushRows item idx}}
+          <div class="k-line-row {{if idx % 2}}is-alt{{/if}}">
+            <div class="k-line-main">
+              <div class="k-line-name">{{item.label}}</div>
+            </div>
+            <div class="k-line-right">
+              <div class="k-line-value">{{item.value}}</div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    <div class="k-sect">用户明细</div>
+    <div class="k-line-rows" style="margin-top:10px">
+      {{if rows.length}}
+        {{each rows item idx}}
+          <div class="k-line-row {{if idx % 2}}is-alt{{/if}}">
+            <div class="k-line-no">{{item.no}}</div>
+            <div class="k-line-main">
+              <div class="k-line-name">{{item.name}}</div>
+              <div class="k-line-sub">{{item.sub}}</div>
+            </div>
+            <div class="k-line-right">
+              <span class="k-tag {{if item.on}}is-ok{{else}}is-idle{{/if}}">{{item.value}}</span>
+            </div>
+          </div>
+        {{/each}}
+      {{else}}
+        <div class="k-empty">还没有人绑定营地角色</div>
+      {{/if}}
+    </div>
+
+    {{if moreText}}<div class="k-note">{{moreText}}</div>{{/if}}
+    {{if note}}<div class="k-note">{{note}}</div>{{/if}}
+  </div>
+</div>
+</body>
+</html>

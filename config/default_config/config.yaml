@@ -1,0 +1,147 @@
+# ========== 基础配置 ==========
+# Bot 名字：聊天文案、视频转发用的署名（默认「人家」，改名就填这里）
+name: "人家"
+
+# ========== 插件更新 ==========
+# 每天定时检查 git 上游：有更新就自动拉取、通知首位主人并重启 Yunzai（框架给了 Bot.restart 才会自动重启，
+# 没给就只提示主人手动重启，进程不会自己退出）；没有更新就静默
+# 也可以随时手动发「#伊伊更新」（同样会被主人校验）
+autoUpdate: true
+# 每天几点检查（HH:MM，24 小时制）
+autoUpdateTime: "09:00"
+
+# ========== 抖音解析 API ==========
+# 解析接口地址
+douyinApiUrl: https://dtk.kesally.ren/api/v1/parse?wait=10
+# API Key，留空则不加 X-API-Key 请求头
+douyinApiKey: ""
+
+# ========== 小红书解析 ==========
+# 留空即可：插件会自动铸造游客会话（无需登录）完成签名
+# 若想用自己浏览器的登录态，把整条 Cookie 粘进来
+xiaohongshuCookie: ""
+
+# ========== 短链接服务 ==========
+# 把超长 CDN 视频地址压成短链
+dlUrl: https://h.kesally.ren/DL
+# 短链 API 密钥
+dlKey: YUANSHENQIDONG
+
+# ========== 视频上传 ==========
+# 视频大小阈值 (MB)，超过则只发短链，不直接发送视频
+mbMax: 99
+
+# ========== 插件优先级 ==========
+# 数值越小越优先响应（Yunzai 规则）。修改后需重启生效
+priority: 0
+
+# ========== 平台开关 ==========
+platforms:
+  douyin: true
+  kuaishou: true
+  bilibili: true
+  xiaohongshu: true
+
+# ========== 评论截图 ==========
+# 解析成功后额外发一张「热评」图（各平台取点赞最高的几条）
+commentCard: true
+# 分平台开关：只剩抖音与 B站 —— 快手评论每个 IP 隔一阵才放一次、小红书评论接口
+# 对陌生 IP 恒回 300012 IP存在风险，这两家的评论卡已整体去掉（不再请求、也不再出图）
+commentCards:
+  douyin: true
+  bilibili: true
+# 热评卡片最多展示几条
+commentLimit: 5
+
+# ========== 整合转发 ==========
+# 开着时该平台触发后本该分几条发的消息（卡片 / 完整简介 / 音乐 / 图集或视频 / 评论卡）
+# 会整合成一条合并转发，一次性发出去；默认全关
+mergeForwards:
+  douyin: false
+  kuaishou: false
+  bilibili: false
+  xiaohongshu: false
+
+# ========== B站专用 ==========
+# 内嵌视频代理端口
+biliProxyPort: 8765
+# Docker 访问宿主机的地址，host 模式可直接 127.0.0.1
+# Docker 环境一般填 host.docker.internal
+biliProxyHost: 127.0.0.1
+
+# ========== 表情包（Memes） ==========
+# 表情优先级：表情包插件的 Yunzai 优先级，数值越小越优先，改动后需重启
+# 与上面的「插件优先级」相互独立；留空 "" 就跟随「插件优先级」
+# 点歌永远排在表情包前面（它自己取本值 -1），所以这里调大调小都不影响点歌
+memes:
+  priority: ""
+  # 表情包功能开关
+  # 发送表情关键词即可制作（需要本机有 meme-generator 服务）
+  enable: true
+  # meme-generator 服务地址，末尾不要带 /；默认是作者自建的公共接口，开箱即用
+  # 自己在本机跑 meme-generator 就换成 http://127.0.0.1:2233（本机地址才会按并发数批量拉预览图）
+  apiUrl: http://datukuai.top:2233
+  # 单次请求超时（毫秒）
+  timeout: 30000
+  # #表情更新 时同时下载预览图的并发数
+  concurrency: 8
+  # 表情菜单每页显示多少个（5 个一行，30 就是 6 行）
+  perPage: 30
+  # 「名称 + 这些后缀」= 查看该表情的参数（详情卡片）
+  detailArgs:
+    - 详情
+    - 参数
+    - 说明
+    - 成分
+  # 禁用的表情：填表情代码或关键词，菜单 / 搜索 / 随机 / 关键词触发都会跳过；留空 [] 表示不禁用
+  disabled: []
+  # 主人反制：开着时，如果素材里主人 QQ 的头像排在最后，就把它提到最前面；
+  # 只反制「反制表情」列表里的表情，列表留空 [] 表示所有表情都反制；触发者自己就是主人时一律不反制
+  # 默认关闭，想用发「#伊伊反制开」
+  counter: false
+  # 反制表情：填表情代码或关键词，只有列表里的表情才做主人反制；留空 [] 表示所有表情都反制
+  counterCodes: []
+  # 每天定时清空本地表情数据并重新拉取（插件启动时也会检查一次，缺数据就自动拉）
+  autoUpdate: true
+  # 自动更新的时间（HH:MM，24 小时制；只在 autoUpdate 为 true 时生效）
+  autoUpdateTime: "02:30"
+
+# ========== 点歌（网易云） ==========
+music:
+  # 点歌功能开关（关掉后「#点歌 / #听N / #选N」整体不响应）
+  enable: true
+  # NeteaseCloudMusicApiEnhanced 接口地址，末尾不要带 /；默认是作者自建的公共接口
+  # 本地部署就填 http://127.0.0.1:<端口>
+  apiUrl: https://wyy.h.kesally.ren
+  # 网易云 Cookie：填 MUSIC_U 的值（一长串），或者整条 Cookie 串都行
+  # 有了它，VIP / 会员歌才会给完整播放地址；留空只能拿到 30 秒试听片段
+  # 默认已填好一个（2026-10-26 实测能拿到完整播放地址），换了就在面板里改
+  # 也可以直接在群里发「#伊伊设置网易云ck <值>」（面板里只显示是否配置，不亮内容）
+  cookie: "0050705497FF5123F4341A4B3A03817F1AA12AED60AEDC0D0877CE692D0CF08D06E45D2864FF1F61279CA7FA1337EF37F500DBB94BD186EF01E1D2F3153276C3CD2BBD407D6B929F55FAE52761DC6C669BDD15B8D1671B13B5536BD3D10E63B8910CF7C86FFD1EF0715F6E1A16398CDECE1A40DA4F0042A5D9378FA0FD102E3F5CF5C33CB779A37B0789421AB2C5C22D67634D2D105B4A2FDB02F62E88F9652EF8600640394A5116594682B1B4E9A52061B81AF945ED21F8EE99B53767039E0669BB61E6203BDD1A3A6CE95B11DA6F2E1A8ECD59AFA8184BB6D3BB3CE807589265023165250D59FBA2F5D756F4DC65DF60A9DBFBEE64135ED944F478FE9F45D9FACF4DB1A6744F8AEDA04730BC8AFE5A7D82CE20E77C75660208EA1774A92541542924221622AAB0F7C08156D1039CFC19A229D5C99CA59E463760CFDC951606853DC16BE0A50C70E5745881B1E439F609"
+  # 单次请求超时（毫秒）
+  timeout: 15000
+  # 预览图每页显示多少首（卡片一行一首，15 就是一屏）
+  perPage: 15
+  # 搜索最多翻到第几页（接口带 songCount，实际可能有几十页，这里封个顶）
+  maxPages: 10
+  # 取流音质：standard / higher / exhigh / lossless / hires
+  # 非会员账号填 standard 就好，往上报会被接口降级或只给试听片段
+  level: standard
+
+# ========== 卡片背景 ==========
+# 图源：开 = 先走「背景图片接口」，接口超时或拿不到就回落本地；关 = 只用本地
+bgSource: true
+# 本地背景图放 resources/Img/：不认文件名，目录下所有图片随机挑一张
+# API 地址，图源开着且非空时优先使用 API 返回的图片
+# API 应直接返回图片内容（Content-Type 为 image/*）
+helpBgApi: "https://h.kesally.ren/API/IMG/?sort=mp"
+
+# ========== 出图 ==========
+# 卡片编码格式（Yunzai 出图后端认 png / jpeg / webp 三种）
+# - png：无损，像素跟原来的 webp(quality 100) 完全一致，但 Chromium 的 PNG 编码快三到四成
+# - jpeg：最快、体积最小（同一张卡约 webp 的三分之一），代价是文字边缘有损，放大才看得出来
+# - webp：体积介于两者之间，但编码最慢；另外微信（ComWeChat）适配器不认 webp，会被当文件发出去
+# 2026-10-24 实测（1080 宽的面板卡，同一台机器）：webp(100) 787ms / png 561ms / jpeg(92) 109ms
+imgType: png
+# 有损格式（jpeg / webp）的质量，1~100；png 用不到这一项
+quality: 100

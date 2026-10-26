@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}} · {{heroName}}</span>
+        </div>
+        <div class="k-sub">
+          {{if alias}}<span class="k-badge">{{alias}}</span>{{/if}}
+          {{if heroType}}<span class="k-badge">{{heroType}}</span>{{/if}}
+          {{if branch}}<span class="k-badge">{{branch}}</span>{{/if}}
+          {{if ownerText}}<span class="k-time">{{ownerText}}</span>{{/if}}
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    {{if heroIcon}}
+      <div class="k-cmp-head">
+        <div class="k-cmp-side">
+          <div class="k-cmp-face"><img src="{{heroIcon}}"></div>
+          <div>
+            <div class="k-cmp-name">{{heroName}}</div>
+            <div class="k-cmp-sub">{{if skilled}}{{skilled}}{{else}}{{branch || heroType || '全生涯战绩'}}{{/if}}</div>
+          </div>
+        </div>
+      </div>
+    {{/if}}
+
+    <div class="k-facts">
+      <div class="k-fact">
+        <div class="k-fact-label">胜率</div>
+        <div class="k-fact-value">{{winRate}}</div>
+        <div class="k-fact-sub">{{win}} 胜 {{lose}} 负 · 共 {{total}} 场</div>
+      </div>
+      <div class="k-fact">
+        <div class="k-fact-label">最高连胜</div>
+        <div class="k-fact-value">{{maxWin}}</div>
+        <div class="k-fact-sub">当前战力 {{power || '—'}}</div>
+      </div>
+      <div class="k-fact">
+        <div class="k-fact-label">最佳</div>
+        <div class="k-fact-value">{{best || '—'}}</div>
+        <div class="k-fact-sub">MVP / 评分最多次数</div>
+      </div>
+    </div>
+
+    {{if radarSvg || recent.length}}
+      <div class="k-panel k-split">
+        {{if radarSvg || radar.length}}
+          <div class="k-split-col">
+            <div class="k-panel-head">
+              <span class="k-panel-title">五维数据<span class="k-panel-sub"> · 满分 100</span></span>
+            </div>
+            {{if radarSvg}}
+              <div class="k-radar">{{@radarSvg}}</div>
+            {{else}}
+              <div class="k-bars">
+                {{each radar item}}
+                  <div class="k-bar-row">
+                    <span class="k-bar-label">{{item.label}}</span>
+                    <span class="k-bar-track"><span class="k-bar-fill" style="width:{{item.pct}}%"></span></span>
+                    <span class="k-bar-num">{{item.value}}</span>
+                  </div>
+                {{/each}}
+              </div>
+            {{/if}}
+          </div>
+        {{/if}}
+
+        {{if recent.length}}
+          <div class="k-split-col">
+            <div class="k-panel-head">
+              <span class="k-panel-title">近期战绩</span>
+              <span class="k-panel-sub">最近 {{recent.length}} 场</span>
+            </div>
+            <div class="k-line-rows">
+              {{each recent item idx}}
+                <div class="k-line-row {{item.win ? 'is-win' : 'is-lose'}}">
+                  <div class="k-line-no">{{item.win ? '胜' : '负'}}</div>
+                  <div class="k-line-main">
+                    <div class="k-line-name">{{item.mapName || '未知地图'}}</div>
+                    <div class="k-line-sub">{{item.time}}{{if item.grade}} · 评分 {{item.grade}}{{/if}}</div>
+                  </div>
+                  <div class="k-line-right">
+                    <div class="k-line-value">{{item.kill}}/{{item.dead}}/{{item.assist}}</div>
+                    <div class="k-line-sub">{{item.mvp ? 'MVP' : (item.svp ? '败方最佳' : '')}}</div>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        {{/if}}
+      </div>
+    {{/if}}
+
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

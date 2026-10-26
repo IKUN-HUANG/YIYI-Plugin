@@ -1,0 +1,235 @@
+@import url('badge.css');
+
+@font-face {
+  font-family: 'SourceHan';
+  src: url('../Font/SourceHanSansSC-subset.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'NotoSansMath';
+  src: url('../Font/NotoSansMath-Regular.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Symbola';
+  src: url('../Font/Symbola.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Noto Color Emoji';
+  src: url('../Font/NotoColorEmoji.woff2') format('woff2');
+  font-display: block;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  width: 1080px;
+  background: transparent;
+}
+
+body {
+  font-family: 'SourceHan', 'NotoSansMath', 'Symbola', 'Noto Color Emoji', "Microsoft YaHei", "PingFang SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.help-card {
+  width: 1080px;
+  min-height: 405px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  isolation: isolate;
+  background: #eef3f8;
+}
+
+.help-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* 背景图始终原样展示，不做模糊；bgBlur 只控制面板是否加毛玻璃 */
+.help-card.is-blur .help-header,
+.help-card.is-blur .help-group {
+  backdrop-filter: blur(6px) saturate(130%);
+  -webkit-backdrop-filter: blur(6px) saturate(130%);
+}
+
+.help-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 49px;
+  color: #24313f;
+}
+
+/* 面板白纱是文字背后的遮罩：0.72(标题) / 0.66(分组) / 0.58(条目) 按深色正文压在照片上的可读性定 */
+.help-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 38px 43px;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 27px;
+  box-shadow: 0 11px 38px rgba(50, 70, 120, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  margin-bottom: 27px;
+}
+.help-header-main {
+  flex: 1;
+  min-width: 0;
+}
+.help-title {
+  font-size: 43px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #3C82CE;
+  line-height: 1.2;
+}
+.help-subtitle {
+  font-size: 17px;
+  color: #4a5768;
+  margin-top: 11px;
+  letter-spacing: 0.5px;
+}
+
+.help-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.help-group {
+  margin-bottom: 0;
+  padding: 30px 27px 19px;
+  background: rgba(255, 255, 255, 0.66);
+  border-radius: 27px;
+  box-shadow: 0 11px 38px rgba(50, 70, 120, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+.help-group-title {
+  font-size: 21px;
+  font-weight: 600;
+  color: #3C82CE;
+  margin-bottom: 22px;
+  padding-left: 16px;
+  position: relative;
+}
+.help-group-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 22px;
+  background: linear-gradient(180deg, #4A90D9, #87CEFA);
+  border-radius: 2px;
+}
+
+.help-items {
+  display: grid;
+  grid-template-columns: repeat(var(--item-cols, 2), minmax(0, 1fr));
+  gap: 13px;
+}
+.help-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 16px;
+  background: rgba(255, 255, 255, 0.58);
+  border-radius: 19px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+.help-item-icon {
+  /* 图标有方形的也有横长条的（小红书字标），留出横向空间让它按比例撑开 */
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  flex-shrink: 0;
+  padding: 7px 3px;
+  border-radius: 13px;
+  background: rgba(74, 144, 217, 0.12);
+}
+.help-item:nth-child(5n+2) .help-item-icon { background: rgba(255, 138, 138, 0.15); }
+.help-item:nth-child(5n+3) .help-item-icon { background: rgba(110, 200, 140, 0.15); }
+.help-item:nth-child(5n+4) .help-item-icon { background: rgba(255, 180, 90, 0.18); }
+.help-item:nth-child(5n) .help-item-icon { background: rgba(170, 130, 220, 0.15); }
+
+.help-item-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4A90D9, #87CEFA);
+  flex-shrink: 0;
+  margin-left: 18px;
+  margin-right: 18px;
+}
+.help-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.help-item-title {
+  font-size: 19px;
+  font-weight: 600;
+  color: #24313f;
+  line-height: 1.4;
+  word-break: break-all;
+}
+.help-cmd {
+  color: #3C82CE;
+  font-weight: 600;
+  margin-right: 2px;
+}
+.help-item-desc {
+  font-size: 16px;
+  color: #5b687c;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+/* ── 四列模式（一行放四项）──
+   列一多，标题那栏只剩两百来像素，「#王者微信扫码」会被拆成两行；
+   图标、圆点、内边距各让一点，标题收到 17px，短口令就能整条站在一行里 */
+.help-groups.is-dense .help-item {
+  gap: 10px;
+  padding: 13px 12px;
+}
+
+.help-groups.is-dense .help-item-icon {
+  width: 38px;
+  height: 38px;
+  padding: 5px 2px;
+  border-radius: 11px;
+}
+
+.help-groups.is-dense .help-item-dot {
+  width: 9px;
+  height: 9px;
+  margin-left: 3px;
+  margin-right: 3px;
+}
+
+.help-groups.is-dense .help-item-title {
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.help-groups.is-dense .help-item-desc {
+  font-size: 14px;
+  margin-top: 4px;
+  line-height: 1.35;
+}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body class="k-body-narrow">
+<div class="k-card is-narrow">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          {{if sub}}<span class="k-badge">{{sub}}</span>{{/if}}
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-help-lead">{{lead}}</div>
+
+    <div class="k-help-opts">
+      <div class="k-help-opt k-help-opt--bind">
+        <div class="k-help-opt-head">
+          <span class="k-help-opt-tag">{{bind.tag}}</span>
+          <span class="k-help-opt-name">{{bind.name}}</span>
+        </div>
+        <div class="k-help-opt-cmd">{{bind.cmd}}</div>
+        <ul class="k-help-list">{{each bind.points line}}<li>{{line}}</li>{{/each}}</ul>
+      </div>
+
+      <div class="k-help-opt k-help-opt--scan k-help-opt--gold">
+        <div class="k-help-opt-head">
+          <span class="k-help-opt-tag">{{scan.tag}}</span>
+          <span class="k-help-opt-name">{{scan.name}}</span>
+        </div>
+        <div class="k-help-opt-cmd">{{scan.cmd}}</div>
+        <ul class="k-help-list">{{each scan.points line}}<li>{{line}}</li>{{/each}}</ul>
+      </div>
+    </div>
+
+    <div class="k-help-choose">
+      <div class="k-help-choose-title">{{chooseTitle}}</div>
+      <ul class="k-help-list">{{each choose line}}<li>{{line}}</li>{{/each}}</ul>
+    </div>
+
+    {{if note}}<div class="k-note">{{note}}</div>{{/if}}
+  </div>
+</div>
+</body>
+</html>

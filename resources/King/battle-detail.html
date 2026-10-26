@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card k-detail-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>王者荣耀 · 战绩详情</span>
+        </div>
+        <div class="k-sub">
+          {{if meName}}<span class="k-badge is-name">{{meName}}</span>{{/if}}
+          <span class="k-badge">营地 {{campId}}</span>
+          <span class="k-badge">第 {{index}} 场</span>
+          <span class="k-time">{{genTime}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    {{if meName || hasMe}}
+    <div class="k-detail-section">
+      <div class="k-detail-section-title">
+        <span>我的本场表现{{if meHeroName}} · {{meHeroName}}{{/if}}</span>
+      </div>
+
+      <div class="k-detail-perf">
+        <div class="k-detail-perf-side is-result{{if win}} is-win{{else}} is-lose{{/if}}">
+          <div class="k-detail-perf-result">
+            <span class="k-detail-perf-cn">{{resultText}}</span>
+            <span class="k-detail-perf-en">{{resultEn}}</span>
+          </div>
+          <div class="k-detail-perf-kill">
+            <b>{{myKills}}</b><em>:</em><b>{{enemyKills}}</b><span>团队击杀</span>
+          </div>
+          <div class="k-detail-perf-meta">
+            {{if tips}}<span class="k-detail-perf-tip">“{{tips}}”</span>{{/if}}
+            <span>{{mapName}}{{if matchDesc}} · {{matchDesc}}{{/if}}</span>
+            {{if startTime}}<span>{{startTime}}</span>{{/if}}
+            {{if usedTimeMin}}<span>{{usedTimeMin}} 分钟</span>{{/if}}
+          </div>
+        </div>
+
+        {{if meName}}
+        <div class="k-detail-me k-detail-perf-me">
+          {{if meAvatar}}<img class="k-detail-me-face" src="{{meAvatar}}">{{/if}}
+          {{if meFightPower}}<span class="k-detail-me-power">战力 {{meFightPower}}{{if meFightPowerDelta}} <span class="k-detail-me-delta{{if meFightPowerDelta > 0}} is-up{{else}} is-down{{/if}}">{{meFightPowerDeltaText}}</span>{{/if}}</span>{{/if}}
+          {{if meKda}}<span class="k-detail-me-kda">{{meKda}}</span>{{/if}}
+          {{if meScore}}<span class="k-detail-me-score {{meScoreClass}}">{{meScore}}</span>{{/if}}
+          {{if meEvalIcon}}<img class="k-detail-me-eval" src="{{meEvalIcon}}">{{else if meEvalTag}}<span class="k-detail-me-evaltag">{{meEvalTag}}</span>{{/if}}
+          {{if meMvpIcon}}<img class="k-detail-me-tag" src="{{meMvpIcon}}">{{/if}}
+        </div>
+        {{/if}}
+
+        <div class="k-detail-perf-side is-data">
+          <div class="k-detail-quads">
+            {{if meRatings.length}}
+            <div class="k-detail-quad is-ratings">
+              <div class="k-detail-rating-grid">
+                <div class="k-detail-rating-head">五维<br>评级</div>
+                {{each meRatings item}}
+                <div class="k-detail-rating">
+                  <span class="k-detail-rating-name">{{item.name}}</span>
+                  <span class="k-detail-rating-tier tier-{{item.tier}}">{{item.tier}}</span>
+                </div>
+                {{/each}}
+              </div>
+            </div>
+            {{/if}}
+            {{each meGroups group}}
+            <div class="k-detail-quad">
+              <div class="k-detail-quad-title">{{group.title}}</div>
+              {{each group.items item}}
+              <div class="k-detail-quad-item">
+                <span class="k-detail-bi-name">{{item.name}}</span>
+                <span class="k-detail-bi-value{{if item.highlight}} is-hl{{/if}}">{{item.value}}</span>
+                {{if item.note}}<span class="k-detail-bi-note{{if item.noteHighlight}} is-hl{{/if}}">前 {{item.note}}</span>{{/if}}
+              </div>
+              {{/each}}
+            </div>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="k-detail-panel">
+      <div class="k-detail-section-title"><span>对局数据</span></div>
+
+      <div class="k-detail-data">
+        {{if hasBan}}
+        <div class="k-detail-data-bans">
+          <div class="k-detail-ban-line">
+            <span class="k-detail-ban-cap">我方</span>
+            <div class="k-detail-ban-row">
+              {{each myBanHeros item}}
+              <div class="k-detail-ban-item">
+                <span class="k-detail-ban-face">
+                  {{if item.icon}}<img src="{{item.icon}}">{{else}}<span class="k-detail-ban-text">{{item.name}}</span>{{/if}}
+                </span>
+                <span class="k-detail-ban-name">{{item.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+          <div class="k-detail-ban-line is-enemy">
+            <span class="k-detail-ban-cap">敌方</span>
+            <div class="k-detail-ban-row">
+              {{each enemyBanHeros item}}
+              <div class="k-detail-ban-item">
+                <span class="k-detail-ban-face">
+                  {{if item.icon}}<img src="{{item.icon}}">{{else}}<span class="k-detail-ban-text">{{item.name}}</span>{{/if}}
+                </span>
+                <span class="k-detail-ban-name">{{item.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+        </div>
+        {{/if}}
+
+        <div class="k-detail-data-stats">
+          <div class="k-detail-line">
+            <span class="k-detail-line-label">经济</span>
+            <div class="k-detail-economy">
+              <div class="k-detail-economy-my" style="width: {{myEconomyRate}}%"><span>{{myMoneyText}}</span></div>
+              <div class="k-detail-economy-enemy"><span>{{enemyMoneyText}}</span></div>
+            </div>
+          </div>
+
+          <div class="k-detail-line">
+            <span class="k-detail-line-label">资源</span>
+            <div class="k-detail-res">
+              {{each resources item}}
+              <div class="k-detail-res-item{{if item.my > item.enemy}} is-ahead{{else if item.my < item.enemy}} is-behind{{/if}}">
+                <div class="k-detail-res-score">{{item.my}}<span class="k-detail-res-div">:</span>{{item.enemy}}</div>
+                <div class="k-detail-res-name">{{item.name}}</div>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="k-detail-teams">
+      <div class="k-detail-team">
+        <div class="k-detail-team-head{{if win}} is-win{{else}} is-lose{{/if}}">
+          <span class="k-detail-team-name">我方{{resultText}}</span>
+          <span class="k-detail-team-kda">{{myKda}}</span>
+        </div>
+        <div class="k-detail-players">
+          {{each myRoles role}}
+          <div class="k-detail-player{{if role.isMe}} is-me{{/if}}{{if role.isBot}} is-bot{{/if}}{{if role.placeholder}} is-missing{{/if}}{{if role.isDevil}} is-devil{{/if}}">
+            {{if role.isBot}}<span class="k-detail-bot-mark is-{{role.botTier}}"><i>{{role.botLabel}}</i></span>{{/if}}
+            <div class="k-detail-phead">
+              <div class="k-detail-avatar-wrap">
+                {{if role.avatar}}<img class="k-detail-avatar" src="{{role.avatar}}">{{else}}<span class="k-detail-avatar is-missing">?</span>{{/if}}
+                {{if role.isMe}}<span class="k-detail-me-badge">我</span>{{/if}}
+              </div>
+              <div class="k-detail-pwho">
+                <div class="k-detail-pname-row">
+                  <span class="k-detail-pname">{{role.roleName}}</span>
+                </div>
+                {{if role.maxTags.length}}
+                <div class="k-detail-max-tags">{{each role.maxTags tag}}<img src="{{tag.icon}}" title="{{tag.text}}">{{/each}}</div>
+                {{/if}}
+                <div class="k-detail-phero">{{role.heroLine}}</div>
+              </div>
+              {{if role.evalIcon || role.mvpIcon}}
+              <div class="k-detail-pbadges">
+                {{if role.evalIcon}}<img class="k-detail-icon" src="{{role.evalIcon}}">{{/if}}
+                {{if role.mvpIcon}}<img class="k-detail-icon" src="{{role.mvpIcon}}">{{/if}}
+              </div>
+              {{/if}}
+              <div class="k-detail-pscore">
+                <div class="k-detail-score {{role.scoreClass}}">{{role.score}}</div>
+                <div class="k-detail-score-cap">评分</div>
+              </div>
+            </div>
+            <div class="k-detail-pnums">
+              <span class="k-detail-pkda">{{role.kills}} / {{role.deaths}} / {{role.assists}}</span>
+              <span class="k-detail-sep"></span>
+              <span class="k-detail-pnum is-money"><em>经济</em><b>{{role.moneyText}}{{if role.maxMoney}}<i class="k-detail-star">★</i>{{/if}}</b></span>
+              {{if role.hurtText}}
+              <span class="k-detail-pnum is-hurt"><em>输出</em><b>{{role.hurtText}}{{if role.maxHeroHurt}}<i class="k-detail-star">★</i>{{/if}}</b>{{if role.hurtRate}}<i class="k-detail-rate {{role.hurtRateClass}}">{{role.hurtRate}}%</i>{{/if}}</span>
+              {{/if}}
+            </div>
+            {{if role.extraItems.length}}
+            <div class="k-detail-extra">
+              {{each role.extraItems extra}}<span class="k-detail-extra-item"><em>{{extra.label}}</em><b>{{extra.text}}{{if extra.star}}<i class="k-detail-star">★</i>{{/if}}</b></span>{{/each}}
+            </div>
+            {{/if}}
+            <div class="k-detail-pfoot">
+              {{if role.equips.length || role.skillIcon}}
+              <div class="k-detail-equips">
+                {{if role.skillIcon}}<span class="k-detail-equip is-skill"><img src="{{role.skillIcon}}"></span><i class="k-detail-equip-split"></i>{{/if}}
+                <div class="k-detail-equip-grid">
+                  {{each role.equips equip}}{{if equip}}<span class="k-detail-equip"><img src="{{equip}}"></span>{{/if}}{{/each}}
+                </div>
+              </div>
+              {{/if}}
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+
+      <div class="k-detail-team">
+        <div class="k-detail-team-head{{if enemy.win}} is-win{{else}} is-lose{{/if}}">
+          <span class="k-detail-team-name">敌方{{enemy.resultText}}</span>
+          <span class="k-detail-team-kda">{{enemy.kda}}</span>
+        </div>
+        <div class="k-detail-players">
+          {{each enemyRoles role}}
+          <div class="k-detail-player{{if role.isMe}} is-me{{/if}}{{if role.isBot}} is-bot{{/if}}{{if role.placeholder}} is-missing{{/if}}{{if role.isDevil}} is-devil{{/if}}">
+            {{if role.isBot}}<span class="k-detail-bot-mark is-{{role.botTier}}"><i>{{role.botLabel}}</i></span>{{/if}}
+            <div class="k-detail-phead">
+              <div class="k-detail-avatar-wrap">
+                {{if role.avatar}}<img class="k-detail-avatar" src="{{role.avatar}}">{{else}}<span class="k-detail-avatar is-missing">?</span>{{/if}}
+                {{if role.isMe}}<span class="k-detail-me-badge">我</span>{{/if}}
+              </div>
+              <div class="k-detail-pwho">
+                <div class="k-detail-pname-row">
+                  <span class="k-detail-pname">{{role.roleName}}</span>
+                </div>
+                {{if role.maxTags.length}}
+                <div class="k-detail-max-tags">{{each role.maxTags tag}}<img src="{{tag.icon}}" title="{{tag.text}}">{{/each}}</div>
+                {{/if}}
+                <div class="k-detail-phero">{{role.heroLine}}</div>
+              </div>
+              {{if role.evalIcon || role.mvpIcon}}
+              <div class="k-detail-pbadges">
+                {{if role.evalIcon}}<img class="k-detail-icon" src="{{role.evalIcon}}">{{/if}}
+                {{if role.mvpIcon}}<img class="k-detail-icon" src="{{role.mvpIcon}}">{{/if}}
+              </div>
+              {{/if}}
+              <div class="k-detail-pscore">
+                <div class="k-detail-score {{role.scoreClass}}">{{role.score}}</div>
+                <div class="k-detail-score-cap">评分</div>
+              </div>
+            </div>
+            <div class="k-detail-pnums">
+              <span class="k-detail-pkda">{{role.kills}} / {{role.deaths}} / {{role.assists}}</span>
+              <span class="k-detail-sep"></span>
+              <span class="k-detail-pnum is-money"><em>经济</em><b>{{role.moneyText}}{{if role.maxMoney}}<i class="k-detail-star">★</i>{{/if}}</b></span>
+              {{if role.hurtText}}
+              <span class="k-detail-pnum is-hurt"><em>输出</em><b>{{role.hurtText}}{{if role.maxHeroHurt}}<i class="k-detail-star">★</i>{{/if}}</b>{{if role.hurtRate}}<i class="k-detail-rate {{role.hurtRateClass}}">{{role.hurtRate}}%</i>{{/if}}</span>
+              {{/if}}
+            </div>
+            {{if role.extraItems.length}}
+            <div class="k-detail-extra">
+              {{each role.extraItems extra}}<span class="k-detail-extra-item"><em>{{extra.label}}</em><b>{{extra.text}}{{if extra.star}}<i class="k-detail-star">★</i>{{/if}}</b></span>{{/each}}
+            </div>
+            {{/if}}
+            <div class="k-detail-pfoot">
+              {{if role.equips.length || role.skillIcon}}
+              <div class="k-detail-equips">
+                {{if role.skillIcon}}<span class="k-detail-equip is-skill"><img src="{{role.skillIcon}}"></span><i class="k-detail-equip-split"></i>{{/if}}
+                <div class="k-detail-equip-grid">
+                  {{each role.equips equip}}{{if equip}}<span class="k-detail-equip"><img src="{{equip}}"></span>{{/if}}{{/each}}
+                </div>
+              </div>
+              {{/if}}
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+
+    {{if hasTrend || hasTimeline}}
+    <div class="k-detail-section k-replay-box">
+      <div class="k-detail-section-title"><span>对局回顾 · 对局走势</span></div>
+      <div class="k-trend-cells">
+        {{if hasTrend}}
+        {{each trend.cells cell}}
+        <div class="k-trend-cell">
+          <div class="k-trend-head">
+            <span class="k-trend-key"><i class="k-trend-dot" style="background: {{cell.color}}"></i>{{cell.label}}</span>
+            <span class="k-trend-last{{if cell.lead}} is-lead{{else}} is-behind{{/if}}">{{cell.lastText}}</span>
+          </div>
+          <svg class="k-trend-svg" viewBox="0 0 {{cell.width}} {{cell.height}}">
+            {{each cell.yTicks tick}}
+            <line class="k-trend-grid" x1="{{cell.left}}" y1="{{tick.y}}" x2="{{cell.right}}" y2="{{tick.y}}"></line>
+            <text class="k-trend-ytick" x="{{cell.tickX}}" y="{{tick.y}}">{{tick.text}}</text>
+            {{/each}}
+            {{if cell.hasZero}}<line class="k-trend-zero" x1="{{cell.left}}" y1="{{cell.zeroY}}" x2="{{cell.right}}" y2="{{cell.zeroY}}"></line>{{/if}}
+            <polygon class="k-trend-area" points="{{cell.area}}" fill="{{cell.color}}"></polygon>
+            <polyline class="k-trend-line{{if cell.thick}} is-gap{{/if}}" points="{{cell.points}}" stroke="{{cell.color}}"></polyline>
+            {{each cell.xTicks tick}}
+            <text class="k-trend-xtick" x="{{tick.x}}" y="{{cell.tickY}}" text-anchor="{{tick.anchor}}">{{tick.text}}</text>
+            {{/each}}
+          </svg>
+        </div>
+        {{/each}}
+        {{else}}
+        <div class="k-replay-empty">这一局没拿到经济差曲线，暂时画不出走势</div>
+        {{/if}}
+      </div>
+      {{if hasTimeline}}
+      <div class="k-tl">
+        {{each timelineCols col}}
+        <div class="k-tl-col">
+          {{each col item}}
+          <div class="k-tl-row{{if item.isMine}} is-mine{{/if}}{{if item.sep}} has-sep{{/if}}">
+            <span class="k-tl-time">{{item.time}}</span>
+            <span class="k-tl-pin"></span>
+            <span class="k-tl-text">{{item.text}}</span>
+          </div>
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+      {{else}}
+      <div class="k-replay-empty is-tl">这一局的回顾还在解析，暂时没有可看的事件</div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{if gapNote}}<div class="k-note is-gap">{{gapNote}}</div>{{/if}}
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

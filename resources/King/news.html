@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">{{channelName}}</span>
+          <span class="k-time">共 {{total}} 篇 · {{genTime}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    {{if items.length}}
+      <div class="k-list">
+        {{each items}}
+          <div class="k-row">
+            <div class="k-idx">{{$index + 1}}</div>
+            <div class="k-main">
+              <div class="k-name">{{$value.title}}</div>
+              <div class="k-meta">
+                {{if $value.time}}<span>{{$value.time}}</span>{{/if}}
+                {{if $value.channelName}}<span class="k-badge">{{$value.channelName}}</span>{{/if}}
+              </div>
+            </div>
+            {{if $value.cover}}<img class="k-cover" src="{{$value.cover}}" referrerpolicy="no-referrer">{{/if}}
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <div class="k-empty">没有取到资讯，稍后再试试</div>
+    {{/if}}
+
+    <div class="k-note">发送「#王者公告 N」看第 N 篇正文；翻页发「#王者公告 下一页」「#王者公告 上一页」，正文切页写「#王者公告N-M」（条号-页号）</div>
+  </div>
+</div>
+</body>
+</html>

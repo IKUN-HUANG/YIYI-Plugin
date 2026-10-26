@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card k-rankboard">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">{{scopeName}}</span>
+          <span class="k-badge">{{scopeText}}</span>
+          <span class="k-time">{{updatedText}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    {{set secs = sections}}
+    {{if !secs || !secs.length}}
+      {{set secs = [{ key: 'rank', label: mode, count: total, rows: rows, emptyText: emptyText }]}}
+    {{/if}}
+
+    <div class="k-rank-cols{{if secs.length < 2}} is-single{{/if}}">
+      {{each secs sec}}
+        <div class="k-rank-sec">
+          <div class="k-rank-sec-head">
+            <span class="k-rank-sec-label">{{sec.label}}</span>
+            {{if sec.count}}<span class="k-rank-sec-count">{{sec.count}} 个角色</span>{{/if}}
+          </div>
+          {{if sec.rows && sec.rows.length}}
+            <div class="k-rank-rows">
+              {{each sec.rows item}}
+                <div class="k-rank-item">
+                  <div class="k-rank-no is-rank{{$index + 1}}">{{item.rank}}</div>
+                  <div class="k-rank-face">{{if item.avatar}}<img src="{{item.avatar}}">{{/if}}</div>
+                  <div class="k-rank-main">
+                    <div class="k-rank-line1">
+                      <span class="k-rank-name">{{item.name}}</span>
+                    </div>
+                    <div class="k-rank-line2">
+                      <span class="k-rank-qq">{{item.qq}}</span>
+                      {{if item.campId}}<span class="k-rank-camp">营地 {{item.campId}}</span>{{/if}}
+                      {{if item.stale}}<span class="k-rank-badge is-stale">旧</span>{{/if}}
+                      {{if item.failed}}<span class="k-rank-badge is-failed">失败</span>{{/if}}
+                    </div>
+                  </div>
+                  <div class="k-rank-right">
+                    <div class="k-rank-score">{{item.mainText}}</div>
+                    {{if item.subText}}<div class="k-rank-peak">{{item.subText}}</div>{{/if}}
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <div class="k-empty">{{sec.emptyText || emptyText}}</div>
+          {{/if}}
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body class="k-body-narrow">
+<div class="k-card is-narrow">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if heroAvatar}}<img class="k-logo k-hero-face" src="{{heroAvatar}}">{{else if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{heroName}} · 战力查询</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">四大区</span>
+          <span class="k-time">{{genTime}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-power-grid">
+      {{each regions region}}
+        <div class="k-power-box is-{{region.regionKey}}">
+          <div class="k-power-box-head">
+            <span class="k-power-region" style="font-size: {{region.regionSize}}px">{{region.regionName}}</span>
+            {{if region.alias}}<span class="k-power-alias" style="font-size: {{region.aliasSize}}px">{{region.alias}}</span>{{/if}}
+          </div>
+          <div class="k-power-body">
+            {{if region.guobiao}}<div class="k-power-line is-guobiao"><img class="k-power-medal" src="{{region.medal.guobiao}}"><span class="k-power-score">{{region.guobiao}}</span></div>{{/if}}
+            {{if region.province}}<div class="k-power-line is-province"><img class="k-power-medal" src="{{region.medal.province}}"><span class="k-power-area" style="font-size: {{region.provinceSize}}px">{{region.province}}</span>{{if region.provincePower}}<span class="k-power-score">{{region.provincePower}}</span>{{/if}}</div>{{/if}}
+            {{if region.city}}<div class="k-power-line is-city"><img class="k-power-medal" src="{{region.medal.city}}"><span class="k-power-area" style="font-size: {{region.citySize}}px">{{region.city}}</span>{{if region.cityPower}}<span class="k-power-score">{{region.cityPower}}</span>{{/if}}</div>{{/if}}
+            {{if region.area}}<div class="k-power-line is-area"><img class="k-power-medal" src="{{region.medal.area}}"><span class="k-power-area" style="font-size: {{region.areaSize}}px">{{region.area}}</span>{{if region.areaPower}}<span class="k-power-score">{{region.areaPower}}</span>{{/if}}</div>{{/if}}
+          </div>
+          {{if region.updatetime}}<div class="k-power-time">{{region.updatetime}}</div>{{/if}}
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="k-note">战力数据来自第三方，仅供参考</div>
+  </div>
+</div>
+</body>
+</html>

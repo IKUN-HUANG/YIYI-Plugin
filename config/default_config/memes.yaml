@@ -1,0 +1,710 @@
+# 这张表定义「# 后面那些参数」：`#摸头#圆`、`#像素化#20`、`#鬼畜#左`……
+#
+# 每一段用 18 个 # 隔开，一段就是一个表情，方便逐段核对。
+#
+# 写法：
+#   flags  ：开关型参数，「群里敲的词: 接口字段名」，敲了就等于把该字段设成 true
+#   fields ：带值的参数，键是详情卡片上显示的中文名，里面写：
+#     key    ：接口字段名（不要改）
+#     type   ：integer / number / string（带值参数用）
+#     values ：枚举型的「别名: 接口值」，敲别名就等于取对应值
+#
+# 聊天里的写法：
+#   文案用 / 或空格分成多段（如 `第一条 第二条/第三条`）；
+#   # 只引导参数，第一个 # 之前是文案，之后每段都是参数值；
+#   `#鬼畜#左` === `#鬼畜#left`，数字直接写（`#像素化#20`），写参数名则用接口默认值（`#像素化#数值`）。
+#
+# 默认值来自接口，这张表里写不了 default，只能在注释里标出来。
+
+##################
+# 戒导（abstinence）
+# 关键词：戒导    文案：0 段
+abstinence:
+  fields:
+    # 指定时间
+    时间:
+      key: time
+      type: string
+    # 指定名字
+    名字:
+      key: name
+      type: string
+
+##################
+# 安安举牌（acacia_anan_holdsign）
+# 关键词：安安举牌 / 夏目安安举牌    文案：1 段    默认文案：快说吾辈可爱
+acacia_anan_holdsign:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(0.png)，2=第二张(1.png)，3=第三张(2.jpg)，
+    # 4=第四张(3.jpg)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 支付宝支付（alipay）
+# 关键词：支付宝支付    文案：0~1 段
+alipay:
+  fields:
+    # 二维码内容
+    内容:
+      key: message
+      type: string
+
+##################
+# 一直（always）
+# 关键词：一直    文案：0 段
+always:
+  fields:
+    # 生成模式，包含 normal、loop、circle
+    # 默认 normal；可选：套娃 / 循环 / 普通 / 正常
+    模式:
+      key: mode
+      values:
+        套娃: circle
+        循环: loop
+        普通: normal
+        正常: normal
+
+##################
+# 亚托莉枕头（atri_pillow）
+# 关键词：亚托莉枕头    文案：1 段    默认文案：ATRI
+atri_pillow:
+  fields:
+    # yes or no
+    # 默认 random；可选：是 / 否 / 随机 / -y / -n
+    模式:
+      key: mode
+      values:
+        是: yes
+        否: no
+        随机: random
+        '-y': yes
+        '-n': no
+
+##################
+# ba说（ba_say）
+# 关键词：ba说    文案：1 段    默认文案：那我问你
+ba_say:
+  fields:
+    # 角色编号：1、心奈，2、爱丽丝，3、泉奈，4、key，5、玛丽，6、濑名，7、优香
+    # 可选：心奈 / 爱丽丝 / 泉奈 / key / 玛丽 / 濑名 / 优香
+    角色:
+      key: character
+      values:
+        心奈: 1
+        爱丽丝: 2
+        泉奈: 3
+        key: 4
+        玛丽: 5
+        濑名: 6
+        优香: 7
+    # 消息框的位置，包含 left、right、random
+    # 默认 random；可选：左 / 右 / 随机
+    位置:
+      key: position
+      values:
+        左: left
+        右: right
+        随机: random
+
+##################
+# 奶茶（bubble_tea）
+# 关键词：奶茶    文案：0 段
+bubble_tea:
+  fields:
+    # 奶茶的位置，包含 right、left、both
+    # 默认 right；可选：右手 / 左手 / 双手 / 左 / 右 / 两边
+    位置:
+      key: position
+      values:
+        右手: right
+        左手: left
+        双手: both
+        左: left
+        右: right
+        两边: both
+
+##################
+# 奖状（certificate）
+# 关键词：奖状 / 证书    文案：3~4 段    默认文案：小王 / 优秀学生 / 一年一班
+certificate:
+  fields:
+    # 指定时间
+    时间:
+      key: time
+      type: string
+
+##################
+# 小丑（clown）
+# 关键词：小丑    文案：0 段
+clown:
+  # 参考插件按「爷」开头就算，这里只能整词匹配，所以另加了「爷爷」
+  flags:
+    # 是否使用爷爷头轮廓
+    爷: person
+    爷爷: person
+
+##################
+# 小丑面具（clown_mask）
+# 关键词：小丑面具    文案：0 段
+clown_mask:
+  fields:
+    # 小丑在前/后，front/behind
+    # 默认 front；可选：前 / 后
+    模式:
+      key: mode
+      values:
+        前: front
+        后: behind
+
+##################
+# 爬（crawl）
+# 关键词：爬    文案：0 段
+crawl:
+  fields:
+    # 图片编号，范围为 1~92
+    数值:
+      key: number
+      type: integer
+
+##################
+# Deepseek说（deepseek_say）
+# 关键词：Deepseek说 / deepseek说 / 鲸鱼娘说    文案：1 段    默认文案：正在思考中……
+deepseek_say:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(1.png)，2=第二张(2.png)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 狗都不玩（dog_dislike）
+# 关键词：狗都不玩    文案：0 段
+dog_dislike:
+  flags:
+    # 是否将图片变为圆形
+    圆: circle
+
+##################
+# 下班（downban）
+# 关键词：下班    文案：0 段
+downban:
+  fields:
+    # 指定时间
+    时间:
+      key: time
+      type: string
+
+##################
+# 二次元（erciyuan）
+# 关键词：二次元    文案：0 段
+erciyuan:
+  fields:
+    # 指定名字
+    名字:
+      key: name
+      type: string
+
+##################
+# 流萤举牌（firefly_holdsign）
+# 关键词：流萤举牌    文案：1 段    默认文案：我超爱你
+firefly_holdsign:
+  fields:
+    # 图片编号，范围为 1~21
+    数值:
+      key: number
+      type: integer
+
+##################
+# 随机杯子（fleshlight_random）
+# 关键词：随机杯子    文案：0~1 段
+fleshlight_random:
+  fields:
+    # 图片编号，范围为 1~25
+    数值:
+      key: number
+      type: integer
+
+##################
+# 原神吃（genshin_eat）
+# 关键词：原神吃    文案：0 段
+genshin_eat:
+  fields:
+    # 角色编号：1、八重神子，2、胡桃，3、妮露，4、可莉，5、刻晴，6、钟离
+    # 可选：八重神子 / 八重 / 胡桃 / 妮露 / 可莉 / 刻晴 / 钟离
+    角色:
+      key: character
+      values:
+        八重神子: 1
+        八重: 1
+        胡桃: 2
+        妮露: 3
+        可莉: 4
+        刻晴: 5
+        钟离: 6
+
+##################
+# 工贼（gongzei）
+# 关键词：工贼    文案：1 段    默认文案：我爱加班
+gongzei:
+  fields:
+    名字:
+      key: name
+      type: string
+
+##################
+# 狗叫（goujiao）
+# 关键词：狗叫    文案：1 段    默认文案：下头豹
+goujiao:
+  fields:
+    名字:
+      key: name
+      type: string
+
+##################
+# 鬼畜（guichu）
+# 关键词：鬼畜    文案：0 段
+guichu:
+  fields:
+    # 鬼畜对称方向，包含 left、right、top、bottom
+    # 默认 left；可选：左 / 右 / 上 / 下
+    方向:
+      key: direction
+      values:
+        左: left
+        右: right
+        上: top
+        下: bottom
+
+##################
+# 手枪（gun）
+# 关键词：手枪    文案：0 段
+gun:
+  fields:
+    # 枪的位置，包含 left、right、both
+    # 默认 left；可选：左手 / 右手 / 双手 / 左 / 右 / 两边 / 双枪
+    位置:
+      key: position
+      values:
+        左手: left
+        右手: right
+        双手: both
+        左: left
+        右: right
+        两边: both
+        双枪: both
+
+##################
+# 急急国王（jiji_king）
+# 关键词：急急国王    文案：0~11 段
+jiji_king:
+  flags:
+    # 是否将图片变为圆形
+    圆: circle
+
+##################
+# 汐汐（jinhsi）
+# 关键词：汐汐 / 今汐    文案：1 段    默认文案：汐汐
+jinhsi:
+  fields:
+    # 图片编号，范围为 1~13
+    数值:
+      key: number
+      type: integer
+
+##################
+# 万花筒（kaleidoscope）
+# 关键词：万花筒 / 万花镜    文案：0 段
+kaleidoscope:
+  flags:
+    # 是否将图片变为圆形
+    圆: circle
+
+##################
+# 压岁钱不要交给（keep_your_money）
+# 关键词：压岁钱不要交给    文案：0 段
+keep_your_money:
+  fields:
+    # 图片编号，1-阿罗娜，2-普拉娜
+    # 可选：阿罗娜 / 普拉娜
+    数值:
+      key: number
+      values:
+        阿罗娜: 1
+        普拉娜: 2
+
+##################
+# 卡比锤（kirby_hammer）
+# 关键词：卡比锤 / 卡比重锤    文案：0 段
+kirby_hammer:
+  flags:
+    # 是否将图片变为圆形
+    圆: circle
+
+##################
+# 心奈印章（kokona_seal）
+# 关键词：心奈印章    文案：1 段    默认文案：满分
+kokona_seal:
+  fields:
+    # 图片编号，范围为 1~12
+    数值:
+      key: number
+      type: integer
+
+##################
+# 长离举牌（kurogames_changli_holdsign）
+# 关键词：长离举牌    文案：1 段    默认文案：弈棋布势之道，如同万物运转
+kurogames_changli_holdsign:
+  fields:
+    # 图片编号，范围为 1~5
+    数值:
+      key: number
+      type: integer
+
+##################
+# 尤诺说（kurogames_iuno_say）
+# 关键词：尤诺说    文案：1 段    默认文案：月亮游离世间
+kurogames_iuno_say:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(1.jpg)，2=第二张(2.jpg)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 菲比说（kurogames_phoebe_say）
+# 关键词：菲比说    文案：1 段    默认文案：菲比啾比
+kurogames_phoebe_say:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(1.png)，2=第二张(2.png)，...，
+    # 13=第十三张(13.png)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 弗洛洛说（kurogames_phrolova_say）
+# 关键词：弗洛洛说    文案：1 段    默认文案：我等过很久，我不会再等了…
+kurogames_phrolova_say:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(1.png)，2=第二张(2.png)，3=第三张(3.png)，
+    # 4=第四张(4.png)，5=第五张(5.png)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 松伦说（kurogames_songlun_say）
+# 关键词：松伦说    文案：1 段    默认文案：我看到弹幕上的好好好……
+kurogames_songlun_say:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(1.png)，2=第二张(2.png)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 小维举牌（kurogames_verina_holdsign）
+# 关键词：小维举牌 / 维里奈举牌    文案：1 段    默认文案：希望你开心哦
+kurogames_verina_holdsign:
+  fields:
+    # 图片编号，范围为 1~5
+    数值:
+      key: number
+      type: integer
+
+##################
+# 左右横跳（left_right_jump）
+# 关键词：左右横跳    文案：0 段
+left_right_jump:
+  fields:
+    # 跑动方向，包含 left_right、right_left
+    # 默认 left_right；可选：左右 / 右左
+    方向:
+      key: direction
+      values:
+        左右: left_right
+        右左: right_left
+
+##################
+# 看扁（look_flat）
+# 关键词：看扁    文案：0~1 段    默认文案：可恶...被人看扁了
+look_flat:
+  # 比例越大压得越扁
+  fields:
+    # 图片“压扁”比例，默认为 2
+    比例:
+      key: ratio
+      type: integer
+
+##################
+# 循环（loop）
+# 关键词：循环    文案：0 段
+loop:
+  fields:
+    # 循环方向，包含 left、right、top、bottom
+    # 默认 top；可选：左 / 右 / 上 / 下
+    方向:
+      key: direction
+      values:
+        左: left
+        右: right
+        上: top
+        下: bottom
+
+##################
+# 卢浮宫（louvre）
+# 关键词：卢浮宫    文案：0 段
+louvre:
+  fields:
+    # 线迹模式: 0=随机选择, 1=精细, 2=一般, 3=稍粗, 4=超粗, 5=极粗, 6=浮雕,
+    # 7=线稿(彩色)
+    # 可选：精细 / 一般 / 稍粗 / 超粗 / 极粗 / 浮雕 / 线稿 / 彩色
+    数值:
+      key: number
+      values:
+        精细: 1
+        一般: 2
+        稍粗: 3
+        超粗: 4
+        极粗: 5
+        浮雕: 6
+        线稿: 7
+        彩色: 7
+
+##################
+# 上香（mourning）
+# 关键词：上香    文案：0 段
+mourning:
+  # 参考插件里「灰」也算黑白，这里单独加了一条别名
+  flags:
+    # 是否将图片变为黑白
+    黑白: black
+    灰: black
+
+##################
+# 我朋友说（my_friend）
+# 关键词：我朋友说    文案：1~10 段    默认文案：让我康康
+my_friend:
+  fields:
+    # 指定名字
+    名字:
+      key: name
+      type: string
+
+##################
+# 我老婆（my_wife）
+# 关键词：我老婆 / 这是我老婆    文案：0 段
+my_wife:
+  # 两个都是纯文字参数，按「自称 称呼」的顺序填，用 / 分开，如 #我老婆#🐔/老婆
+  fields:
+    # 人称代词，默认为“我”
+    自称:
+      key: pronoun
+      type: string
+    # 称呼，默认为“老婆”
+    名字:
+      key: name
+      type: string
+
+##################
+# 丰川祥子说（mygo_togawa_sakiko_say）
+# 关键词：丰川祥子说 / 祥子说    文案：1 段    默认文案：我从没觉得玩乐队开心过……
+mygo_togawa_sakiko_say:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(1.png)，2=第二张(2.png)，3=第三张(3.png)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 若叶睦说（mygo_wakaba_mutsumi_say）
+# 关键词：若叶睦说 / 睦子米说    文案：1 段    默认文案：我从没觉得玩乐队开心过……
+mygo_wakaba_mutsumi_say:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(1.png)，2=第二张(2.png)，3=第三张(3.png)，
+    # 4=第四张(4.png)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 我敲（myplay）
+# 关键词：我敲    文案：1 段    默认文案：笨死了
+myplay:
+  fields:
+    名字:
+      key: name
+      type: string
+
+##################
+# 国庆计划（national_day_plan）
+# 关键词：国庆计划 / 国庆节计划    文案：0~1 段
+national_day_plan:
+  fields:
+    # 图片编号，范围为 0~3，0为随机
+    数值:
+      key: number
+      type: integer
+
+##################
+# 新喜报（new_goodnews）
+# 关键词：新喜报    文案：1 段    默认文案：喜报传佳讯⏎福星高照⏎满门庭
+new_goodnews:
+  fields:
+    # 昵称（第一段文字）
+    名字:
+      key: name
+      type: string
+
+##################
+# 请假条（note_for_leave）
+# 关键词：请假条    文案：0~1 段    默认文案：想玩原神
+note_for_leave:
+  fields:
+    # 指定时间
+    时间:
+      key: time
+      type: string
+    # 指定名字
+    名字:
+      key: name
+      type: string
+
+##################
+# 熊猫龙图（panda_dragon_figure）
+# 关键词：熊猫龙图    文案：1 段    默认文案：我要玩原神
+panda_dragon_figure:
+  fields:
+    # 龙图名字
+    名字:
+      key: name
+      type: string
+
+##################
+# 摸（petpet）
+# 关键词：摸 / 摸摸 / 摸头 / rua    文案：0 段
+petpet:
+  flags:
+    # 是否将图片变为圆形
+    圆: circle
+
+##################
+# 像素化（pixelate）
+# 关键词：像素化    文案：0 段
+pixelate:
+  # 数字越大越糊
+  fields:
+    # 像素化大小，默认为 10
+    数值:
+      key: number
+      type: integer
+
+##################
+# 世界计划（pjsk）
+# 关键词：pjsk / 世界计划    文案：1 段
+pjsk:
+  # 只能写数字（含 0 = 默认），不认角色名
+  fields:
+    # 角色编号：1、爱莉，2、彰人，3、杏，4、梦，5、绘名，6、遥，7、穗波，8、
+    # 一歌，9、KAITO，10、奏，11、心羽，12、连，13、流歌，14、真冬，15、MEIKO，
+    # 16、初音未来，17、实乃理，18、瑞希，19、宁宁，20、铃，21、类，22、咲希，
+    # 23、志步，24、雫，25、冬弥，26、司
+    角色:
+      key: character
+      type: integer
+    # 图片编号
+    数值:
+      key: number
+      type: integer
+
+##################
+# 群友举牌（qunyoujupai）
+# 关键词：群友举牌 / 他举牌 / 你举牌    文案：1 段    默认文案：我是晓楠嬢
+qunyoujupai:
+  fields:
+    名字:
+      key: name
+      type: string
+
+##################
+# 斯科特（sikete）
+# 关键词：斯科特    文案：1 段    默认文案：那我的屁股怎么办
+sikete:
+  fields:
+    名字:
+      key: name
+      type: string
+
+##################
+# steam消息（steam_message）
+# 关键词：steam消息    文案：1 段    默认文案：黑神话：悟空
+steam_message:
+  fields:
+    # 指定名字
+    名字:
+      key: name
+      type: string
+
+##################
+# 对称（symmetric）
+# 关键词：对称    文案：0 段
+symmetric:
+  fields:
+    # 对称方向，包含 left、right、top、bottom
+    # 默认 left；可选：左 / 右 / 上 / 下
+    方向:
+      key: direction
+      values:
+        左: left
+        右: right
+        上: top
+        下: bottom
+
+##################
+# 微信支付（wechat_pay）
+# 关键词：微信支付    文案：0~1 段
+wechat_pay:
+  fields:
+    # 二维码内容
+    内容:
+      key: message
+      type: string
+
+##################
+# 白猫说（white_cat_say）
+# 关键词：白猫说    文案：1 段    默认文案：宝贝~
+white_cat_say:
+  fields:
+    # 图片编号，0=随机选择，1=第一张(1.png)，2=第二张(2.png)
+    数值:
+      key: number
+      type: integer
+
+##################
+# 丛雨抱（yuzu_soft_murasame_hug）
+# 关键词：丛雨抱    文案：0 段
+yuzu_soft_murasame_hug:
+  fields:
+    # 图片模板编号，1~3  可选：1: 财神丛雨，2: 原版丛雨，3: 虎头丛雨，0 为随机
+    # 可选：财神丛雨 / 财神 / 原版丛雨 / 原版 / 虎头丛雨 / 虎头
+    数值:
+      key: number
+      values:
+        财神丛雨: 1
+        财神: 1
+        原版丛雨: 2
+        原版: 2
+        虎头丛雨: 3
+        虎头: 3
+
+##################
+# 职业选手（zhiyexuanshou）
+# 关键词：职业选手    文案：0 段
+zhiyexuanshou:
+  fields:
+    # 指定名字
+    名字:
+      key: name
+      type: string

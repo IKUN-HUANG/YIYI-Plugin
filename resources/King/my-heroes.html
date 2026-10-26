@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>常用英雄</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">前 {{shownCount}} 位</span>
+          {{if ownerText}}<span class="k-badge is-other">{{ownerText}}</span>{{/if}}
+          <span class="k-time">拥有 <b>{{ownCount}}</b> 个英雄 · 打过 {{heroCount}} 个</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-myhero-facts">
+      <div class="k-myhero-fact"><span class="k-skin-fact-num">{{totalPlay}}</span><span class="k-skin-fact-label">总场次</span></div>
+      <div class="k-myhero-fact"><span class="k-skin-fact-num">{{totalRate}}</span><span class="k-skin-fact-label">总胜率</span></div>
+      <div class="k-myhero-fact"><span class="k-skin-fact-num">{{powerLabel}}</span><span class="k-skin-fact-label">战力口径</span></div>
+    </div>
+
+    <div class="k-myhero-table">
+      <div class="k-myhero-row is-head">
+        <span class="k-myhero-no">#</span>
+        <span class="k-myhero-face">英雄</span>
+        <span class="k-myhero-tag">定位</span>
+        <span class="k-myhero-skill">熟练</span>
+        <span class="k-myhero-play">场次</span>
+        <span class="k-myhero-rate">胜率</span>
+        <span class="k-myhero-power">战力</span>
+        <!-- 称号独占最右一格，排在战力右边，不跟定位挤在一起 -->
+        <span class="k-myhero-honor">称号</span>
+      </div>
+      {{each rows}}
+        <div class="k-myhero-row">
+          <span class="k-myhero-no">{{$value.rank}}</span>
+          <span class="k-myhero-face">
+            {{if $value.icon}}<img src="{{$value.icon}}">{{/if}}
+            <span class="k-myhero-name" style="font-size: {{$value.nameSize}}px">{{$value.name}}</span>
+            {{if $value.sub}}<i class="k-myhero-sub">{{$value.sub}}</i>{{/if}}
+          </span>
+          <span class="k-myhero-tag">{{$value.heroType}}</span>
+          <span class="k-myhero-skill">{{$value.skilledText}}</span>
+          <span class="k-myhero-play">{{$value.playText}}</span>
+          <span class="k-myhero-rate">{{$value.winRate}}</span>
+          <span class="k-myhero-power" style="color: {{$value.powerColor}}">{{$value.power}}</span>
+          <!-- 没有称号的行也留一个空格子，否则列会串位 -->
+          {{if $value.honor}}<span class="k-myhero-honor"><span class="k-honor-badge" title="{{$value.honor.text}}"><img class="k-honor-medal" src="{{$value.honor.icon}}"><span class="k-honor-text">{{$value.honor.short}}</span></span></span>{{else}}<span class="k-myhero-honor"></span>{{/if}}
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

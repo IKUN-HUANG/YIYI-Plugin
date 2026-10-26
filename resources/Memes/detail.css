@@ -1,0 +1,137 @@
+@import url('./list.css');
+
+/* ── 表情详情：参考图 + 参数 ── */
+
+.meme-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.meme-detail-pic {
+  flex: 0 0 460px;
+  padding: 14px 14px 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2px 10px rgba(120, 160, 220, 0.12);
+}
+
+.meme-detail-pic .meme-thumb {
+  border-radius: 14px;
+  background: rgba(240, 247, 255, 0.9);
+}
+
+.meme-detail-tip {
+  margin-top: 8px;
+  font-size: 17px;
+  color: #8a99ad;
+  text-align: center;
+}
+
+.meme-detail-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meme-params {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meme-param {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2px 10px rgba(120, 160, 220, 0.12);
+}
+
+.meme-param-k {
+  flex: 0 0 108px;
+  font-size: 18px;
+  color: #8a99ad;
+}
+
+.meme-param-v {
+  flex: 1;
+  min-width: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #2b3a4f;
+  overflow-wrap: anywhere;
+}
+
+.meme-options {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2px 10px rgba(120, 160, 220, 0.12);
+}
+
+.meme-options-title {
+  margin-bottom: 10px;
+  padding-left: 12px;
+  border-left: 6px solid #4a90d9;
+  font-size: 22px;
+  font-weight: 700;
+  color: #2b3a4f;
+}
+
+.meme-option {
+  padding: 10px 0;
+  border-top: 1px solid rgba(150, 180, 220, 0.18);
+}
+
+.meme-option:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.meme-option-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meme-option-name {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: 9px;
+  background: rgba(74, 144, 217, 0.14);
+  color: #2f6fb5;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.meme-option-cmd {
+  font-size: 18px;
+  font-weight: 600;
+  color: #3C82CE;
+}
+
+.meme-option-help {
+  margin-top: 4px;
+  font-size: 17px;
+  color: #6b7c93;
+}
+
+.meme-option-values {
+  margin-top: 3px;
+  font-size: 16px;
+  color: #8695aa;
+}
+
+.meme-options-tip {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed rgba(150, 180, 220, 0.4);
+  font-size: 16px;
+  color: #8695aa;
+}

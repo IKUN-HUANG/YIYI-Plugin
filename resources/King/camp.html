@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{campTitle || '王者荣耀 · 我的营地'}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">营地 {{campId}}</span>
+          <span class="k-time">{{genTime}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-camp-top">
+      {{if roleIcon}}<img class="k-camp-face" src="{{roleIcon}}">{{/if}}
+      <div class="k-camp-idcard">
+        <div class="k-camp-name">{{roleName}}<span class="k-hero-badge is-{{onlineState}}">{{onlineText}}</span></div>
+        <!-- 战斗力徽章（营地 304 的返回）跟区服排同一行，中间数据格因此是五格而不是六格 -->
+        <div class="k-camp-server">
+          <span class="k-camp-server-text">{{roleText}}{{if areaName}} · {{areaName}}{{/if}}</span>
+          {{if combatExtra && combatExtra.main}}<span class="k-camp-power-badge">战斗力 {{combatExtra.main}}{{if combatExtra.unit}}{{combatExtra.unit}}{{/if}}</span>{{/if}}
+        </div>
+        <!-- 最近上线做成跟等级 / 游戏天数 / 皮肤 同款胶囊并进标签行，独占一行会把卡头撑高 -->
+        <div class="k-camp-tags">
+          <span class="k-badge">等级 {{gameLevel}}</span>
+          {{if gameDays}}<span class="k-badge">游戏 {{gameDays}} 天</span>{{/if}}
+          {{if skins}}<span class="k-badge">皮肤 {{skins.main}}{{if skins.unit}}{{skins.unit}}{{/if}}</span>{{/if}}
+          {{if lastOnlineText}}<span class="k-badge">最近上线 {{lastOnlineText}}</span>{{/if}}
+        </div>
+      </div>
+    </div>
+
+    <div class="k-camp-body">
+      <div class="k-camp-side is-rank">
+        <div class="k-camp-frame is-rank{{if !rank5v5.has}} is-empty{{/if}}">
+          {{if rankFlag}}<img class="k-camp-frame-bg" src="{{rankFlag}}">{{/if}}
+          {{if rankHonor}}<img class="k-camp-frame-honor" src="{{rankHonor}}">{{/if}}
+          {{if rank5v5.icon}}<img class="k-camp-frame-main" src="{{rank5v5.icon}}">{{/if}}
+          {{if rankPips}}<img class="k-camp-frame-pips" src="{{rankPips}}">{{/if}}
+          {{if rank5v5.isKing && rank5v5.star}}<div class="k-camp-frame-count"><img src="{{starIcon}}"><span>× {{rank5v5.star}}</span></div>{{/if}}
+          <div class="k-camp-frame-plate">{{rank5v5.has ? rank5v5.text : '暂无段位'}}</div>
+        </div>
+      </div>
+
+      <!-- 中间五格（1 列 5 行）：历史排位 / 赛季排位 / 历史巅峰 / 赛季巅峰 / 最高战力；少一格，侧栏才能加宽放更大的徽章 -->
+      <div class="k-camp-facts5">
+        {{each campCells cell}}
+        <div class="k-camp-cell is-{{cell.key}}{{if cell.peak}} is-peak{{/if}}">
+          <div class="k-camp-cell-icon">
+            {{if cell.icon}}<img src="{{cell.icon}}">{{else}}<span class="k-camp-cell-word">{{cell.word}}</span>{{/if}}
+          </div>
+          <div class="k-camp-cell-main">
+            <div class="k-camp-cell-value{{if cell.empty}} is-empty{{/if}}">{{cell.value}}{{if cell.unit}}<span class="k-camp-cell-unit">{{cell.unit}}</span>{{/if}}</div>
+            <!-- 历史 / 赛季只留「历史」「赛季」两字的小徽章贴在数值后，是哪一项看左边图标；最高战力那格没有历史/赛季之分，靠 label 自报家门 -->
+            {{if cell.tag}}<span class="k-camp-cell-tag is-{{cell.kind}}">{{cell.tag}}</span>{{else}}{{if cell.label}}<span class="k-camp-cell-name">{{cell.label}}</span>{{/if}}{{/if}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+
+      <div class="k-camp-side is-peak">
+        <div class="k-camp-frame is-peak{{if !peak}} is-empty{{/if}}">
+          {{if peakFlag}}<img class="k-camp-frame-bg" src="{{peakFlag}}">{{/if}}
+          <!-- 巅峰绶带的叠层：金翼自带的蓝圆盘里放魔方（巅峰标志），魔方下面挂一圈金环、环里是角色头像，再往下是当前巅峰分 -->
+          <!-- data-tier：金翼素材 1~4 档的透明边宽窄不同（可见占比 60.8%/62.5%/78.7%/83.8%），样式表按档位反推框宽，四档可见宽度才都是 330（旗面 × 1.1） -->
+          <div class="k-camp-frame-crest"{{if peak && peak.tier}} data-tier="{{peak.tier}}"{{/if}}>
+            {{if peak && peak.icon}}<img class="k-camp-frame-main" src="{{peak.icon}}">{{/if}}
+            {{if peakCube}}<img class="k-camp-frame-cube" src="{{peakCube}}">{{/if}}
+          </div>
+          {{if roleIcon}}
+          <div class="k-camp-frame-ring">
+            {{if peakRing}}<img class="k-camp-frame-ring-img" src="{{peakRing}}">{{/if}}
+            <img class="k-camp-frame-avatar" src="{{roleIcon}}">
+          </div>
+          {{/if}}
+          <div class="k-camp-frame-score{{if !peak || !peak.scored}} is-empty{{/if}}">{{if peak && peak.scored && peakCube}}<img class="k-camp-frame-score-cube" src="{{peakCube}}">{{/if}}{{if peak && peak.scored}}{{peak.score}}{{else}}{{peak && peak.desc ? peak.desc : '未定级'}}{{/if}}</div>
+        </div>
+      </div>
+    </div>
+    <!-- 荣耀称号排在中间三栏之后的第一个整块：称号是历史最高战力时拿过的，比赛季表现更接近「我是谁」 -->
+    {{if honors && honors.rows && honors.rows.length}}
+    <div class="k-camp-sect">
+      <div class="k-camp-sect-head">
+        <span class="k-camp-sect-title">荣耀称号</span>
+        <!-- 副标题走灰字：别做成超链接那种蓝色调 -->
+        <span class="k-camp-sect-sub is-plain">共 {{honors.heroCount}} 个英雄上榜 · 按称号等级排（国服 → 区标）{{if honors.moreText}} · 只摆前 {{honors.rows.length}} 个{{/if}}</span>
+      </div>
+      <!-- 两列名次表（左列 1-5、右列 6-10）：战力并进称号徽章里用 · 隔开，半宽栏里行高才放得下，也不会把战力重复写两遍 -->
+      <div class="k-camp-honors">
+        {{each honors.rows row index}}
+        <div class="k-camp-honor">
+          <span class="k-camp-honor-no">{{index + 1}}</span>
+          {{if row.heroIcon}}<img class="k-camp-honor-face" src="{{row.heroIcon}}">{{/if}}
+          <span class="k-camp-honor-name">{{row.hero}}</span>
+          {{if row.badge}}<span class="k-honor-badge k-camp-honor-badge" title="{{row.badge.text}}{{if row.power}} · 战力 {{row.power}}{{/if}}"><img class="k-honor-medal" src="{{row.badge.icon}}"><span class="k-honor-text">{{row.badge.short}}{{if row.power}} · {{row.power}}{{/if}}</span></span>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{if honors.moreText}}<div class="k-camp-sect-note">{{honors.moreText}}</div>{{/if}}
+    </div>
+    {{/if}}
+
+
+    {{if seasonBlock && (seasonBlock.rankGroup || seasonBlock.peakGroup)}}
+    <!-- 本赛季表现：排位与巅峰按「同一件事」左右配对，不再分成「本赛季排位 / 本赛季巅峰」两个大栏；行序为本季战绩 / 走势 / 五维 / 荣誉 / 分路表现，每行左格排位、右格巅峰，等宽顶对齐，只有一边有数据时另一边留空格但行高一致 -->
+    <div class="k-camp-sect is-season">
+      <div class="k-camp-sect-head">
+        <span class="k-camp-sect-title">本赛季表现</span>
+        {{if seasonBlock.seasonTag}}<span class="k-camp-mode-tag k-camp-sect-tag">{{seasonBlock.seasonTag}}</span>{{/if}}
+        <!-- 标题行后面不挂说明；口径按数据来：排位是本赛季，巅峰是营地唯一可得的近 30 天 -->
+      </div>
+
+      <div class="k-camp-pairs{{if seasonBlock.singlePane}} is-single{{/if}}">
+        <!-- ① 本季战绩四格 + 常用英雄 -->
+        <div class="k-camp-pair">
+          {{if seasonBlock.rankGroup}}
+          <div class="k-camp-mode is-rank">
+            <div class="k-camp-mode-head">
+              <span class="k-camp-mode-tag">{{seasonBlock.rankGroup.label}}</span>
+              {{if seasonBlock.rankGroup.note}}<span class="k-camp-mode-note">{{seasonBlock.rankGroup.note}}</span>{{/if}}
+            </div>
+            <div class="k-camp-facts">
+              {{each seasonBlock.rankGroup.facts}}
+              <div class="k-camp-fact"><b>{{$value.value}}</b><i>{{$value.label}}</i></div>
+              {{/each}}
+            </div>
+            {{if seasonBlock.rankGroup.heroes.length}}
+            <div class="k-camp-heroes">
+              {{each seasonBlock.rankGroup.heroes}}
+              <div class="k-camp-hero">
+                {{if $value.icon}}<img class="k-camp-hero-face" src="{{$value.icon}}">{{/if}}
+                <div class="k-camp-hero-main">
+                  <div class="k-camp-hero-name">{{$value.name}}{{if $value.sub}}<span class="k-camp-hero-sub">{{$value.sub}}</span>{{/if}}</div>
+                  <div class="k-camp-hero-meta">{{if $value.count}}{{$value.count}} 场{{/if}}{{if $value.winRate}} · 胜率 {{$value.winRate}}{{/if}}{{if $value.power}} · 战力 {{$value.power}}{{/if}}</div>
+                </div>
+              </div>
+              {{/each}}
+            </div>
+            {{/if}}
+          </div>
+          {{else}}{{if !seasonBlock.singlePane}}<div class="k-camp-pair-cell"></div>{{/if}}{{/if}}
+          {{if seasonBlock.peakGroup}}
+          <div class="k-camp-mode is-peak">
+            <div class="k-camp-mode-head">
+              <span class="k-camp-mode-tag">{{seasonBlock.peakGroup.label}}</span>
+              {{if seasonBlock.peakGroup.note}}<span class="k-camp-mode-note">{{seasonBlock.peakGroup.note}}</span>{{/if}}
+            </div>
+            <div class="k-camp-facts">
+              {{each seasonBlock.peakGroup.facts}}
+              <div class="k-camp-fact"><b>{{$value.value}}</b><i>{{$value.label}}</i></div>
+              {{/each}}
+            </div>
+            {{if seasonBlock.peakGroup.heroes.length}}
+            <div class="k-camp-heroes">
+              {{each seasonBlock.peakGroup.heroes}}
+              <div class="k-camp-hero">
+                {{if $value.icon}}<img class="k-camp-hero-face" src="{{$value.icon}}">{{/if}}
+                <div class="k-camp-hero-main">
+                  <div class="k-camp-hero-name">{{$value.name}}{{if $value.sub}}<span class="k-camp-hero-sub">{{$value.sub}}</span>{{/if}}</div>
+                  <div class="k-camp-hero-meta">{{if $value.count}}{{$value.count}} 场{{/if}}{{if $value.winRate}} · 胜率 {{$value.winRate}}{{/if}}{{if $value.power}} · 战力 {{$value.power}}{{/if}}</div>
+                </div>
+              </div>
+              {{/each}}
+            </div>
+            {{/if}}
+          </div>
+          {{else}}{{if !seasonBlock.singlePane}}<div class="k-camp-pair-cell"></div>{{/if}}{{/if}}
+        </div>
+
+        <!-- ② 走势（左排位：营地战绩列表 option=1 的最近 30 把 / 右巅峰：同一接口 option=4 的最近 30 把） -->
+        <div class="k-camp-pair">
+          {{if seasonBlock.singlePane !== 'peak'}}
+          <div class="k-camp-pair-cell">
+            {{if seasonBlock.upSvg}}
+            <div class="k-camp-detail-head">排位走势</div>
+            <div class="k-camp-chart">{{@seasonBlock.upSvg}}</div>
+            {{if seasonBlock.upNote}}<div class="k-camp-chart-tip">{{seasonBlock.upNote}}</div>{{/if}}
+            {{/if}}
+          </div>
+          {{/if}}
+          {{if seasonBlock.singlePane !== 'rank'}}
+          <div class="k-camp-pair-cell">
+            {{if seasonBlock.peakSvg}}
+            <div class="k-camp-detail-head">巅峰走势</div>
+            <div class="k-camp-chart">{{@seasonBlock.peakSvg}}</div>
+            {{if seasonBlock.peakNote}}<div class="k-camp-chart-tip">{{seasonBlock.peakNote}}</div>{{/if}}
+            {{/if}}
+          </div>
+          {{/if}}
+        </div>
+
+        <!-- ③ 五维（左排位整赛季 / 右巅峰近 30 天） -->
+        <div class="k-camp-pair">
+          {{if seasonBlock.singlePane !== 'peak'}}
+          <div class="k-camp-pair-cell">
+            {{if seasonBlock.radarSvg}}
+            <div class="k-camp-detail-head">排位五维数据</div>
+            <div class="k-camp-radar">{{@seasonBlock.radarSvg}}</div>
+            {{/if}}
+          </div>
+          {{/if}}
+          {{if seasonBlock.singlePane !== 'rank'}}
+          <div class="k-camp-pair-cell">
+            {{if seasonBlock.peakRadarSvg}}
+            <div class="k-camp-detail-head">巅峰五维数据</div>
+            <div class="k-camp-radar">{{@seasonBlock.peakRadarSvg}}</div>
+            {{/if}}
+          </div>
+          {{/if}}
+        </div>
+
+        <!-- ④ 荣誉（左排位整赛季 / 右巅峰近 30 天） -->
+        <div class="k-camp-pair">
+          {{if seasonBlock.singlePane !== 'peak'}}
+          <div class="k-camp-pair-cell">
+            {{if seasonBlock.honorRows && seasonBlock.honorRows.length}}
+            <div class="k-camp-detail-head">排位荣誉</div>
+            <div class="k-camp-honor-chips">
+              {{each seasonBlock.honorRows item}}
+              <div class="k-camp-honor-chip"><b>{{item.value}}</b><i>{{item.label}}</i></div>
+              {{/each}}
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+          {{if seasonBlock.singlePane !== 'rank'}}
+          <div class="k-camp-pair-cell">
+            {{if seasonBlock.peakHonorRows && seasonBlock.peakHonorRows.length}}
+            <div class="k-camp-detail-head">巅峰荣誉</div>
+            <div class="k-camp-honor-chips">
+              {{each seasonBlock.peakHonorRows item}}
+              <div class="k-camp-honor-chip"><b>{{item.value}}</b><i>{{item.label}}</i></div>
+              {{/each}}
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+        </div>
+
+        <!-- ⑤ 分路表现（左排位 seasonpage 的分路 / 右巅峰 getFightData 逐路拉的那份） -->
+        <!-- 一整条横条按场次占比切段（flex 即 item.percent），段内写「分路 + 场次」，胜率与段太窄写不下的明细放到下面图例行补齐 -->
+        <div class="k-camp-pair">
+          {{if seasonBlock.singlePane !== 'peak'}}
+          <div class="k-camp-pair-cell">
+            {{if seasonBlock.branches && seasonBlock.branches.length}}
+            <div class="k-camp-detail-head">分路表现</div>
+            <div class="k-camp-lanes">
+              <div class="k-camp-lane-stack">
+                {{each seasonBlock.branches item index}}
+                <span class="k-camp-lane-seg is-{{index}}" style="flex: {{item.percent}}"><b>{{item.name}}</b><i>{{item.count}} 场</i></span>
+                {{/each}}
+              </div>
+              <div class="k-camp-lane-legend">
+                {{each seasonBlock.branches item index}}
+                <span class="k-camp-lane-tag"><i class="k-camp-lane-dot is-{{index}}"></i>{{item.name}} {{item.count}} 场{{if item.winRate}} · {{item.winRate}}{{/if}}</span>
+                {{/each}}
+              </div>
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+          {{if seasonBlock.singlePane !== 'rank'}}
+          <div class="k-camp-pair-cell">
+            {{if seasonBlock.peakBranches && seasonBlock.peakBranches.length}}
+            <div class="k-camp-detail-head">分路表现</div>
+            <div class="k-camp-lanes">
+              <div class="k-camp-lane-stack">
+                {{each seasonBlock.peakBranches item index}}
+                <span class="k-camp-lane-seg is-{{index}}" style="flex: {{item.percent}}"><b>{{item.name}}</b><i>{{item.count}} 场</i></span>
+                {{/each}}
+              </div>
+              <div class="k-camp-lane-legend">
+                {{each seasonBlock.peakBranches item index}}
+                <span class="k-camp-lane-tag"><i class="k-camp-lane-dot is-{{index}}"></i>{{item.name}} {{item.count}} 场{{if item.winRate}} · {{item.winRate}}{{/if}}</span>
+                {{/each}}
+              </div>
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+        </div>
+      </div>
+
+    </div>
+    {{/if}}
+    {{if seasonRows && seasonRows.length}}
+    <!-- 赛季数据汇总单开一个 .k-camp-sect.is-summary，与「本赛季表现」「荣耀称号」平级；排位巅峰合成一张表，一行一个赛季 -->
+    <div class="k-camp-sect is-summary">
+      <div class="k-camp-sect-head">
+        <span class="k-camp-sect-title">赛季数据汇总</span>
+      </div>
+      {{if seasonSummary}}
+      <!-- 八格顺序（从左到右、从上到下）：排位最高星数 / 排位王者次数 / 排位场次 / 排位胜率 ｜ 巅峰最高分 / 巅峰次数 / 巅峰场次 / 巅峰胜率 -->
+      <div class="k-camp-season-facts is-merge">
+        <div class="k-camp-season-fact">
+          <span class="k-camp-season-fact-main">{{seasonSummary.bestStar}}</span>
+          <span class="k-camp-season-fact-label">排位最高星数</span>
+        </div>
+        <div class="k-camp-season-fact">
+          <span class="k-camp-season-fact-main">{{seasonSummary.kingSeasons}} 次</span>
+          <span class="k-camp-season-fact-label">排位王者次数</span>
+        </div>
+        <div class="k-camp-season-fact">
+          <span class="k-camp-season-fact-main">{{seasonSummary.totalGames}}</span>
+          <span class="k-camp-season-fact-label">排位场次 · {{seasonSummary.totalWins}} 胜</span>
+        </div>
+        <div class="k-camp-season-fact">
+          <span class="k-camp-season-fact-main">{{seasonSummary.winRate}}</span>
+          <span class="k-camp-season-fact-label">排位胜率</span>
+        </div>
+        <div class="k-camp-season-fact">
+          <span class="k-camp-season-fact-main">{{seasonBlock && seasonBlock.peakSummary ? seasonBlock.peakSummary.bestText : '—'}}</span>
+          <span class="k-camp-season-fact-label">巅峰最高分{{if seasonBlock && seasonBlock.peakSummary && seasonBlock.peakSummary.bestSeasonTag}} · {{seasonBlock.peakSummary.bestSeasonTag}}{{/if}}</span>
+        </div>
+        <div class="k-camp-season-fact">
+          <span class="k-camp-season-fact-main">{{seasonSummary.peakSeasons}} 次</span>
+          <span class="k-camp-season-fact-label">巅峰次数</span>
+        </div>
+        <div class="k-camp-season-fact">
+          <span class="k-camp-season-fact-main">{{seasonSummary.peakGames}}</span>
+          <span class="k-camp-season-fact-label">巅峰场次 · {{seasonSummary.peakWins}} 胜</span>
+        </div>
+        <div class="k-camp-season-fact">
+          <span class="k-camp-season-fact-main">{{seasonSummary.peakWinRate}}</span>
+          <span class="k-camp-season-fact-label">巅峰胜率</span>
+        </div>
+      </div>
+      {{/if}}
+      <!-- 这里不画走势折线图：八格 + 一张表已经说清，折线图要多占 230px 高且与上面两张走势重复 -->
+      <div class="k-camp-table">
+        <div class="k-camp-tr is-head">
+          <span class="k-camp-td is-tag">赛季</span>
+          <span class="k-camp-td is-main">段位</span>
+          <span class="k-camp-td is-num is-pair">段位场次与胜率</span>
+          <span class="k-camp-td is-num is-peak">巅峰分</span>
+          <span class="k-camp-td is-num is-pair">巅峰场次与胜率</span>
+          <span class="k-camp-td is-range">赛季区间</span>
+        </div>
+        {{each seasonRows row index}}
+        <div class="k-camp-tr{{if row.isCurrent}} is-cur{{/if}}">
+          <span class="k-camp-td is-tag">{{row.seasonTag}}</span>
+          <span class="k-camp-td is-main">{{row.jobName}}{{if row.starText}}<i class="k-camp-season-star">{{row.starText}}</i>{{/if}}{{if row.isCurrent}}<span class="k-camp-season-cur">本赛季</span>{{/if}}</span>
+          <span class="k-camp-td is-num is-pair">{{row.gamesText}} 场 · {{row.winRateText}}</span>
+          <span class="k-camp-td is-num is-peak">{{row.peakScoreText}}</span>
+          <span class="k-camp-td is-num is-pair">{{row.peakGamesText}} 场 · {{row.peakWinRateText}}</span>
+          <span class="k-camp-td is-range">{{row.dateRange}}</span>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+
+
+    <div class="k-note k-camp-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          {{if channelName}}<span class="k-badge">{{channelName}}</span>{{/if}}
+          {{if pageText}}<span class="k-badge is-page">{{pageText}}</span>{{/if}}
+          {{if time}}<span class="k-time">{{time}}</span>{{/if}}
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    {{if cover}}<img class="k-cover k-news-cover" src="{{cover}}" referrerpolicy="no-referrer">{{/if}}
+
+    <div class="k-para k-news-body">{{@body}}</div>
+
+    <div class="k-meta k-news-meta">
+      <span>整理于 {{genTime}}</span>
+    </div>
+
+    <div class="k-note">{{note}}</div>
+  </div>
+</div>
+</body>
+</html>

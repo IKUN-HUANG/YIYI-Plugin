@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          {{if roleName}}<span class="k-badge">{{roleName}}</span>{{/if}}
+          {{if rankName}}<span class="k-badge">{{rankName}}</span>{{/if}}
+          <span class="k-badge">{{modeLabel}}</span>
+          {{if ownerText}}<span class="k-badge">看的是 {{ownerText}}</span>{{/if}}
+          <span class="k-time">近 {{days}} 天{{if rangeText}} · {{rangeText}}{{/if}} · 生成于 {{genTime}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-facts">
+      {{each stats item}}
+        <div class="k-fact">
+          <div class="k-fact-label">{{item.label}}</div>
+          <div class="k-fact-value{{if item.tone}} k-tone--{{item.tone}}{{/if}}">{{item.value}}</div>
+          <div class="k-fact-sub">{{if item.sub}}{{item.sub}}{{else}}&nbsp;{{/if}}</div>
+        </div>
+      {{/each}}
+    </div>
+
+    {{if chart}}
+      <div class="k-panel">
+        <div class="k-panel-head">
+          <span class="k-panel-title">{{chartTitle}}</span>
+          <span class="k-panel-sub">{{countText}}{{if coverText}} · {{coverText}}{{/if}}</span>
+        </div>
+        <div class="k-chart">{{@chart}}</div>
+        {{if chartTip}}<div class="k-chart-tip">{{chartTip}}</div>{{/if}}
+      </div>
+    {{/if}}
+
+    {{if segNote}}
+      <div class="k-note is-gap">{{segNote}}</div>
+    {{/if}}
+
+    <div class="k-sect">逐日</div>
+    <div class="k-line-rows">
+      {{each dayRows item index}}
+        <div class="k-line-row{{if index % 2}} is-alt{{/if}}">
+          <div class="k-line-no is-date">{{item.label}}</div>
+          <div class="k-line-main">
+            <div class="k-line-name">{{item.value}}</div>
+            <div class="k-line-sub">{{item.sub}}</div>
+          </div>
+          <div class="k-line-right">
+            <div class="k-line-value{{if item.tone}} k-tone--{{item.tone}}{{/if}}">{{item.delta}}</div>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+    {{if heroRows && heroRows.length}}
+      <div class="k-sect">{{if isPeak}}带分英雄{{else}}上分英雄{{/if}}</div>
+      <div class="k-line-rows">
+        {{each heroRows item index}}
+          <div class="k-line-row{{if index % 2}} is-alt{{/if}}">
+            <div class="k-line-face">{{if item.icon}}<img src="{{item.icon}}">{{/if}}</div>
+            <div class="k-line-main">
+              <div class="k-line-name">{{item.label}}</div>
+              <div class="k-line-sub">{{item.sub}}</div>
+            </div>
+            <div class="k-line-right">
+              <div class="k-line-value{{if item.tone}} k-tone--{{item.tone}}{{/if}}">{{item.value}}</div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{if streakRows && streakRows.length}}
+      <div class="k-sect">记录</div>
+      <div class="k-line-rows">
+        {{each streakRows item index}}
+          <div class="k-line-row{{if index % 2}} is-alt{{/if}}">
+            <div class="k-line-main">
+              <div class="k-line-name">{{item.label}}</div>
+              <div class="k-line-sub">{{item.sub || '—'}}</div>
+            </div>
+            <div class="k-line-right">
+              <div class="k-line-value">{{item.value}}</div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{if modeRows && modeRows.length}}
+      <div class="k-sect">模式分布</div>
+      <div class="k-line-rows">
+        {{each modeRows item index}}
+          <div class="k-line-row{{if index % 2}} is-alt{{/if}}">
+            <div class="k-line-main">
+              <div class="k-line-name">{{item.label}}</div>
+              <div class="k-line-sub">{{item.sub}}</div>
+            </div>
+            <div class="k-line-right">
+              <div class="k-line-value is-muted">{{item.value}}</div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    <div class="k-sect">最近 {{recentRows.length}} 场</div>
+    <div class="k-line-rows">
+      {{each recentRows item index}}
+        <div class="k-line-row{{if item.win}} is-win{{else if item.lose}} is-lose{{/if}}{{if index % 2}} is-alt{{/if}}">
+          <div class="k-line-no is-date">{{item.label}}</div>
+          <div class="k-line-main">
+            <div class="k-line-name{{if item.win}} k-tone--up{{else if item.lose}} k-tone--down{{/if}}">{{item.value}}</div>
+            <div class="k-line-sub">{{item.sub}}</div>
+          </div>
+          <div class="k-line-right">
+            <div class="k-line-value{{if item.tone}} k-tone--{{item.tone}}{{/if}}">{{item.delta}}</div>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+    {{if note}}<div class="k-note">{{note}}</div>{{/if}}
+    <div class="k-note">{{footText}}</div>
+  </div>
+</div>
+</body>
+</html>

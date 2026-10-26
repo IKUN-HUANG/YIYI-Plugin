@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Help/index.css'}}">
+</head>
+<body>
+<div class="help-card{{if bgBlur}} is-blur{{/if}}">
+  {{if bgSrc}}<div class="help-bg" style="background-image:url('{{bgSrc}}')"></div>{{/if}}
+
+  <div class="help-content">
+    <div class="help-header">
+      <div class="help-header-main">
+        <div class="help-title">{{title}}</div>
+        <div class="help-subtitle">{{subTitle}}</div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="help-groups{{if itemCols >= 4}} is-dense{{/if}}" style="--item-cols:{{itemCols}}">
+      {{each helpList}}
+        <div class="help-group">
+          <div class="help-group-title">{{$value.group}}</div>
+          <div class="help-items">
+            {{each $value.list}}
+              <div class="help-item">
+                {{if $value.icon}}
+                  <img class="help-item-icon" src="{{_imgUrl('Icon/' + $value.icon)}}" alt="">
+                {{else}}
+                  <span class="help-item-dot"></span>
+                {{/if}}
+                <div class="help-item-info">
+                  <div class="help-item-title">{{@_hl($value.title)}}</div>
+                  {{if $value.desc}}
+                    <div class="help-item-desc">{{$value.desc}}</div>
+                  {{/if}}
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+</div>
+</body>
+</html>

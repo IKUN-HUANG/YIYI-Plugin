@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>英雄详情</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">官网资料</span>
+          <span class="k-time">{{genTime}}</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-hero">
+      {{if hero.avatar}}<img class="k-hero-face" src="{{hero.avatar}}">{{/if}}
+      <div>
+        <div class="k-hero-line">
+          <span class="k-hero-name">{{hero.name}}</span>
+          {{if hero.honor}}<span class="k-honor-badge is-lg" title="{{hero.honor.text}}"><img class="k-honor-medal" src="{{hero.honor.icon}}"><span class="k-honor-text">{{hero.honor.short}}</span></span>{{/if}}
+        </div>
+        {{if hero.title}}<div class="k-hero-title">{{hero.title}}</div>{{/if}}
+        <div class="k-hero-tags">
+          {{if hero.typeText}}<span class="k-badge">{{hero.typeText}}</span>{{/if}}
+          <span class="k-badge">皮肤 {{hero.skinCount}} 款</span>
+          {{if hero.skills.length}}<span class="k-badge">技能 {{hero.skills.length}} 个</span>{{/if}}
+        </div>
+      </div>
+    </div>
+
+    {{if hero.story}}
+      <div class="k-sect">英雄介绍</div>
+      <div class="k-para">{{hero.story}}</div>
+    {{/if}}
+
+    {{if hero.skills.length}}
+      <div class="k-sect">技能详情</div>
+      <div class="k-skill-list">
+        {{each hero.skills}}
+          <div class="k-skill">
+            <div class="k-skill-icon">{{if $value.icon}}<img src="{{$value.icon}}">{{/if}}</div>
+            <div class="k-skill-body">
+              <div class="k-skill-head">
+                <span class="k-skill-name">{{$value.name}}</span>
+                {{if $value.cool}}<span class="k-skill-tag">冷却 {{$value.cool}}</span>{{/if}}
+                {{if $value.cost}}<span class="k-skill-tag">消耗 {{$value.cost}}</span>{{/if}}
+              </div>
+              {{if $value.desc}}<div class="k-skill-desc">{{$value.desc}}</div>{{/if}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{if hero.gears.length || hero.rings.length}}
+      {{if hero.gears.length}}
+        <div class="k-sect">推荐出装</div>
+        <div class="k-gears">
+          {{each hero.gears item}}
+            <div class="k-gear">
+              <div class="k-gear-img">{{if item.icon}}<img src="{{item.icon}}">{{/if}}</div>
+              <div class="k-gear-name">{{item.name}}</div>
+              {{if item.win}}<div class="k-gear-win">胜率 {{item.win}}</div>{{/if}}
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+      {{if hero.rings.length}}
+        <div class="k-sect">铭文推荐{{if hero.ringRate}}<span class="k-sect-sub">这套胜率 {{hero.ringRate}}</span>{{/if}}</div>
+        <div class="k-line-rows">
+          {{each hero.rings item idx}}
+            <div class="k-line-row{{if idx % 2}} is-alt{{/if}}">
+              {{if item.icon}}<div class="k-line-face"><img src="{{item.icon}}"></div>{{/if}}
+              <div class="k-line-main">
+                <div class="k-line-name">{{item.name}}</div>
+              </div>
+              <div class="k-line-right">
+                <div class="k-line-value">{{item.count ? 'x' + item.count : '—'}}</div>
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+      {{if hero.equipTip}}<div class="k-line-sub" style="margin-top:12px">{{hero.equipTip}}</div>{{/if}}
+    {{/if}}
+
+    {{if hero.skins.length}}
+      <div class="k-sect">皮肤海报（{{hero.skinCount}} 款）</div>
+      <div class="k-grid">
+        {{each hero.skins}}
+          <div class="k-skin">
+            {{if $value.cover}}<img src="{{$value.cover}}">{{/if}}
+            <div class="k-skin-main">
+              <div class="k-skin-name">{{$value.name}}</div>
+              <div class="k-skin-meta">
+                {{if $value.quality}}<span>{{$value.quality}}</span>{{/if}}
+                {{if $value.onlineAt}}<span>{{$value.onlineAt}}</span>{{/if}}
+              </div>
+              {{if $value.desc}}<div class="k-skin-desc">{{$value.desc}}</div>{{/if}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+
+    {{if detailUrl}}<div class="k-note">官网：{{detailUrl}}</div>{{/if}}
+  </div>
+</div>
+</body>
+</html>

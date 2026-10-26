@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path}}King/king.css">
+</head>
+<body>
+<div class="k-card">
+  <div class="k-bg">
+    <span class="k-glow k-glow--1"></span>
+    <span class="k-glow k-glow--2"></span>
+    <span class="k-glow k-glow--3"></span>
+  </div>
+
+  <div class="k-content">
+    <div class="k-head">
+      <div class="k-head-main">
+        <div class="k-title">
+          {{if logoSrc}}<img class="k-logo" src="{{logoSrc}}">{{/if}}
+          <span>{{title}}</span>
+        </div>
+        <div class="k-sub">
+          <span class="k-badge">{{count}} 个</span>
+          <span class="k-time">标注有效期 {{ttlText}}，命中顺延</span>
+        </div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle || pluginName}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="k-line-rows" style="margin-top:6px">
+      {{if rows.length}}
+        {{each rows item idx}}
+          <div class="k-line-row {{if idx % 2}}is-alt{{/if}}">
+            <div class="k-line-no">{{item.no}}</div>
+            <div class="k-line-main">
+              <div class="k-line-name">{{item.campId}}{{if item.name}} · {{item.name}}{{/if}}</div>
+              <div class="k-line-sub">查这个号只会拿到「隐藏了主页」，查了也白查</div>
+            </div>
+            <div class="k-line-right">
+              <span class="k-tag is-wait">{{item.left}}</span>
+            </div>
+          </div>
+        {{/each}}
+      {{else}}
+        <div class="k-empty">当前没有被标注「隐藏了主页」的营地ID</div>
+      {{/if}}
+    </div>
+
+    {{if moreText}}<div class="k-note">{{moreText}}</div>{{/if}}
+    {{if note}}<div class="k-note">{{note}}</div>{{/if}}
+    <div class="k-note">清一个发「#王者清除隐藏名单 <营地ID>」，全清发「#王者清除隐藏名单 全部」。</div>
+  </div>
+</div>
+</body>
+</html>

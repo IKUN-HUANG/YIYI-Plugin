@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Memes/help.css'}}">
+</head>
+<body>
+<div class="meme-card meme-card--help">
+  <div class="meme-bg">
+    <span class="meme-glow meme-glow--1"></span>
+    <span class="meme-glow meme-glow--2"></span>
+    <span class="meme-glow meme-glow--3"></span>
+  </div>
+
+  <div class="meme-content">
+    <div class="meme-header">
+      <div class="meme-header-main">
+        <div class="meme-title">伊伊表情包</div>
+        <div class="meme-subtitle">共 {{total}} 个表情包 · 直接发送名称就能制作</div>
+      </div>
+      <div class="page-badges">
+        <span class="page-version">{{pluginTitle}} v{{version}}</span>
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+      </div>
+    </div>
+
+    <div class="meme-steps">
+      {{each steps}}
+        <div class="meme-step">
+          <span class="meme-step-no">{{$index + 1}}</span>
+          <div class="meme-step-main">
+            <div class="meme-step-head">
+              <span class="meme-step-title">{{$value.title}}</span>
+              <span class="meme-step-cmd">{{$value.cmd}}</span>
+            </div>
+            <div class="meme-step-desc">{{$value.desc}}</div>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+    {{if examples.length}}
+      <div class="meme-eg">
+        <div class="meme-eg-title">随便来几个</div>
+        <div class="meme-eg-grid">
+          {{each examples}}
+            <div class="meme-eg-item">
+              <div class="meme-thumb">
+                {{if $value.thumb}}
+                  <img src="{{$value.thumb}}" alt="">
+                {{else}}
+                  <span class="meme-thumb-text">{{$value.title}}</span>
+                {{/if}}
+              </div>
+              <div class="meme-name">{{$value.title}}</div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    {{/if}}
+
+    <div class="meme-footer">
+      <div class="meme-page">
+        <span class="meme-page-now">共 {{total}} 个表情包</span>
+        <span class="meme-page-total">文字 {{textCount}} / 图像 {{imageCount}}</span>
+      </div>
+      <div class="meme-hint">发送「表情名称」即可制作，例：摸头</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Help/version.css'}}">
+</head>
+<body>
+<div class="ver-card{{if bgBlur}} is-blur{{/if}}">
+  {{if bgSrc}}<div class="ver-bg" style="background-image:url('{{bgSrc}}')"></div>{{/if}}
+
+  <div class="ver-content">
+    <div class="ver-header">
+      <div class="ver-title">{{pluginTitle}}</div>
+      <div class="page-badges page-badges--row">
+        <span class="env-tag env-tag--{{yunzai.flavor}}">{{yunzai.display}}</span>
+        <span class="page-version">{{pluginTitle}} v{{version}}</span>
+      </div>
+    </div>
+
+    <div class="ver-changelog">
+      <div class="ver-section-title">更新日志</div>
+      <div class="ver-changelog-body">
+        {{@changelogHtml}}
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

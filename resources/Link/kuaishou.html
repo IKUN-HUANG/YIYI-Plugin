@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{{_res_path + 'Link/card.css'}}">
+</head>
+<body>
+<div class="card{{if isLandscape}} is-landscape{{/if}}">
+  {{if coverSrc}}
+    <img class="bg{{if isLandscape}} landscape{{/if}}" src="{{coverSrc}}" referrerpolicy="no-referrer">
+    <div class="blur-wrap">
+      <div class="blur" style="background-image:url('{{coverSrc}}')"></div>
+    </div>
+  {{/if}}
+  <div class="blur-layer"></div>
+  <div class="dark"></div>
+
+  <div class="content" style="--accent:{{accent}}">
+    <div class="info-row">
+      <div class="author-line">
+        {{if avatarSrc}}<img class="avatar" src="{{avatarSrc}}" referrerpolicy="no-referrer">{{/if}}
+        <div class="info">
+          <div class="name-row">
+            <span class="name ellipsis" style="font-size:{{authorSize}}px">{{author}}</span>
+            <div class="type-badge">
+              {{if icons.kuaishou}}<img src="{{icons.kuaishou}}" alt="kuaishou">{{/if}}
+              <span>{{if isVideo}}视频{{else}}图文{{/if}}</span>
+            </div>
+          </div>
+          <span class="dyid ellipsis" style="font-size:{{dyidSize}}px">快手号：{{dyid}}</span>
+        </div>
+      </div>
+      {{if triggerName}}
+        <div class="trigger-line">
+          <div class="t-info">
+            <span class="t-name ellipsis" style="font-size:{{triggerNameSize}}px">{{triggerName}}</span>
+            {{if triggerUrl}}<a class="t-link" style="font-size:{{triggerUrlSize}}px" href="{{triggerUrl}}" target="_blank">{{triggerUrl}}</a>{{/if}}
+          </div>
+          {{if tAvatarSrc}}<img class="t-avatar" src="{{tAvatarSrc}}" referrerpolicy="no-referrer">{{/if}}
+        </div>
+      {{/if}}
+    </div>
+
+    {{if desc}}
+      <div class="desc-wrap">
+        <div class="desc">{{desc}}</div>
+      </div>
+    {{/if}}
+
+    {{if showSpecs}}
+      <div class="specs">
+        <div class="spec"><img class="spec-icon" src="{{icons.res}}">{{res}}</div>
+        <div class="spec"><img class="spec-icon" src="{{icons.fps}}">{{fps}}fps</div>
+        <div class="spec"><img class="spec-icon" src="{{icons.dur}}">{{dur}}</div>
+      </div>
+    {{/if}}
+
+    <div class="stats">
+      <div class="stat"><img class="stat-icon" src="{{icons.like}}">{{likeFmt}}</div>
+      <div class="stat"><img class="stat-icon" src="{{icons.comment}}">{{commentFmt}}</div>
+      <div class="stat"><img class="stat-icon" src="{{icons.collect}}">{{collectFmt}}</div>
+      <div class="stat"><img class="stat-icon" src="{{icons.share}}">{{shareFmt}}</div>
+    </div>
+
+    <div class="footer">
+      <div class="time-box">
+        <span>作品发布时间: {{time}}</span>
+        <span>图片生成时间: {{genTime}}</span>
+      </div>
+      {{if mTitle || mCoverSrc}}
+        <div class="music-line">
+          <div class="info">
+            <span class="mname ellipsis" style="font-size:{{mTitleSize}}px">{{mTitle}}</span>
+            {{if mAuthor}}<span class="mauthor ellipsis" style="font-size:{{mAuthorSize}}px">{{mAuthor}}</span>{{/if}}
+          </div>
+          {{if mCoverSrc}}<img class="mcover" src="{{mCoverSrc}}" referrerpolicy="no-referrer">{{/if}}
+        </div>
+      {{/if}}
+    </div>
+
+    <div class="copyright-bar">{{@copyright}}</div>
+  </div>
+</div>
+</body>
+</html>
+

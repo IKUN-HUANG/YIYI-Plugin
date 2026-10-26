@@ -1,0 +1,546 @@
+@font-face {
+  font-family: 'SourceHan';
+  src: url('../Font/SourceHanSansSC-subset.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'NotoSansMath';
+  src: url('../Font/NotoSansMath-Regular.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Symbola';
+  src: url('../Font/Symbola.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Noto Color Emoji';
+  src: url('../Font/NotoColorEmoji.woff2') format('woff2');
+  font-display: block;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  width: 1080px;
+  background: transparent;
+}
+
+body {
+  font-family: 'SourceHan', 'NotoSansMath', 'Symbola', 'Noto Color Emoji', "Microsoft YaHei", "PingFang SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  width: 1080px;
+  height: 1620px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 36px;
+  isolation: isolate;
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  z-index: 1;
+}
+.bg.landscape {
+  inset: auto;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: auto;
+  transform: translateY(-50%);
+}
+
+.blur-wrap {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(0,0,0,.15) 52%, rgba(0,0,0,.45) 62%, rgba(0,0,0,.8) 72%, #000 82%, #000 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(0,0,0,.15) 52%, rgba(0,0,0,.45) 62%, rgba(0,0,0,.8) 72%, #000 82%, #000 100%);
+}
+.blur {
+  position: absolute;
+  inset: -59px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(30px) saturate(180%);
+  -webkit-filter: blur(30px) saturate(180%);
+}
+
+.card.is-landscape .blur-wrap {
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.blur-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  mask-image: linear-gradient(to top, #000 0%, #000 15%, transparent 60%);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 15%, transparent 60%);
+}
+
+.dark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(to bottom, rgba(10,14,26,0) 0%, rgba(10,14,26,0) 40%, rgba(10,14,26,.10) 52%, rgba(10,14,26,.35) 62%, rgba(10,14,26,.70) 72%, rgba(10,14,26,.90) 100%);
+}
+.card.is-landscape .dark {
+  background: linear-gradient(to bottom, rgba(10,14,26,0) 0%, rgba(10,14,26,0) 40%, rgba(10,14,26,.30) 60%, rgba(10,14,26,.70) 80%, rgba(10,14,26,.90) 100%);
+}
+
+.content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 70px 32px;
+  color: #fff;
+  z-index: 3;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 22px;
+}
+
+.author-line {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  flex: 1;
+  max-width: 50%;
+}
+.author-line .avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .45);
+  flex-shrink: 0;
+  display: block;
+}
+.author-line .info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+.author-line .dyid {
+  font-weight: 400;
+  color: rgba(255, 255, 255, .7);
+  text-shadow: 0 1px 7px rgba(0, 0, 0, .5);
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+.name-row .name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, .55);
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, .5);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 135px;
+  color: #000;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .1);
+  white-space: nowrap;
+}
+.type-badge img {
+  /* 平台图标有方形的（抖音 / 快手 / B站）也有横长条的（小红书字标），一律按高度缩放、保持原始比例 */
+  height: 20px;
+  width: auto;
+  max-width: 56px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+.type-badge span {
+  line-height: 1;
+  display: block;
+  margin-top: -2px;
+}
+
+.trigger-line {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  flex: 1;
+  max-width: 50%;
+  justify-content: flex-end;
+}
+.trigger-line .t-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .45);
+  flex-shrink: 0;
+  display: block;
+}
+.trigger-line .t-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+  text-align: right;
+}
+.trigger-line .t-name {
+  font-weight: 600;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, .55);
+}
+.trigger-line .t-link {
+  font-weight: 400;
+  color: rgba(255, 255, 255, .7);
+  text-shadow: 0 1px 7px rgba(0, 0, 0, .5);
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.music-line {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  min-width: 0;
+  flex: 1;
+}
+.music-line .info {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 59px;
+  min-width: 0;
+  text-align: right;
+}
+.music-line .mname {
+  font-weight: 600;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, .55);
+}
+.music-line .mauthor {
+  font-weight: 400;
+  color: rgba(255, 255, 255, .7);
+  text-shadow: 0 1px 7px rgba(0, 0, 0, .5);
+}
+.music-line .mcover {
+  width: 59px;
+  height: 59px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .45);
+  flex-shrink: 0;
+  display: block;
+}
+
+.desc-wrap {
+  position: relative;
+  padding-left: 16px;
+}
+.desc-wrap::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 5px;
+  background: var(--accent, #25f4ee);
+  border-radius: 3px;
+}
+.desc {
+  font-size: 32px;
+  line-height: 1.7;
+  font-weight: 500;
+  color: #f5f5f7;
+  word-break: break-all;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, .5);
+  margin-bottom: 36px;
+  white-space: pre-wrap;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+}
+
+.specs {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 32px;
+}
+.spec {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 22px 16px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #f0f0f0;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+  white-space: nowrap;
+}
+.spec-icon,
+.stat-icon {
+  opacity: .85;
+  filter: brightness(0) invert(1);
+}
+.spec-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.stats {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, .18);
+}
+.stat {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 26px;
+  font-weight: 700;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, .5);
+  white-space: nowrap;
+}
+.stat-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 24px;
+  font-size: 22px;
+  color: rgba(255, 255, 255, .7);
+  text-shadow: 0 1px 7px rgba(0, 0, 0, .5);
+}
+.time-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 5px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.copyright-bar {
+  margin-top: 35px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, .18);
+  text-align: center;
+  font-size: 19px;
+  color: rgba(255, 255, 255, .55);
+  text-shadow: 0 1px 7px rgba(0, 0, 0, .5);
+}
+.copyright-bar .version {
+  color: #d3bc8e;
+  margin-left: 5px;
+  display: inline-block;
+  padding: 0 4px;
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 评论卡（解析后另发的「热评」图，高度自适应；蓝白配色） ---------- */
+.card.cmt {
+  height: auto;
+  min-height: 360px;
+  background: linear-gradient(168deg, #f6faff 0%, #e8f1fd 46%, #d7e7fa 100%);
+}
+
+.cmt-content {
+  position: static;
+  padding: 56px 64px 30px;
+  color: #16324f;
+}
+
+.cmt-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 30px;
+}
+
+.cmt-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  padding: 10px;
+  background: rgba(37, 99, 235, .08);
+  border: 1px solid rgba(37, 99, 235, .16);
+  object-fit: contain;
+}
+
+.cmt-title {
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #0f2f57;
+}
+
+/* 右上角放分享链接，长链接省略号收尾 */
+.cmt-link {
+  margin-left: auto;
+  max-width: 470px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, .09);
+  border: 1px solid rgba(37, 99, 235, .18);
+  font-size: 22px;
+  color: #2563eb;
+}
+
+.cmt-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cmt-item {
+  display: flex;
+  gap: 22px;
+  padding: 26px 0;
+  border-top: 1px solid rgba(37, 99, 235, .14);
+}
+
+.cmt-item:first-child {
+  border-top: none;
+}
+
+.cmt-avatar {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: rgba(37, 99, 235, .08);
+  border: 1px solid rgba(37, 99, 235, .14);
+}
+
+.cmt-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.cmt-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cmt-nick {
+  flex: 1;
+  min-width: 0;
+  font-size: 27px;
+  color: #4d6f97;
+}
+
+.cmt-like {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 26px;
+  color: #2f5a8f;
+}
+
+/* 图标本体是浅灰的心形，蓝白底上先压成纯黑再染成主题蓝 */
+.cmt-like img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(31%) sepia(89%) saturate(1930%) hue-rotate(212deg) brightness(97%) contrast(96%);
+}
+
+.cmt-text {
+  margin-top: 10px;
+  font-size: 33px;
+  line-height: 1.45;
+  color: #12283f;
+  word-break: break-word;
+}
+
+.cmt-more {
+  margin-top: 8px;
+  font-size: 25px;
+  color: #6b88ab;
+}
+
+/* 评论卡是浅底，版权条跟着走蓝白（默认那套是给深色平台卡的） */
+.card.cmt .copyright-bar {
+  border-top-color: rgba(37, 99, 235, .16);
+  color: rgba(37, 99, 235, .55);
+  text-shadow: none;
+}
+
+.card.cmt .copyright-bar .version {
+  color: #2563eb;
+}

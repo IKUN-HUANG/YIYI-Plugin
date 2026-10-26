@@ -1,0 +1,364 @@
+@import url('../Help/badge.css');
+
+@font-face {
+  font-family: 'SourceHan';
+  src: url('../Font/SourceHanSansSC-subset.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'NotoSansMath';
+  src: url('../Font/NotoSansMath-Regular.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Symbola';
+  src: url('../Font/Symbola.woff2') format('woff2');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Noto Color Emoji';
+  src: url('../Font/NotoColorEmoji.woff2') format('woff2');
+  font-display: block;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  width: 1080px;
+  background: transparent;
+}
+
+body {
+  font-family: 'SourceHan', 'NotoSansMath', 'Symbola', 'Noto Color Emoji', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* ── 卡片 ── */
+
+.music-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 1080px;
+  /* 9:16 竖图：15 首一屏正好撑满 1080×1920，少几首就留白给背景图，
+     多几首（perPage 调到 30）也不会被裁掉，只是比例不再是 9:16 */
+  min-height: 1920px;
+  border-radius: 32px;
+  overflow: hidden;
+  /* 没背景图时的兜底底色，跟帮助 / 版本同一块中性灰蓝 */
+  background: #eef3f8;
+  box-shadow: 0 10px 30px rgba(59, 108, 168, 0.18);
+}
+
+.music-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* 照片原样展示：不压白纱、不做模糊，跟帮助 / 版本卡片一个口径；可读性靠面板的 0.75 白纱和深色字 */
+.music-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.music-content {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 38px 30px 34px;
+}
+
+/* ── 头部 ── */
+
+/* 标题 / 页脚 / 列表行三层白纱统一 0.75：字更清楚，照片仍然透得出来 */
+.music-header {
+  display: flex;
+  /* 角标跟左侧「标题 + 副标题」整块垂直居中 */
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 26px;
+  margin-bottom: 18px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(59, 108, 168, 0.14);
+}
+
+.music-header-main {
+  min-width: 0;
+  padding-left: 18px;
+  border-left: 6px solid #2f6fd0;
+}
+
+.music-title {
+  font-size: 54px;
+  font-weight: 700;
+  color: #0f2a5c;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.music-subtitle {
+  margin-top: 8px;
+  font-size: 22px;
+  color: #4467a0;
+}
+
+/* 点歌卡角标比帮助 / 版本卡大一号（16/15 → 20/19），只在本卡生效，不动共用的 badge.css */
+.music-header .page-version {
+  font-size: 20px;
+  padding: 7px 22px;
+}
+
+.music-header .env-tag {
+  font-size: 19px;
+  padding: 6px 18px;
+}
+
+/* ── 歌曲列表 ── */
+
+.music-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+.music-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(184, 212, 242, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 3px 8px rgba(59, 108, 168, 0.08);
+}
+
+.music-index {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #3c82ce;
+  background: rgba(74, 144, 217, 0.14);
+}
+
+/* 第一页的前三名给个实心角标，一眼能看出排名 */
+.music-index--top {
+  color: #ffffff;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.music-cover {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f7fe 100%);
+}
+
+.music-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.music-cover-note {
+  font-size: 30px;
+  color: #9dbbdf;
+}
+
+.music-meta {
+  flex: 0 0 400px;
+  min-width: 0;
+}
+
+/* 歌名 + VIP 角标同一行：名字太长自己截断，角标永远跟在后头不被挤掉 */
+.music-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.music-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 23px;
+  font-weight: 600;
+  color: #0f2a5c;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-artist {
+  margin-top: 3px;
+  font-size: 16px;
+  color: #41567a;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 专辑名 + 发行时间竖排；两行各自省略，不让长专辑名把行撑开 */
+.music-album {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.music-album-name {
+  font-size: 16px;
+  color: #465b7d;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-album-date {
+  margin-top: 3px;
+  font-size: 13px;
+  color: #6b7f9e;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.music-tail {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.music-tag {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #b45309;
+  background: rgba(254, 243, 199, 0.95);
+}
+
+.music-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.music-like {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #41567a;
+}
+
+/* 爱心用内联 SVG 而不是 ♥ 字符：不赌随包字体里有没有 U+2665，颜色直接由 fill 定 */
+.music-heart {
+  width: 14px;
+  height: 14px;
+  fill: #2f6fd0;
+}
+
+.music-like-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.music-time {
+  font-size: 16px;
+  color: #41567a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 底部 ── */
+
+.music-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 16px 22px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(184, 212, 242, 0.95);
+  border-radius: 18px;
+}
+
+.music-page {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.music-page-now {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f2a5c;
+}
+
+.music-page-total {
+  font-size: 18px;
+  color: #41567a;
+}
+
+.music-hint {
+  font-size: 18px;
+  color: #3c82ce;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* 命令高亮（跟帮助页同一套写法，模板里走 {{@hint}} 原样输出） */
+.music-hint .help-cmd {
+  color: #1d4ed8;
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+.music-progress {
+  height: 8px;
+  margin-top: 14px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+
+.music-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+}
