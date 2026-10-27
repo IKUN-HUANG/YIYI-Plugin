@@ -1,5 +1,6 @@
 /**
- * @file 每天固定时刻的任务骨架（自动更新、表情包自动更新、缓存清扫…），定时与去重只在这里实现。
+ * @file 定时任务骨架：每天固定时刻（表情包自动更新）与每隔 N 分钟轮询（插件自动更新，
+ *   盯上游有没有新提交），定时与去重只在这里实现。
  * @module utils/AutoTask
  */
 
@@ -95,6 +96,130 @@ export function createAutoTask ({
       time: formatTime(),
       ...(status ? status() : {}),
       lastDay
+    }
+  }
+
+  return { run: taskRun, start, stop, status: taskStatus }
+}
+
+/** 轮询任务的心跳，毫秒：每分钟问一次「到间隔了没」，间隔改小了不用等重启 */
+const BEAT_MS = 60 * 1000
+
+/**
+ * 把「还剩多久」翻成一句人话，给静默期的 reason 用。
+ *
+ * @param {number} ms 剩余的毫秒数
+ * @returns {string} `11 小时 42 分钟` / `35 分钟`；不到一分钟算 `1 分钟`
+ */
+function leftText (ms) {
+  const minutes = Math.max(1, Math.ceil(ms / 60000))
+  if (minutes < 60) return `${minutes} 分钟`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest ? `${hours} 小时 ${rest} 分钟` : `${hours} 小时`
+}
+
+/**
+ * 造一个「每隔 N 分钟跑一次」的任务（插件自动更新：每 10 分钟看一眼上游有没有新提交）。
+ *
+ * 跟 `createAutoTask` 的差别只在「什么时候该跑」：那边认一天里的第几分钟、一天一次；
+ * 这边认「距上次跑过了多久」，所以用户把间隔从 60 改成 5，下一次心跳就按新间隔判，不用重启插件。
+ *
+ * @param {object} options 配置
+ * @param {() => boolean} options.enabled 开关，每次心跳都问一次（配置改了立即生效）
+ * @param {() => string} options.intervalText 用户配置的间隔原文，回执里展示
+ * @param {() => number|null} options.parseInterval 间隔原文 → 分钟数（认不出给 null）
+ * @param {() => string} options.formatInterval 展示用的间隔（`10 分钟`）
+ * @param {string} options.disabledReason 关着时 `run()` 的 reason
+ * @param {string} options.intervalLabel 间隔在错误文案里的叫法，例如「更新间隔」
+ * @param {string} options.startLabel 启动日志的主语，例如「插件自动更新」
+ * @param {{info: Function, mark: Function, warn: Function, error: Function}} options.log 日志器
+ * @param {(opts: object) => Promise<object>} options.run 真正要干的事；`run()` 的额外选项原样传给它
+ * @param {() => number} [options.holdUntil] 静默到哪个时间戳（毫秒），0 = 没静默；命中时连间隔判断都不做
+ * @param {string} [options.holdLabel] 静默原因的叫法，例如「本地改动挡住了更新」
+ * @param {() => object} [options.status] 额外的状态字段
+ * @param {object} [options.stopResult] `stop()` 的返回值
+ * @returns {{run: Function, start: Function, stop: Function, status: Function}} 任务句柄
+ */
+export function createIntervalTask ({
+  enabled,
+  intervalText,
+  parseInterval,
+  formatInterval,
+  disabledReason,
+  intervalLabel,
+  startLabel,
+  log,
+  run,
+  holdUntil,
+  holdLabel = '静默中',
+  status,
+  stopResult
+}) {
+  let timer = null
+  let lastAt = 0
+  let busy = false
+
+  async function taskRun (now = new Date(), { force = false, ...rest } = {}) {
+    if (!enabled()) return { ran: false, reason: disabledReason }
+
+    const minutes = parseInterval()
+    if (minutes == null) return { ran: false, reason: `${intervalLabel}「${intervalText()}」不是分钟数` }
+    /** 上一次还没跑完（查上游最长要几十秒）就不叠第二次，免得两条 fetch 抢同一个 .git */
+    if (busy) return { ran: false, reason: '上一次检查还没跑完' }
+
+    const at = now.getTime()
+
+    /**
+     * 静默期排在间隔判断前面：写进静默就是「这段时间别再查上游」，一次 git 都不该跑。
+     * 冲突不会因为多问几遍就自己消失，撞一次报一次只会把私聊刷成噪音。
+     */
+    const hold = Number(holdUntil?.() ?? 0) || 0
+    if (!force && hold > at) return { ran: false, reason: `${holdLabel}，静默中（还剩 ${leftText(hold - at)}）` }
+
+    if (!force && at - lastAt < minutes * 60 * 1000) return { ran: false, reason: '还没到间隔' }
+
+    busy = true
+    lastAt = at
+    try {
+      return { ran: true, ...(await run(rest)) }
+    } finally {
+      busy = false
+    }
+  }
+
+  function start () {
+    if (timer) return { started: false, reason: '定时器已经在跑' }
+
+    /** 起表：第一次真检查落在一个间隔之后，不在启动瞬间抢网络（插件刚起来还有一堆活） */
+    lastAt = Date.now()
+    timer = setInterval(() => {
+      taskRun().catch(err => log.error(`${startLabel}出错`, err))
+    }, BEAT_MS)
+    timer.unref?.()
+
+    const every = formatInterval()
+    log.mark(`${startLabel}：${enabled() && every ? `每 ${every}检查一次` : '已关闭'}`)
+
+    return { started: true, interval: every }
+  }
+
+  function stop () {
+    if (timer) clearInterval(timer)
+    timer = null
+    return stopResult
+  }
+
+  function taskStatus () {
+    return {
+      running: !!timer,
+      enabled: enabled(),
+      minutes: parseInterval(),
+      interval: formatInterval(),
+      busy,
+      holdUntil: Number(holdUntil?.() ?? 0) || 0,
+      ...(status ? status() : {}),
+      lastAt
     }
   }
 

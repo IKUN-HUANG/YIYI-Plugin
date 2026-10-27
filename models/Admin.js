@@ -40,8 +40,8 @@ export function boolValue (text) {
 export const SETTINGS = [
   { group: '基础', label: 'Bot 名字', alias: ['名字', '昵称', 'bot名'], path: ['name'], type: 'text', desc: '回消息时用的名字，留空就用触发 Bot 的昵称' },
   { group: '基础', label: '插件优先级', alias: ['插件优先级', '解析优先级', '优先级'], path: ['priority'], type: 'number', desc: '数值越小越优先，改动后需重启', restart: true },
-  { group: '基础', label: '插件自动更新', alias: ['插件更新', '自动更新插件', '插件自动更新'], path: ['autoUpdate'], type: 'bool', desc: '每天定时检查 git 上游，有更新就拉取并重启（框架没给 Bot.restart 就提示手动重启；没更新就静默）' },
-  { group: '基础', label: '插件更新时间', alias: ['插件更新时间', '插件更新点'], path: ['autoUpdateTime'], type: 'time', example: '09:00', desc: '每天几点检查插件更新（HH:MM，24 小时制）' },
+  { group: '基础', label: '插件自动更新', alias: ['插件更新', '自动更新插件', '插件自动更新'], path: ['autoUpdate'], type: 'bool', desc: '常驻轮询 git 上游，一有新提交就拉取并重启（框架没给 Bot.restart 就提示手动重启；没变动就静默）' },
+  { group: '基础', label: '插件更新间隔', alias: ['插件更新间隔', '插件更新频率', '更新间隔'], path: ['autoUpdateInterval'], type: 'number', min: 1, max: 1440, desc: '隔几分钟查一次上游（分钟，默认 10），改完下一次心跳就按新值算；本地改动撞上上游时私聊你一次然后静默 12 小时' },
   { group: '基础', label: '背景图源开关', alias: ['背景图源开关', '图源', '图片源', '背景图源'], path: ['bgSource'], type: 'bool', desc: '开启走「背景图片接口」，关闭只用本地 resources/Img/ 里的图' },
   { group: '基础', label: '背景图片接口', alias: ['背景图片接口', '背景接口', '背景API', '帮助背景接口'], path: ['helpBgApi'], type: 'text', mask: true, example: '接口地址', desc: '留空就用本地 resources/Img/ 里的图（随机挑一张）；只显示是否配置，不亮地址' },
   { group: '基础', label: '网易云 Cookie', alias: ['网易云Cookie', '网易云ck', '网抑云Cookie', '网抑云ck', '点歌ck'], path: ['music', 'cookie'], type: 'text', mask: true, maskWord: 'Cookie', example: 'MUSIC_U 的值', desc: '填 MUSIC_U 的值（或整条 Cookie）：配了才能点 VIP 歌，只显示是否配置' },
@@ -76,7 +76,7 @@ export const SETTINGS = [
 
 /** 三张分组卡：别名是用户打的那个词，count 由 groupIndex 现算 */
 export const GROUP_CMDS = [
-  { group: '基础', alias: '基础设置', cmd: '#伊伊基础设置', desc: 'Bot 名字、插件优先级、插件自动更新与时间、背景图源开关与背景图片接口、网易云 Cookie、网抑云点歌接口' },
+  { group: '基础', alias: '基础设置', cmd: '#伊伊基础设置', desc: 'Bot 名字、插件优先级、插件自动更新与间隔、背景图源开关与背景图片接口、网易云 Cookie、网抑云点歌接口' },
   { group: '平台解析', alias: '解析设置', cmd: '#伊伊解析设置', desc: '四个平台解析开关、四个整合转发开关、评论截图与条数、抖音 / B站评论开关、B站代理、视频阈值' },
   { group: '表情', alias: '表情设置', cmd: '#伊伊表情设置', desc: '表情开关与接口、表情优先级、详情后缀、禁用表情、主人反制与反制列表、自动更新与时间' }
 ]
@@ -212,7 +212,7 @@ export function findListCmd (label) {
 }
 
 /**
- * 按别名认设置项，最长别名优先 ——「插件更新时间」不能被「插件更新」抢走。
+ * 按别名认设置项，最长别名优先 ——「插件更新间隔」不能被「插件更新」抢走。
  *
  * @param {string} rest 前缀之外的整段
  * @returns {{item: object, value: string}|null} 没认出来回 null
