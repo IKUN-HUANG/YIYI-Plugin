@@ -37,8 +37,8 @@ export default {
   /** 插件自动更新开关 */
   get pluginAutoUpdate () { return this.cfg.autoUpdate !== false },
 
-  /** 每天检查更新的时刻，`HH:MM` */
-  get pluginAutoUpdateTime () { return this.cfg.autoUpdateTime ?? this.defaultOf('config', 'autoUpdateTime') },
+  /** 隔几分钟查一次上游（自动更新），单位分钟 */
+  get pluginAutoUpdateInterval () { return this.cfg.autoUpdateInterval ?? this.defaultOf('config', 'autoUpdateInterval') },
 
   /** 抖音解析接口地址 */
   get douyinApiUrl () { return this.cfg.douyinApiUrl || '' },

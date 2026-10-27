@@ -1,18 +1,24 @@
 /**
- * @file `#伊伊更新` 与每日自动检查，只做快进。
+ * @file `#伊伊更新` / `#伊伊强制更新` 与自动检查（每 N 分钟看一眼上游有没有新提交）。
  * @module models/Admin/update
  *
  * 动手之前先 `probeUpdateSource` 探环境：没装 git、目录不是 git 仓库（压缩包装的）、插件只是
  * 外层仓库里的一层、没配远程、游离 HEAD，全部翻成人话直接回给用户，顺带报出上游是 GitHub 还是
- * Gitee。分叉也明确拒绝；绝不在用户工作区做 merge/rebase —— 插件目录是用户的，猜错一次就是数据事故。
+ * Gitee。分叉也明确拒绝；默认路线绝不在用户工作区做 merge/rebase —— 插件目录是用户的，猜错一次
+ * 就是数据事故。
  *
- * 副作用：跑 git、私聊主人、重启 Yunzai、起一个每日定时任务。
+ * 唯一的例外是主人**明确要**的 `#伊伊强制更新`（`force: true`）：`git reset --hard` 把工作区对齐到
+ * 上游，本地改动与本地提交一起丢掉，冲突无从谈起。覆盖前先把已跟踪文件的改动存成补丁放进
+ * `data/update/`，盖错了还能 `git apply` 找回；未跟踪文件（`data/`、`cache/`、`config/config/`）
+ * git 本来就不碰，设置不会丢。
+ *
+ * 副作用：跑 git、私聊主人、重启 Yunzai、起一个常驻轮询任务。
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { rootDir, createLogger, parseClock, formatClock, createAutoTask, pluginTitle } from '#yiyi.utils'
+import { rootDir, dataDir, createLogger, createIntervalTask, pluginTitle } from '#yiyi.utils'
 import { Config } from '#yiyi.components'
 
 const log = createLogger('管理')
@@ -68,6 +74,82 @@ async function git (args, cwd = rootDir) {
 function gitReason (err, fallback = '执行 git 失败') {
   const lines = String(err?.stderr || err?.message || '').trim().split('\n').filter(Boolean)
   return (lines.pop() || fallback).replace(/^fatal:\s*/i, '')
+}
+
+/**
+ * 本地改动（只看**已跟踪**文件）：`git reset --hard` 会悄无声息吃掉的就是这些。
+ *
+ * 未跟踪文件（`data/`、`cache/`、`config/config/` 都不入库）不在里面：git 本身不碰它们，
+ * 用户设置、登录态、绑定都靠这个区分活下来，所以这里只数已跟踪的。
+ *
+ * @param {string} cwd 仓库根
+ * @returns {Promise<Array<string>>} 改过的文件路径（相对仓库根）；读不出来回空数组
+ */
+async function dirtyFiles (cwd) {
+  try {
+    const out = await git(['status', '--porcelain', '--untracked-files=no'], cwd)
+    return out
+      ? out.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+        /** `XY path` 或 `R  old -> new`：取右半边那个真实路径 */
+        const rest = line.slice(2).trim()
+        return rest.includes(' -> ') ? rest.split(' -> ').pop() : rest
+      })
+      : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * 上游这两个提交之间动了哪些文件 —— 本地改动撞上这些文件才会真冲突。
+ *
+ * @param {string} cwd 仓库根
+ * @param {string} target 上游 ref（`origin/main` 或 `FETCH_HEAD`）
+ * @returns {Promise<Array<string>>} 文件路径；读不出来回空数组
+ */
+async function upstreamChanged (cwd, target) {
+  try {
+    const out = await git(['diff', '--name-only', 'HEAD', target], cwd)
+    return out ? out.split('\n').map(s => s.trim()).filter(Boolean) : []
+  } catch {
+    return []
+  }
+}
+
+/** 补丁文件名里的时间戳：`20261027-181530`，按本地时区 */
+function stampNow () {
+  const at = new Date()
+  const pad = n => String(n).padStart(2, '0')
+  return `${at.getFullYear()}${pad(at.getMonth() + 1)}${pad(at.getDate())}-${pad(at.getHours())}${pad(at.getMinutes())}${pad(at.getSeconds())}`
+}
+
+/**
+ * 强制覆盖之前，先把已跟踪文件的改动存成补丁（`data/update/force-<时间>.patch`）。
+ *
+ * 覆盖是主人要求的，但「要覆盖」和「盖错了没法回头」是两件事：一份 `git apply` 就能还原的补丁
+ * 成本几乎为零，而它能把一次手滑从「改了一晚上的东西没了」降级成「多一条命令」。
+ *
+ * @param {string} cwd 仓库根
+ * @returns {Promise<string>} 补丁文件绝对路径；没有改动 / 写不出来回空串
+ */
+async function savePatch (cwd) {
+  try {
+    const { stdout } = await execFileAsync('git', ['diff', '--binary', 'HEAD'], {
+      cwd,
+      timeout: GIT_TIMEOUT_MS,
+      windowsHide: true,
+      maxBuffer: GIT_MAX_BUFFER
+    })
+    if (!String(stdout ?? '').trim()) return ''
+    const dir = path.join(dataDir, 'update')
+    fs.mkdirSync(dir, { recursive: true })
+    const file = path.join(dir, `force-${stampNow()}.patch`)
+    fs.writeFileSync(file, String(stdout), 'utf8')
+    return file
+  } catch (err) {
+    log.warn(`覆盖前备份本地改动失败（${err?.message || err}），继续覆盖`)
+    return ''
+  }
 }
 
 /**
@@ -164,7 +246,7 @@ function siteOf (url = '') {
  */
 function noGitText (dir) {
   return [
-    '这台机器上没有 git 命令，「#伊伊更新」用不了（每日自动更新也会直接跳过）。',
+    '这台机器上没有 git 命令，「#伊伊更新」用不了（自动更新也会直接跳过）。',
     '',
     `插件目录：${dir}`,
     '插件本身照常能用，只是没法一键更新。装好 git 之后再发一次「#伊伊更新」就行：',
@@ -190,7 +272,7 @@ function notRepoText (dir) {
     `   海外网络可以换 GitHub：${GITHUB_URL}`,
     '2. 保持现在的装法：去 Gitee 或 GitHub 下载最新压缩包解压覆盖，注意别删 config/，设置都在里面。',
     '',
-    '插件其余功能不受影响，只是「#伊伊更新」和每日自动更新都不会生效。'
+    '插件其余功能不受影响，只是「#伊伊更新」和自动更新都不会生效。'
   ].join('\n')
 }
 
@@ -406,19 +488,61 @@ async function fetchUpstream (cwd, remote, branch) {
 }
 
 /**
- * 检查并快进。ok 只管「命令跑成没跑成」：
- * 环境用不了（没装 git / 不是仓库 / 没配远程 / 游离 HEAD）= ok:false + blocked:true + 多行 reason；
- * 分叉 = ok:false + reason；没更新 = ok:true + updated:false。
+ * 强制覆盖：`git reset --hard` 到上游，本地改动与本地提交一起丢掉。
  *
- * @param {{cwd?: string, pull?: boolean}} [opts] cwd 默认插件根；pull=false 只检查不合并
+ * 不 merge、不 rebase、不 clean —— 冲突无从谈起，这正是 `#伊伊强制更新` 存在的理由。
+ * 覆盖前先把已跟踪文件的改动存成补丁（见 `savePatch`），盖错了还能找回来。
+ *
+ * @param {{repo: string, target: string, base: object, dirty: Array<string>}} args 目标仓库 / 上游 ref / 公共字段 / 改过的文件
+ * @returns {Promise<object>} 与 `runPluginUpdate` 同形状，另加 forced / discarded / droppedCommits / patch / moved / subject
+ */
+async function forceOverwrite ({ repo, target, base, dirty }) {
+  let subject = ''
+  try {
+    subject = await git(['log', '--format=%h %s', '--no-merges', '-1', target], repo)
+  } catch { /** 取不到提交说明不影响覆盖，回执里少一行而已 */ }
+
+  const patch = dirty.length ? await savePatch(repo) : ''
+  try {
+    await git(['reset', '--hard', target], repo)
+  } catch (err) {
+    return { ...base, ok: false, forced: true, conflict: dirty, reason: `覆盖失败：${gitReason(err)}` }
+  }
+
+  const head = await git(['rev-parse', 'HEAD'], repo)
+  return {
+    ...base,
+    ok: true,
+    forced: true,
+    /** 版本没动但本地改动被还原了，对外也算「变了」—— 回执不能只说「已经是最新」 */
+    updated: head !== base.before || dirty.length > 0,
+    moved: head !== base.before,
+    after: head,
+    incoming: base.behind,
+    subject,
+    discarded: dirty.length,
+    droppedCommits: base.ahead,
+    patch
+  }
+}
+
+/**
+ * 检查并快进；`force: true` 时改成直接覆盖。ok 只管「命令跑成没跑成」：
+ * 环境用不了（没装 git / 不是仓库 / 没配远程 / 游离 HEAD）= ok:false + blocked:true + 多行 reason；
+ * 分叉 / 本地改动挡住 = ok:false + reason（冲突时带上 `conflict` 文件表）；没更新 = ok:true + updated:false。
+ *
+ * @param {{cwd?: string, pull?: boolean, force?: boolean}} [opts] cwd 默认插件根；
+ *   `pull:false` 只检查不合并；`force:true` 丢弃本地改动直接覆盖上游（`#伊伊强制更新` 那条路）
  * @returns {Promise<{ok: boolean, updated: boolean, blocked?: boolean, repo?: string|null,
  *   inside?: string|null, branch?: string|null, remote?: string, url?: string, site?: string,
  *   label?: string, official?: boolean, source?: string, upstream?: string, before?: string,
  *   after?: string, upstreamSha?: string, ahead?: number, behind?: number, incoming?: number,
- *   subject?: string, mirror?: string, pending?: number, reason?: string}>}
+ *   subject?: string, mirror?: string, pending?: number, forced?: boolean, moved?: boolean,
+ *   conflict?: Array<string>, discarded?: number, droppedCommits?: number, patch?: string,
+ *   reason?: string}>}
  *   blocked:true 时 reason 是给用户看的完整说明（多行），其余情况 reason 是一句话
  */
-export async function runPluginUpdate ({ cwd = rootDir, pull = true } = {}) {
+export async function runPluginUpdate ({ cwd = rootDir, pull = true, force = false } = {}) {
   const env = await probeUpdateSource({ cwd })
   if (!env.ok) return { ok: false, updated: false, ...env }
 
@@ -445,16 +569,50 @@ export async function runPluginUpdate ({ cwd = rootDir, pull = true } = {}) {
   const behind = Number(await git(['rev-list', '--count', `HEAD..${target}`], repo)) || 0
   const base = { ...env, ok: true, updated: false, upstream: target, before, after: before, upstreamSha, ahead, behind, mirror }
 
+  const dirty = await dirtyFiles(repo)
+
+  if (force) return await forceOverwrite({ repo, target, base, dirty })
+
   if (!behind) return { ...base, reason: ahead ? `本地比上游多 ${ahead} 个提交` : '' }
-  if (ahead) return { ...base, ok: false, reason: `本地有 ${ahead} 个提交、上游有 ${behind} 个，分叉了；自动更新只做快进，请手动处理` }
+  if (ahead) {
+    return {
+      ...base,
+      ok: false,
+      reason: `本地有 ${ahead} 个提交、上游有 ${behind} 个，分叉了；自动更新只做快进，要丢掉本地提交直接覆盖就发「#伊伊强制更新」`
+    }
+  }
 
   const subject = await git(['log', '--format=%h %s', '--no-merges', '-1', `HEAD..${target}`], repo)
-  if (!pull) return { ...base, pending: behind, subject }
+
+  /**
+   * 「本地改动挡住了更新」：本地改过的文件，上游这一趟也改了 —— 快进要覆盖它们，git 会直接拒。
+   * 只有交集才算冲突：本地改的文件上游没动，快进照样能过去，不该吓用户。
+   */
+  const changed = await upstreamChanged(repo, target)
+  const conflict = dirty.filter(file => changed.includes(file))
+
+  if (!pull) return { ...base, pending: behind, subject, conflict: conflict.length ? conflict : undefined }
+  if (conflict.length) {
+    return {
+      ...base,
+      ok: false,
+      subject,
+      conflict,
+      reason: `本地改动挡住了更新：${conflict.join('、')}；发「#伊伊强制更新」丢弃本地改动直接覆盖`
+    }
+  }
 
   try {
     await git(['merge', '--ff-only', target], repo)
   } catch (err) {
-    return { ...base, ok: false, subject, reason: `合并失败：${gitReason(err)}` }
+    return {
+      ...base,
+      ok: false,
+      subject,
+      /** 报错里没细说，但工作区确实脏：按冲突算，自动更新才会通知并静默，而不是每 10 分钟干撞一次 */
+      conflict: dirty.length ? dirty : undefined,
+      reason: `合并失败：${gitReason(err)}（本地改动挡着的话，发「#伊伊强制更新」直接覆盖）`
+    }
   }
 
   const head = await git(['rev-parse', 'HEAD'], repo)
@@ -541,53 +699,141 @@ export function restartYunzai () {
   return 'Bot.restart()'
 }
 
+/** 间隔的合法范围，单位分钟：1 分钟已经比 git 服务商舒服的上限还快，一天当上限 */
+const UPDATE_INTERVAL_MIN = 1
+const UPDATE_INTERVAL_MAX = 1440
+
 /**
- * 把「HH:MM」翻成当天第几分钟。
+ * 把配置里「隔几分钟查一次」翻成数字。
  *
- * @param {string} [text] 时间文本，默认取配置里的更新时间
- * @returns {number|null} 0–1439；认不出来回 null
+ * @param {string|number} [text] 间隔原文，默认取配置里的更新间隔
+ * @returns {number|null} 1–1440 的整数分钟；认不出来（不是数字 / 越界）回 null
  */
-export function parseUpdateTime (text = Config.pluginAutoUpdateTime) {
-  return parseClock(text)
+export function parseUpdateInterval (text = Config.pluginAutoUpdateInterval) {
+  const num = Number(String(text ?? '').trim())
+  if (!Number.isFinite(num)) return null
+  const minutes = Math.round(num)
+  if (minutes < UPDATE_INTERVAL_MIN || minutes > UPDATE_INTERVAL_MAX) return null
+  return minutes
 }
 
 /**
- * 反过来：分钟数 → `HH:MM`，回执与日志统一用它。
+ * 反过来：分钟数 → 人话的间隔，启动日志与状态统一用它。
  *
- * @param {string} [text] 时间文本，默认取配置里的更新时间
- * @returns {string} `HH:MM`；认不出来回空串
+ * @param {string|number} [text] 间隔原文，默认取配置里的更新间隔
+ * @returns {string} 形如 `10 分钟`；认不出来回空串
  */
-export function formatUpdateTime (text = Config.pluginAutoUpdateTime) {
-  return formatClock(parseUpdateTime(text))
+export function formatUpdateInterval (text = Config.pluginAutoUpdateInterval) {
+  const minutes = parseUpdateInterval(text)
+  return minutes == null ? '' : `${minutes} 分钟`
 }
 
-/** 每日自动更新：判断「今天到点没有、今天跑过没有」都交给 createAutoTask */
-const autoUpdate = createAutoTask({
+/** 上一次「没什么可干」的结论：同一句话只报一次，不然每十分钟一条能把日志刷爆 */
+let lastQuietNote = ''
+
+/** 本地改动与上游撞车之后静默多久：12 小时（冲突不会因为多查几遍自己消失） */
+const CONFLICT_HOLD_MS = 12 * 60 * 60 * 1000
+/** 上面那个时长的说法，日志和私聊里都用它，别两处硬编码 */
+const CONFLICT_HOLD_TEXT = '12 小时'
+
+/**
+ * 静默到什么时候（毫秒时间戳），0 = 没静默。
+ *
+ * 只在「本地改动和上游改到同一个文件」时写：那一刻机器再勤快也没用，得人来决定留哪边。
+ * 主人手动跑 `#伊伊更新` / `#伊伊强制更新`、或者静默期满后又跑通了，都立刻解除。
+ */
+let holdUntil = 0
+
+/**
+ * 现在是不是在静默期里 —— 状态面板与闸门用。
+ *
+ * @returns {number} 静默到的时间戳（毫秒）；0 = 没静默
+ */
+export function updateHoldUntil () {
+  return holdUntil
+}
+
+/**
+ * 手动更新之后解除静默（手动就是「我已经处理过了」，没必要再等满 12 小时）。
+ *
+ * @returns {void}
+ */
+export function resetUpdateHold () {
+  holdUntil = 0
+}
+
+/**
+ * 同一句提示只报首次（结论变了才再说一次）。
+ *
+ * 轮询是常驻的：不是 git 仓库、上游拉不动这类毛病会一直存在，每圈都喊一遍等于刷屏。
+ * 更新成功或恢复正常时把记忆清掉，下次真出问题还会再报。
+ *
+ * @param {string} note 这一次的结论（当去重 key 用）
+ * @param {'info'|'mark'|'warn'} level 日志级别
+ * @param {string} text 真要写进日志的那一句
+ * @returns {void}
+ */
+function noteOnce (note, level, text) {
+  if (note === lastQuietNote) return
+  lastQuietNote = note
+  if (level === 'warn') log.warn(text)
+  else if (level === 'mark') log.mark(text)
+  else log.info(text)
+}
+
+/** 每隔 N 分钟看一眼上游：有新提交就快进并重启，没有就一句都不写 */
+const autoUpdate = createIntervalTask({
   enabled: () => Config.pluginAutoUpdate,
-  timeText: () => Config.pluginAutoUpdateTime,
-  parseTime: () => parseUpdateTime(),
-  formatTime: () => formatUpdateTime(),
+  intervalText: () => Config.pluginAutoUpdateInterval,
+  parseInterval: () => parseUpdateInterval(),
+  formatInterval: () => formatUpdateInterval(),
   disabledReason: '自动更新已关闭',
-  timeLabel: '更新时间',
-  sameDayReason: '今天已经检查过',
+  intervalLabel: '更新间隔',
   startLabel: '插件自动更新',
+  holdUntil: () => holdUntil,
+  holdLabel: '本地改动挡住了更新',
   log,
-  status: () => ({ repos: UPDATE_REPOS }),
+  status: () => ({ repos: UPDATE_REPOS, holdUntil }),
   run: async ({ cwd = rootDir } = {}) => {
     const ret = await runPluginUpdate({ cwd })
+
+    /**
+     * 撞上了：本地改过的文件，上游这一趟也改了。快进会盖掉主人的改动，自动这条路不该替他决定，
+     * 于是报一次、静默 12 小时 —— 期间一次 git 都不跑，免得每十分钟撞一次墙。
+     */
+    if (ret.conflict?.length) {
+      holdUntil = Date.now() + CONFLICT_HOLD_MS
+      const files = ret.conflict.map(file => `  ${file}`).join('\n')
+      log.warn(`自动更新跳过：本地改动与上游撞车（${ret.conflict.join('、')}），${CONFLICT_HOLD_TEXT}内不再检查`)
+      await notifyUpdateMaster(
+        `「${pluginTitle}」自动更新卡住了：下面这些文件你改过、上游也改了，我没敢动：\n\n${files}\n\n` +
+        `${ret.subject ? `上游最新：${ret.subject}\n\n` : ''}` +
+        '想保留自己的改动：先提交或挪开，让我能快进。\n' +
+        '想直接要上游版本：发「#伊伊强制更新」，覆盖前我会把改动存成补丁。\n\n' +
+        `接下来 ${CONFLICT_HOLD_TEXT}先不查上游了，免得反复撞；这期间手动更新照常能用。`
+      )
+      return { ...ret, holdUntil }
+    }
+
+    /** 没撞车就说明冲突过去了（或压根没有），静默自然解除 */
+    holdUntil = 0
+
     if (!ret.ok) {
       if (ret.blocked) {
-        log.mark(`跳过自动更新：${String(ret.reason).split('\n')[0]}`)
+        const head = String(ret.reason).split('\n')[0]
+        noteOnce(`blocked:${head}`, 'mark', `跳过自动更新：${head}`)
         return { ...ret }
       }
-      log.warn(`自动更新失败：${ret.reason}`)
+      noteOnce(`fail:${ret.reason}`, 'warn', `自动更新失败：${ret.reason}`)
       return { ...ret }
     }
     if (!ret.updated) {
-      log.mark('上游没有更新，静默')
+      /** 「上游没变动」是常态（每十分钟一次），静默；状态里的 lastAt 能看出还在查 */
+      lastQuietNote = ''
       return { ...ret }
     }
 
+    lastQuietNote = ''
     log.mark(`插件已更新：${ret.subject || shortSha(ret.after)}`)
     const willRestart = canRestartYunzai()
     await notifyUpdateMaster(
@@ -604,9 +850,9 @@ const autoUpdate = createAutoTask({
   }
 })
 
-/** 立刻跑一次自动更新（闸门用，跳过时间判断）。 */
+/** 立刻跑一次自动更新（闸门用；`{ force: true }` 跳过间隔判断）。 */
 export const runAutoUpdate = autoUpdate.run
-/** 起每日定时检查。 */
+/** 起轮询检查（每 N 分钟，N 取配置）。 */
 export const startUpdateCheck = autoUpdate.start
 /** 停掉定时检查。 */
 export const stopUpdateCheck = autoUpdate.stop
