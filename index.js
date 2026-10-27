@@ -19,7 +19,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { appsDir, createLogger, emoji, version, author, group } from '#yiyi.utils'
+import { appsDir, createLogger, emoji, version, author, group, pluginName } from '#yiyi.utils'
 
 const log = createLogger()
 
@@ -43,8 +43,12 @@ for (const file of listApps()) {
 }
 
 log.mark(`伊伊插件v${version}载入成功${emoji()}~`)
-log.mark(`Created By ${author}.`)
-log.mark(`闲聊群：${group}.`)
+/**
+ * `author` / `group` 取自 package.json，写了对象或干脆没写都可能：
+ * 横幅是「插件起来了」的信号，缺字段时给个兜底，别让用户看见 `Created By .` 或 `undefined`。
+ */
+log.mark(`Created By ${author || pluginName}.`)
+log.mark(`闲聊群：${group || '—'}.`)
 log.mark('-----------------')
 
 /**

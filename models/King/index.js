@@ -56,6 +56,7 @@ export { plain, toId, toNum, toMs, compact, setTrue } from './core/schema-base.j
 export { normalizePush, pushToDisk, normalizeWatch, watchToDisk, normalizeAlert, alertToDisk, normalizeReport, reportToDisk, normalizeGroupPush, groupPushToDisk } from './core/schema-push.js'
 export { normalizeRankRow, rankRowToDisk, normalizeHiddenEntry, hiddenToDisk, normalizeBlacklistEntry, blacklistToDisk } from './core/schema-rows.js'
 export { KING_DIRS, KING_FILES, USER_PARTS, GROUP_PARTS, ROLE_BLOCK_OF_PART, accountToDisk, normalizeAccount, authFromDoc, authToDisk, normalizeBind, bindToDisk, emptyRoleBlocks, rolesToMemory, rolesToDisk, rolesMemoryToDisk, roleBlockMemory, rolesWithBlock } from './core/schema.js'
+export { settleLoginAccount } from './login/bind.js'
 export { encryptRsaChunked, randomDigits, sha1Hex } from './login/device.js'
 export { ensureSubForUser, seedCursor } from './push/sub.js'
 export { rankView, rankSectionLabel, rankSections } from './view/rank.js'

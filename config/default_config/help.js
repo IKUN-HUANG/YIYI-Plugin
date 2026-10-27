@@ -75,8 +75,8 @@ export const helpList = [
       { icon: 'Help/emoji-disabled.svg', title: '#伊伊禁用表情', desc: '禁用或恢复表情，如「#伊伊禁用表情 摸头」' },
       { icon: 'Help/anti.svg', title: '#伊伊反制', desc: '主人反制开关，如「#伊伊反制开启」或「#伊伊反制关闭」，写「开 / 关」也认' },
       { icon: 'Help/anti-emoji.svg', title: '#伊伊反制表情', desc: '哪些表情才反制；清空就全反制' },
-      { icon: 'Help/update.svg', title: '#伊伊更新', desc: '检查更新，只有主人能用，更完自动重启' },
-      { icon: 'Help/force-update.svg', title: '#伊伊强制更新', desc: '本地改过东西也能拉：直接拿上游覆盖，覆盖前把改动存成补丁' }
+      { icon: 'Help/update.svg', title: '#伊伊更新', desc: '检查更新，只有主人和作者能用，更完自动重启' },
+      { icon: 'Help/force-update.svg', title: '#伊伊强制更新', desc: '本地改过东西也能拉：直接拿上游覆盖，覆盖前存补丁；只有主人和作者能用' }
     ]
   }
 ]

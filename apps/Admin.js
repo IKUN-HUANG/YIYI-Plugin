@@ -8,7 +8,7 @@
 import path from 'node:path'
 import { createLogger, pluginTitle, version, yunzai, rootDir } from '#yiyi.utils'
 import { render, Config } from '#yiyi.components'
-import { extractMsgId, extractSrcId, loadChangelog, loadHelpConfig, loadHelpBg, persistBg, takeCachedBg, highlightCmds, settingsGroups, settingRest, matchSetting, writeSetting, settingUsage, settingApplied, GROUP_CMD_RE, findGroupCmd, groupIndex, GROUP_CMDS, LIST_CMD_RE, findListCmd, updateMasterList, runPluginUpdate, probeUpdateSource, resetUpdateHold, updateCheckingText, canRestartYunzai, restartYunzai, startUpdateCheck, shortSha } from '#yiyi.models'
+import { extractMsgId, extractSrcId, loadChangelog, loadHelpConfig, loadHelpBg, persistBg, takeCachedBg, highlightCmds, settingsGroups, settingRest, matchSetting, writeSetting, settingUsage, settingApplied, GROUP_CMD_RE, findGroupCmd, groupIndex, GROUP_CMDS, LIST_CMD_RE, findListCmd, updateMasterList, runPluginUpdate, probeUpdateSource, resetUpdateHold, updateCheckingText, canRestartYunzai, restartYunzai, startUpdateCheck, shortSha, isPluginMaster, masterOnlyText } from '#yiyi.models'
 
 const log = createLogger('管理')
 
@@ -158,7 +158,7 @@ export class Admin extends plugin {
    * @returns {Promise<*>} e.reply 的结果
    */
   async update (e) {
-    if (!e.isMaster) return e.reply('只有主人可以使用「#伊伊更新」哦')
+    if (!isPluginMaster(e)) return e.reply(masterOnlyText('#伊伊更新'))
     updateMasterList(e)
 
     const env = await probeUpdateSource()
@@ -204,7 +204,7 @@ export class Admin extends plugin {
    * @returns {Promise<*>} e.reply 的结果
    */
   async forceUpdate (e) {
-    if (!e.isMaster) return e.reply('只有主人可以使用「#伊伊强制更新」哦')
+    if (!isPluginMaster(e)) return e.reply(masterOnlyText('#伊伊强制更新'))
     updateMasterList(e)
 
     const env = await probeUpdateSource()

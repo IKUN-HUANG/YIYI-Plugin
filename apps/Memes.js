@@ -7,7 +7,7 @@
  */
 import { createLogger, pluginTitle, version, yunzai, qqAllRe } from '#yiyi.utils'
 import { render, Config } from '#yiyi.components'
-import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
+import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
 
 const log = createLogger('表情包')
 
@@ -192,7 +192,7 @@ export class Memes extends plugin {
 
   async update (e) {
     if (!this.memeOn) return false
-    if (!e.isMaster) return false
+    if (!isPluginMaster(e)) return e.reply(masterOnlyText('#表情更新'))
 
     await e.reply('正在同步Memes服务端表情~', true)
     const ret = await updateMemeData({
@@ -368,12 +368,8 @@ async function bootMemes () {
   if (!Config.memesEnable) return
 
   startMemeAutoUpdate()
-  if (hasMemeData()) return
-
-  log.mark(`本地还没有表情数据，开始在后台从 ${Config.memesApiUrl} 同步`)
-  const ret = await ensureMemeData()
-  if (ret.ok) log.mark(`表情数据同步完成：共 ${ret.total} 个表情`)
-  else log.warn(`表情数据同步失败：${ret.reason}`)
+  /** 数据没跟着插件走：加载完先看一眼本地有没有，没有就自己拉，别让用户等到手动发「#表情更新」 */
+  await bootMemeSync()
 }
 
 void bootMemes()

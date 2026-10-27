@@ -207,6 +207,8 @@ export async function updateMemeData ({ onProgress } = {}) {
 
 /** 同一时刻只允许一个拉取进程（多人同时触发不会把接口打两遍） */
 const PULL_RETRY_MS = 5 * 60 * 1000
+/** 启动同步失败后等多久再撞一次（单位毫秒）：接口抽风时给个缓机，别连着打两遍 */
+const BOOT_RETRY_MS = 10 * 1000
 let pulling = null
 let failedAt = 0
 let failedReason = ''
@@ -252,6 +254,38 @@ function pullMemeData ({ onProgress, force = false } = {}) {
 export async function ensureMemeData ({ onProgress } = {}) {
   if (hasMemeData()) return { ok: true, cached: true }
   return pullMemeData({ onProgress })
+}
+
+/**
+ * 启动时同步：表情数据不随插件发布，插件加载完发现有功能但没数据就自己拉一份，
+ * 不让用户等到手动发「#表情更新」。
+ *
+ * 接口偶尔抽风，失败后再撞一次（隔 `BOOT_RETRY_MS`），两次都失败才放弃并在日志里留话 ——
+ * 表情功能不会因此停摆，第一次用到表情时 `ensureMemeData()` 还会再兜一次。
+ *
+ * @returns {Promise<{ok: boolean, cached?: boolean, total?: number, reason?: string}>} 结果
+ */
+export async function bootMemeSync () {
+  if (!Config.memesEnable) return { ok: false, reason: '表情功能已关闭' }
+  if (hasMemeData()) return { ok: true, cached: true }
+  if (isMemePulling()) return { ok: false, reason: '已经在同步了' }
+
+  log.mark(`本地还没有表情数据（${memeDir}），启动后自动从 ${Config.memesApiUrl} 同步`)
+  let ret = await pullMemeData()
+
+  /** `recent` = 刚失败过还在冷却里，这时别干等，直接算失败 */
+  if (!ret.ok && !ret.recent) {
+    log.warn(`启动同步失败：${ret.reason}，${Math.round(BOOT_RETRY_MS / 1000)} 秒后重试一次`)
+    await new Promise(resolve => {
+      setTimeout(resolve, BOOT_RETRY_MS).unref?.()
+    })
+    ret = await pullMemeData({ force: true })
+  }
+
+  if (ret.ok) log.mark(`启动同步完成：共 ${ret.total} 个表情`)
+  else log.warn(`启动同步失败：${ret.reason}（可以发「#表情更新」手动重试）`)
+
+  return ret
 }
 
 /**
