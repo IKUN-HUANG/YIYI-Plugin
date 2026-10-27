@@ -177,7 +177,7 @@ export const REPORT_LABEL_OF = { daily: '日报', weekly: '周报', monthly: '�
  * 几个角色就都去查同一个主页，自然拿到同一份战绩、同一份上下线时刻（三个角色各 30 局、16 胜 14 负一模一样）。
  */
 export const ROLE_STATE_KEYS = [
-  'campId', 'roleId', 'roleName', 'campUserId',
+  'campId', 'roleId', 'roleName', 'campUserId', 'campAccount',
   'lastGameSeq', 'lastGameTime', 'lastOnlineState', 'lastGaming', 'lastGamingStart', 'lastGamingHero',
   'lastStreak', 'pendingDetail', 'skipTicks', 'idleSince', 'roles', 'unavailable', 'invalidReason'
 ]
@@ -243,6 +243,37 @@ export function extraRoleSubs (qq, sub = {}) {
   return out
 }
 
+/** 账号级开局游标最多留几项，超了先淘汰最老的 */
+const GAMING_SEEN_MAX = 8
+
+/**
+ * 记一笔「这个营地账号的这一局已经播报过」。
+ *
+ * 游标挂在订阅顶层而不是角色状态里：同一账号下几个角色拿到的是同一份账号级 `isGaming`，
+ * 谁先看到都算数，剩下那几个（跳圈没查、下一圈才查）靠它认出「这一局已经报过」，不再各报一遍、
+ * 也不用把别人的 `lastGamingStart` 覆盖掉。
+ * @param {object} owner 订阅记录（顶层的那个）
+ * @param {string} [account] 这一圈实际用的营地号
+ * @param {string} [start] 开局标识（`gaming.dtEventTime`）
+ * @returns {boolean 记没记上}
+ */
+function stampGamingSeen (owner, account = '', start = '') {
+  if (!owner || typeof owner !== 'object') return false
+  const camp = toText(account)
+  const key = toText(start)
+  if (!camp || !key) return false
+  const map = owner.gamingSeen && typeof owner.gamingSeen === 'object' && !Array.isArray(owner.gamingSeen)
+    ? { ...owner.gamingSeen }
+    : {}
+  /** 同账号覆盖后重新插到末尾，淘汰时才先掉最久没动过的那个 */
+  delete map[camp]
+  map[camp] = key
+  const keys = Object.keys(map)
+  for (const old of keys.slice(0, Math.max(0, keys.length - GAMING_SEEN_MAX))) delete map[old]
+  owner.gamingSeen = map
+  return true
+}
+
 /**
  * 把这一圈算出来的状态写回存档：额外角色的写进 sub.roles[campId]，主角色的整条覆盖（存档结构没变）。
  *
@@ -255,10 +286,18 @@ export function extraRoleSubs (qq, sub = {}) {
 export function applyPushPatch (data, qq, sub = {}, patch = {}) {
   const id = toText(qq)
   if (!id || !data?.pushList) return false
-  const { __extra, ...clean } = patch
+  /** `gamingSeen` 是账号级游标、`campAccount` 是这一圈实际用的营地号：都只挂在订阅顶层，不写进角色状态 */
+  const { __extra, gamingSeen, campAccount, ...clean } = patch
 
   if (!sub.__extra) {
-    data.pushList[id] = { ...clean }
+    const kept = data.pushList[id] && typeof data.pushList[id] === 'object' ? data.pushList[id].gamingSeen : null
+    const next = { ...clean }
+    /** 以盘上的为准：同一圈里别的角色可能刚记过一笔，别拿这一圈开头的快照把它盖回去 */
+    const seen = (kept && typeof kept === 'object' && !Array.isArray(kept) ? kept : null) ||
+      (gamingSeen && typeof gamingSeen === 'object' && !Array.isArray(gamingSeen) ? gamingSeen : null)
+    if (seen && Object.keys(seen).length) next.gamingSeen = { ...seen }
+    data.pushList[id] = next
+    stampGamingSeen(next, campAccount, clean.lastGamingStart)
     return true
   }
 
@@ -269,5 +308,6 @@ export function applyPushPatch (data, qq, sub = {}, patch = {}) {
   const roles = owner.roles && typeof owner.roles === 'object' ? { ...owner.roles } : {}
   roles[campId] = { ...clean }
   owner.roles = roles
+  stampGamingSeen(owner, campAccount, clean.lastGamingStart)
   return true
 }

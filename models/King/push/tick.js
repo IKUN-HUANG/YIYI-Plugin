@@ -155,17 +155,22 @@ async function collectSubs (data, baseSubs) {
  */
 async function readOnline ({ qq, campId, accountId, campUserId, targetRoleId, onlineOn }) {
   /** 这一圈实际拿去查的营地号：跟存档里不一样就写回去，别每圈都重新认一遍 */
-  const blank = { hidden: false, state: null, liveName: '', usedCamp: toText(campUserId) }
+  const blank = { hidden: false, state: null, liveName: '', usedCamp: toText(campUserId), playing: { roleId: '', roleName: '' } }
   if (!onlineOn) return blank
 
   const state = await fetchOnlineState(campId, accountId, campUserId, targetRoleId, qq)
   if (state === HIDDEN) return { ...blank, hidden: true }
   const usedCamp = toText(state?.campUserId) || blank.usedCamp
   const liveName = cleanName(state?.roleName)
+  /**
+   * 「账号里谁在打」单独带出去：这一位自己离线时 `state` 会被当成没信号丢掉（下面那行），
+   * 但开局署名与观战要的正是**别人的**名字 —— 跟着 state 一起丢就白认了。
+   */
+  const playing = { roleId: toText(state?.playingRoleId), roleName: cleanName(state?.playingRoleName) }
   /** 刷新到的角色名最准：回写缓存，并把绑定里缺名字的老数据补上 */
   if (liveName && qq) rememberCampRoleName(qq, targetRoleId || campId, { roleName: liveName, accountId })
   /** 拿不到有效在线信号就当没状态，别把半截数据当「在线」推出去 */
-  return { hidden: false, state: state && hasOnlineSignal(state) ? state : null, liveName, usedCamp }
+  return { hidden: false, state: state && hasOnlineSignal(state) ? state : null, liveName, usedCamp, playing }
 }
 
 /**
@@ -274,21 +279,30 @@ async function checkOneSub ({ qq, raw, now, round, maxMultiplier }) {
   if (battle.hidden) return { status: 'failed', hide: true, sub, campId }
 
   const knownName = online.liveName || campRoleName(qq, targetRoleId || campId)
-  const { rows, details, patch } = planPush(sub, { state: online.state, info: battle.info, now, maxMultiplier, name: knownName, qq })
-  /** 认出来的营地号跟存档里不一样（换过号 / 老数据写错）就写回去，下一圈直接用 */
-  const usedCamp = online.usedCamp
-  if (usedCamp && usedCamp !== toText(sub.campUserId)) patch.campUserId = usedCamp
-
-  if (!rows.length && !details.length) return { status: 'applied', sub, patch }
-  const watchJob = watchJobOf({ groupId, qq, campId, campUserId, rows, patch })
   /**
-   * 这一位实际上是哪个**营地账号**（不是角色）：开局行去重就认它。
+   * 这一位实际上是哪个**营地账号**（不是角色）：开局去重、开局游标、观战链接都认它。
    *
    * 额外角色的 `campUserId` 是故意留空的（留空才不会几个角色查到同一份主页），
    * 所以这里得另找一份账号级的 ID：这一圈真拿去查的那个 → 存档里的 → 本地推断的。
    * 一个账号下挂几个角色时它们拿到的是同一份账号级 `isGaming`，得靠这个键才能合成一条。
    */
-  const campAccount = toText(usedCamp) || toText(campUserId) || accountCampOf(campId, qq)
+  const campAccount = toText(online.usedCamp) || toText(campUserId) || accountCampOf(campId, qq)
+  /** 账号下真在打的那位（可能不是本次查的这一位，见 state.js 的 playingRoleOf） */
+  const playingName = toText(online.playing?.roleName)
+  const playingRoleId = toText(online.playing?.roleId)
+  const { rows, details, patch } = planPush(sub, { state: online.state, info: battle.info, now, maxMultiplier, name: knownName, qq, account: campAccount, playingName })
+  /** 认出来的营地号跟存档里不一样（换过号 / 老数据写错）就写回去，下一圈直接用 */
+  const usedCamp = online.usedCamp
+  if (usedCamp && usedCamp !== toText(sub.campUserId)) patch.campUserId = usedCamp
+  /** 开局游标要落到账号级：同一账号下别的角色（下一圈才轮到）靠它认出「这一局已经播报过」 */
+  patch.campAccount = campAccount
+
+  if (!rows.length && !details.length) return { status: 'applied', sub, patch }
+  /**
+   * 观战要的是**营地号**：额外角色的 `campUserId` 是空的，直接回退成 campId 会让 `probeFriend`
+   * 拿角色 ID 当好友 ID 去查，永远「不是他的好友」——链接就这么丢了。所以这里显式给账号号。
+   */
+  const watchJob = watchJobOf({ groupId, qq, campId: playingRoleId || campId, campUserId: campAccount || campUserId, rows, patch, who: playingName || patch.roleName })
   /** sendable：这一位在本群确实有能用的推送账号，同局出图时才有资格当主体 */
   /** 攒群不在这里做：并发查完之后由主流程按原顺序攒，群里的行才不会因为谁先查完而乱序 */
   return {

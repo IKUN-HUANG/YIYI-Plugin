@@ -139,9 +139,10 @@ function watchSleep (ms) {
  * @param {string} [campUserId=""]
  * @param {Array<object>} [rows]
  * @param {object} [patch]
+ * @param {string} [who] 卡片上署的那个角色名（账号下真在打的那位，可能不是本次查的这一位）
  * @returns {object|null 轮询计划；没有可播链接时回 null}
  */
-export function watchJobOf ({ groupId = '', qq = '', campId = '', campUserId = '', rows = [], patch = {} } = {}) {
+export function watchJobOf ({ groupId = '', qq = '', campId = '', campUserId = '', rows = [], patch = {}, who = '' } = {}) {
   const group = toText(groupId)
   const role = toText(campId)
   if (!group || !role) return null
@@ -154,7 +155,7 @@ export function watchJobOf ({ groupId = '', qq = '', campId = '', campUserId = '
     groupId: group,
     campId: role,
     campUserId: toText(campUserId) || role,
-    who: normalizeName(patch?.roleName) || '群友'
+    who: normalizeName(who) || normalizeName(patch?.roleName) || '群友'
   }
 }
 

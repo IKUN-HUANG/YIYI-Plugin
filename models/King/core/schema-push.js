@@ -39,6 +39,34 @@ const PUSH_NUM_STATE = new Set([
 
 const PUSH_TEXT_STATE = new Set(['lastGamingHero', 'unavailableReason', 'invalidReason'])
 
+/** 账号级开局游标最多记这么多个营地账号：超了先淘汰最老的（一个 QQ 名下不会有几十个营地号） */
+const GAMING_SEEN_MAX = 8
+
+/**
+ * 账号级「这一局已经播报过」的游标 —— 只挂在订阅顶层，不进角色状态。
+ *
+ * 为什么要单独记一份：`/game/morebattlelist` 的 `isGaming` 是**营地账号级**的，一个账号底下几个角色
+ * 会各报同一场开局；只记在角色自己的 `lastGamingStart` 里，那个角色这一圈没轮到查（跳圈）就到下一圈
+ * 再报一遍，而且署名是它自己的角色名 —— 2026-10-27 群里那两张相隔 8 分钟、胜率场数一模一样的
+ * 「开局提醒」（owo阿尼亚 / 星辰、旧梦）就是这么来的。
+ * @param {*} src 订阅原始记录
+ * @returns {{[营地号: string]: string}} 营地号 → 开局标识
+ */
+function seenGamingOf (src) {
+  const raw = plain(plain(src)?.gamingSeen)
+  if (!raw) return {}
+  const out = {}
+  for (const [key, value] of Object.entries(raw)) {
+    const account = toId(key)
+    const start = toText(value).trim()
+    if (!account || !start) continue
+    out[account] = start
+  }
+  const keys = Object.keys(out)
+  for (const key of keys.slice(0, Math.max(0, keys.length - GAMING_SEEN_MAX))) delete out[key]
+  return out
+}
+
 /**
  * 落盘时：`campId` 写 `roleId`、`campUserId` 写 `camp`、`byUser` 不写（文件属主就是它）；
  * 额外角色只写角色级字段，不再重复群号与开关，也不再套一层 `roles`。
@@ -61,6 +89,8 @@ export function normalizePush (raw) {
     byUser: toId(src.byUser)
   }
   readState(src, sub)
+  const seenGaming = seenGamingOf(src)
+  if (Object.keys(seenGaming).length) sub.gamingSeen = seenGaming
 
   const extra = roleStatesOf(src.roles)
   if (Object.keys(extra).length) sub.roles = extra
@@ -139,6 +169,8 @@ export function pushToDisk (raw) {
   setTrue(out, 'battle', src.battle === true)
   setTrue(out, 'online', src.online === true)
   writeState(src, out)
+  const seenGaming = seenGamingOf(src)
+  if (Object.keys(seenGaming).length) out.gamingSeen = seenGaming
 
   const roles = {}
   for (const [campId, saved] of Object.entries(plain(src.roles) || {})) {

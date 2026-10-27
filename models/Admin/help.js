@@ -6,9 +6,14 @@
  * 迁移必须纯且可重入 —— 没迁过的原样返回，调用方靠 `===` 判断「没动」。
  *
  * 副作用：读写 config/config/help.js 与 .help_meta.json；取背景图会走网络。
+ *
+ * 两处都得盯住 Windows：菜单数据是**运行期**用 `import()` 读的绝对路径，
+ * 拼 `file://${路径}` 在 Windows 下会变成 `file://C:\...`（反斜杠没转义、盘符被当主机名），
+ * 只能 `pathToFileURL()`。
  */
 import path from 'node:path'
 import fs from 'node:fs'
+import { pathToFileURL } from 'node:url'
 import { rootDir, resourcesDir, loadBg, createLogger, cacheNamespace } from '#yiyi.utils'
 import { Config } from '#yiyi.components'
 
@@ -197,8 +202,9 @@ export function migrateKingHelpList (list, defList, refresh = false) {
  */
 export async function loadHelpConfig () {
   const useUser = fs.existsSync(USER_FILE)
-  const mod = await import(`file://${useUser ? USER_FILE : DEF_FILE}?t=${Date.now()}`)
-  const def = useUser ? await import(`file://${DEF_FILE}?t=${Date.now()}`) : mod
+  /** `?t=` 是给热重载用的：同一份 help.js 改了要能读到新内容（file:// 后面带 query 合法，Windows 也一样） */
+  const mod = await import(`${pathToFileURL(useUser ? USER_FILE : DEF_FILE).href}?t=${Date.now()}`)
+  const def = useUser ? await import(`${pathToFileURL(DEF_FILE).href}?t=${Date.now()}`) : mod
   const base = mod.helpCfg || def.helpCfg
   const kingRevision = Number(def.kingHelpRevision || 0)
   const refresh = useUser && kingHelpStale(kingRevision)
