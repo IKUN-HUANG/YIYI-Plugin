@@ -11,9 +11,13 @@
  *
  * 顺序就是依赖顺序（越靠前的越底层）。barrel 里也不要出现两个模块同名的导出——
  * 撞名时 ESM 谁都不导出，`check-imports` 会当场红。
+ *
+ * `Boot.js` 也摆在这一层：它只是「登记 + 排序执行」的中转，不认识任何业务，
+ * 谁想在插件载入完成后干活都往这里登记（见 `index.js` 横幅最后一行之后）。
  */
 export * from './Path.js'
 export * from './Logger.js'
+export * from './Boot.js'
 export * from './Version.js'
 export * from './Value.js'
 export * from './Async.js'

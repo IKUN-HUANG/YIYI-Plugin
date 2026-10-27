@@ -6,7 +6,7 @@
  * `#伊伊基础设置` 会被通用规则当成「项名 = 基础设置」处理掉。
  */
 import path from 'node:path'
-import { createLogger, pluginTitle, version, yunzai, rootDir } from '#yiyi.utils'
+import { createLogger, pluginTitle, version, yunzai, rootDir, afterLoaded } from '#yiyi.utils'
 import { render, Config } from '#yiyi.components'
 import { extractMsgId, extractSrcId, loadChangelog, loadHelpConfig, loadHelpBg, persistBg, takeCachedBg, highlightCmds, settingsGroups, settingRest, matchSetting, writeSetting, settingUsage, settingApplied, GROUP_CMD_RE, findGroupCmd, groupIndex, GROUP_CMDS, LIST_CMD_RE, findListCmd, updateMasterList, runPluginUpdate, probeUpdateSource, resetUpdateHold, updateCheckingText, canRestartYunzai, restartYunzai, startUpdateCheck, shortSha, isPluginMaster, masterOnlyText } from '#yiyi.models'
 
@@ -158,32 +158,34 @@ export class Admin extends plugin {
    * @returns {Promise<*>} e.reply 的结果
    */
   async update (e) {
-    if (!isPluginMaster(e)) return e.reply(masterOnlyText('#伊伊更新'))
+    /** 手动触发的一律**引用回复**（第二个参数 true）：群里问「更好了没」时能顺着原消息看到是回哪一句 */
+    if (!isPluginMaster(e)) return e.reply(masterOnlyText('#伊伊更新'), true)
     updateMasterList(e)
 
     const env = await probeUpdateSource()
     if (!env.ok) {
       log.warn(`「#伊伊更新」用不了：${String(env.reason).split('\n')[0]}`)
-      return e.reply(env.reason)
+      return e.reply(env.reason, true)
     }
 
-    await e.reply(updateCheckingText(env))
+    await e.reply(updateCheckingText(env), true)
     const ret = await runPluginUpdate()
 
     /** 主人自己动手了（而且成功了）：自动更新那边的静默立刻解除，不用干等满 12 小时 */
     if (ret.ok) resetUpdateHold()
 
-    if (!ret.ok) return e.reply(ret.blocked ? ret.reason : `更新失败：${ret.reason}`)
+    if (!ret.ok) return e.reply(ret.blocked ? ret.reason : `更新失败：${ret.reason}`, true)
     if (!ret.updated) {
       const ahead = ret.ahead ? `（本地还有 ${ret.ahead} 个提交）` : ''
-      return e.reply(`已经是最新版本了${ahead}`)
+      return e.reply(`已经是最新版本了${ahead}`, true)
     }
 
     log.mark(`手动更新：${ret.subject || shortSha(ret.after)}`)
-    const via = ret.mirror ? `\n原源拉不动，已换官方镜像：${ret.mirror}` : ''
+    const via = ret.mirror ? `\n[原源拉不动，已换官方镜像：${ret.mirror}]` : ''
     const willRestart = canRestartYunzai()
     await e.reply(
-      `已更新 ${ret.incoming} 个提交：\n${ret.subject || ''}\n${shortSha(ret.before)} → ${shortSha(ret.after)}${via}\n${willRestart ? '重启 Yunzai 中…' : '这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。'}`
+      `已更新 ${ret.incoming} 个提交：\n[${ret.subject || shortSha(ret.after)}]\n[${shortSha(ret.before)} → ${shortSha(ret.after)}]${via}\n${willRestart ? '开始重启Yunzai…' : '这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。'}`,
+      true
     )
     if (!willRestart) {
       log.warn('框架没给 Bot.restart()，不动进程，已提示主人手动重启')
@@ -204,21 +206,22 @@ export class Admin extends plugin {
    * @returns {Promise<*>} e.reply 的结果
    */
   async forceUpdate (e) {
-    if (!isPluginMaster(e)) return e.reply(masterOnlyText('#伊伊强制更新'))
+    /** 同 `#伊伊更新`：手动触发的回执一律引用回复 */
+    if (!isPluginMaster(e)) return e.reply(masterOnlyText('#伊伊强制更新'), true)
     updateMasterList(e)
 
     const env = await probeUpdateSource()
     if (!env.ok) {
       log.warn(`「#伊伊强制更新」用不了：${String(env.reason).split('\n')[0]}`)
-      return e.reply(env.reason)
+      return e.reply(env.reason, true)
     }
 
-    await e.reply(`强制更新：本地改过什么、多出几个提交都不管，直接拿上游版本覆盖${env.label ? `（${env.label}）` : ''}…`)
+    await e.reply(`强制更新：本地改过什么、多出几个提交都不管，直接拿上游版本覆盖${env.label ? `（${env.label}）` : ''}…`, true)
     const ret = await runPluginUpdate({ force: true })
     resetUpdateHold()
 
-    if (!ret.ok) return e.reply(ret.blocked ? ret.reason : `强制更新失败：${ret.reason}`)
-    if (!ret.moved && !ret.discarded) return e.reply('已经是最新版本，本地也没有改动，没什么可覆盖的')
+    if (!ret.ok) return e.reply(ret.blocked ? ret.reason : `强制更新失败：${ret.reason}`, true)
+    if (!ret.moved && !ret.discarded) return e.reply('已经是最新版本，本地也没有改动，没什么可覆盖的', true)
 
     const lines = [ret.moved ? `已覆盖到上游 ${shortSha(ret.after)}` : '代码本来就最新，只是把本地改动还原了']
     if (ret.moved && ret.subject) lines.push(ret.subject)
@@ -231,10 +234,10 @@ export class Admin extends plugin {
     const willRestart = canRestartYunzai()
     if (!willRestart) {
       log.warn('框架没给 Bot.restart()，不动进程，已提示主人手动重启')
-      return e.reply(`${lines.join('\n')}\n\n这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。`)
+      return e.reply(`${lines.join('\n')}\n\n这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。`, true)
     }
 
-    await e.reply(`${lines.join('\n')}\n\n重启 Yunzai 中…`)
+    await e.reply(`${lines.join('\n')}\n\n开始重启Yunzai…`, true)
     const how = restartYunzai()
     log.mark(`正在重启 Yunzai（${how}）`)
   }
@@ -372,4 +375,8 @@ export class Admin extends plugin {
   }
 }
 
-if (Config.pluginAutoUpdate) startUpdateCheck()
+/**
+ * 自动更新等「插件载入完成」再挂（`afterLoaded`）：定时器一挂就打一行启动日志，
+ * 模块顶层挂的话这行会挤在「已加载 Admin」中间，用户分不清插件到底起没起完。
+ */
+if (Config.pluginAutoUpdate) afterLoaded(startUpdateCheck)

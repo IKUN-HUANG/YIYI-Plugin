@@ -5,7 +5,7 @@
  * 只做三件事：认指令、调模型拿数据、回包（文本或一张卡）。
  * 所有判断/取数/文案都在 models/Memes.js 那一侧，这里不写业务规则。
  */
-import { createLogger, pluginTitle, version, yunzai, qqAllRe } from '#yiyi.utils'
+import { createLogger, pluginTitle, version, yunzai, qqAllRe, afterLoaded } from '#yiyi.utils'
 import { render, Config } from '#yiyi.components'
 import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
 
@@ -363,7 +363,10 @@ export class Memes extends plugin {
   }
 }
 
-/** 插件加载时把自动更新挂上；本地没数据就在后台先拉一份 */
+/**
+ * 插件载入完（横幅之后）把自动更新挂上；本地没数据就在后台先拉一份。
+ * 走 `afterLoaded()` 而不是模块顶层直接跑：那行启动日志要落在「载入成功」后面。
+ */
 async function bootMemes () {
   if (!Config.memesEnable) return
 
@@ -372,4 +375,4 @@ async function bootMemes () {
   await bootMemeSync()
 }
 
-void bootMemes()
+afterLoaded(bootMemes)
