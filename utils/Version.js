@@ -18,11 +18,40 @@ const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-
 /** 插件版本号（`#伊伊版本` 与页脚展示用） */
 export const version = pkg.version
 
-/** 插件作者（载入横幅的 Created By） */
-export const author = pkg.author
+/**
+ * 插件作者名（载入横幅的 `Created By`）。
+ *
+ * `package.json` 的 `author` 有两种合法写法：字符串，或 npm 惯用的 `{ name, url }` 对象。
+ * 横幅拿它拼模板字符串，直接塞对象就会打成 `Created By [object Object].`
+ * （v1.0.0 的线上横幅就是这个 bug），所以这里统一只取名字。
+ */
+export const author = (() => {
+  const a = pkg.author
+  if (typeof a === 'string') return a.trim()
+  if (Array.isArray(a)) {
+    const hit = a.find(x => typeof x === 'string') || a.find(x => x?.name)
+    return String(typeof hit === 'string' ? hit : hit?.name || '').trim()
+  }
+  return String(a?.name || '').trim()
+})()
 
 /** 闲聊群号（载入横幅最后一行） */
 export const group = pkg.qqGroup
+
+/**
+ * 作者 QQ（`package.json` 的 `qq` 字段；写单个、数组、数字都认，一个都认不出就回空数组）。
+ *
+ * 作者的号跟框架主人一样能用管理指令（`#伊伊更新`、`#伊伊强制更新`、`#表情更新`）：
+ * 换人只改 package.json，不用动代码。
+ *
+ * @type {string[]}
+ */
+export const authorQQ = (() => {
+  const raw = pkg.qq ?? pkg.author?.qq ?? []
+  return (Array.isArray(raw) ? raw : [raw])
+    .map(v => String(v ?? '').trim())
+    .filter(v => /^\d+$/.test(v))
+})()
 
 /** 已知宿主分支：靠 package.json 的 name 认，认不出再靠 `global.Bot.trsscfg` 兜 TRSS */
 const FLAVORS = [
@@ -91,4 +120,4 @@ export const yunzai = (() => {
  * 默认导出给想一次取全的地方用（barrel 只转 named，所以从 `#yiyi.utils` 取不到 default），
  * 场景里一般直接取具名导出；`raw` 是插件 package.json 原文。
  */
-export default { pluginName, version, author, group, yunzai, raw: pkg }
+export default { pluginName, version, author, authorQQ, group, yunzai, raw: pkg }
