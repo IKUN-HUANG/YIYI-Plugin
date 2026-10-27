@@ -15,9 +15,12 @@ import { isFlagOn } from './store.js'
  * 纯函数式的推送决策：把上下线、开局、结束、连击都算成推送行，同时给出下一圈该不该查、要查什么
  *
  * @param {object} [sub] 订阅记录
+ * @param {object} [opts] 这一圈的取数与归属
+ * @param {string} [opts.account] 这一圈实际用的营地号（账号级开局游标按它取，见 `gamingSeen`）
+ * @param {string} [opts.playingName] 账号下**真在打**的那个角色名（不是本次查的这一位时用它署名）
  * @returns {{messages: Array<object>, rows: Array<object>, details: Array<object>, patch: object} 要发的消息、卡片行、详情图、要写回的状态}
  */
-export function planPush (sub = {}, { state = null, info = null, now = Date.now(), maxMultiplier = IDLE_BACKOFF_MAX, name = '', qq = '' } = {}) {
+export function planPush (sub = {}, { state = null, info = null, now = Date.now(), maxMultiplier = IDLE_BACKOFF_MAX, name = '', qq = '', account = '', playingName = '' } = {}) {
   const battleOn = isFlagOn(sub, 'battle')
   const onlineOn = isFlagOn(sub, 'online')
   const messages = []
@@ -77,13 +80,29 @@ export function planPush (sub = {}, { state = null, info = null, now = Date.now(
   if (info && battleOn) {
     const gaming = Boolean(info.isGaming)
     const startKey = toText(info.gaming?.dtEventTime)
-    const seen = gaming && (startKey ? toText(sub.lastGamingStart) === startKey : toText(sub.lastGaming) === '1')
+    /**
+     * 「这一局报过没」看两处：这个角色自己的游标，和这个**营地账号**的游标。
+     * 后者才是关键：`isGaming` 是账号级的，一个账号下几个角色会各报同一场，而空闲角色是跳圈查的
+     * （每 5 圈一次），轮到它时局已经开了好几分钟，只有账号级游标能拦住这张「重复 + 署名认错」的卡。
+     */
+    const acctStart = toText(sub.gamingSeen?.[toText(account)])
+    const seen = gaming && (startKey ? toText(sub.lastGamingStart) === startKey || acctStart === startKey : toText(sub.lastGaming) === '1')
 
     /** 开局这条也只看 5v5 排位和巅峰赛：火焰山 / 娱乐 / 匹配 / 10v10 不推（进度照记，免得每轮重扫） */
     const rankedGaming = gaming && isRankedGaming(info.gaming || {})
+    /**
+     * 署名给**真在打的那位**，不是「这一圈轮到谁查」：`isGaming` 是账号级的，空闲角色跳圈查到它时
+     * 只知道「账号里有人在打」，照自己的名字报就是用户看到的「认不清角色」。认不出来才退回自己。
+     */
+    const signer = cleanName(playingName) || who
 
-    if (rankedGaming && !seen) messages.push(formatGamingText(info.gaming || {}, who))
-    if (rankedGaming && !seen) rows.push(gamingRow(info.gaming || {}, who))
+    if (rankedGaming && !seen) {
+      messages.push(formatGamingText(info.gaming || {}, signer))
+      const row = gamingRow(info.gaming || {}, signer)
+      /** 这一行的角色名先钉住，后面统一挂 QQ 与角色名时不再盖掉（见下方 rows 循环） */
+      row.role = signer
+      rows.push(row)
+    }
 
     patch.lastGaming = gaming ? '1' : ''
     patch.lastGamingHero = gaming ? toText(info.gaming?.heroId) : ''
@@ -119,7 +138,8 @@ export function planPush (sub = {}, { state = null, info = null, now = Date.now(
   const owner = toText(qq)
   for (const row of rows) {
     row.qq = owner
-    row.role = who
+    /** 开局行已经在上面署过「真在打的那位」，这里只给没署过的补 */
+    row.role = toText(row.role) || who
   }
 
   const active = isSubActive(state, info, Math.floor(now / 1000))

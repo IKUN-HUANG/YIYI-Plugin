@@ -20,6 +20,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { dataDir, createLogger, truncInt } from '#yiyi.utils'
 import { kingReply, kingFail, kingGuard } from './Say.js'
 import { kingContext, contextFailText } from './Context.js'
@@ -279,7 +280,8 @@ export async function sendExportFile (e, file, name = '') {
 
   if (typeof segment?.file === 'function') {
     tries.push(() => e.reply(segment.file(file, label)))
-    tries.push(() => e.reply(segment.file(`file://${file}`, label)))
+    /** 第二级照旧是 file:// 形式，但 URL 必须由 `pathToFileURL` 拼：Windows 的 `file://C:\...` 反斜杠没转义、盘符被当主机名，协议端读不到 */
+    tries.push(() => e.reply(segment.file(pathToFileURL(file).href, label)))
   }
   tries.push(() => e.reply({ type: 'file', file, name: label }))
   tries.push(() => {

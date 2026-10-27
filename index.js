@@ -10,10 +10,15 @@
  *
  * 这里**不许**出现 `setInterval`：定时任务一律走 `utils/AutoTask.js`，
  * 模块顶层挂定时器会让进程退不掉（测试、REPL、热重载全卡在这一句上）。
+ *
+ * **动态 `import()` 的目标一律过 `pathToFileURL().href`**：Windows 的绝对路径是 `C:\...`，
+ * 直接丢给 `import()` 会被当成协议 `c:`，报 `ERR_UNSUPPORTED_ESM_URL_SCHEME`
+ * （Linux 上 `import('/a/b.js')` 恰好能跑，所以这个 bug 只在 Windows 露头，一露就是「所有 app 全载入失败」）。
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { appsDir, createLogger, emoji, version, author, group } from '#yiyi.utils'
 
 const log = createLogger()
@@ -28,7 +33,7 @@ log.mark('-----------------')
 for (const file of listApps()) {
   const name = file.slice(0, -3)
   try {
-    const mod = await import(path.join(appsDir, file))
+    const mod = await import(pathToFileURL(path.join(appsDir, file)).href)
     apps[name] = Object.values(mod)[0]
     log.info(`已加载 ${name}`)
   } catch (err) {
