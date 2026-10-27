@@ -12,7 +12,12 @@
  * `data/update/`，盖错了还能 `git apply` 找回；未跟踪文件（`data/`、`cache/`、`config/config/`）
  * git 本来就不碰，设置不会丢。
  *
- * 副作用：跑 git、私聊主人、重启 Yunzai、起一个常驻轮询任务。
+ * 副作用：跑 git、私聊主人、重启 Yunzai、起一个常驻轮询任务（定时器由入口的「载入完成」
+ * 钩子挂上，不然那行启动日志会插到载入横幅中间去）。
+ *
+ * 回执与通知的格式是对外契约（用户按它判断「更到哪了」）：手动更新的每一条回执都**引用回复**，
+ * 正文一行一件事、用方括号起头 —— `已更新 1 个提交：` / `[<sha> <提交说明>]` / `[旧 sha → 新 sha]` /
+ * `开始重启Yunzai…`；自动更新只私聊首位主人，前几行同样是方括号，最后一行是 `开始重启Yunzai...`。
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -451,13 +456,16 @@ export async function probeUpdateSource ({ cwd = rootDir } = {}) {
 }
 
 /**
- * 「正在检查上游更新…」这句回执，带上探出来的源（GitHub / Gitee）。
+ * 「伊伊插件检查更新中.」这句回执，第二行带上探出来的源（Gitee · origin/main）。
+ *
+ * 两行而不是一句话：源里本来就有 `·` 和小横线，挤在括号里在手机上会折成一团。
  *
  * @param {{source?: string}} [env] probeUpdateSource 的结果
- * @returns {string} 一行话
+ * @returns {string} 一两行话
  */
 export function updateCheckingText (env = {}) {
-  return env?.source ? `正在检查上游更新…（源：${env.source}）` : '正在检查上游更新…'
+  const source = String(env?.source || '').trim()
+  return source ? `伊伊插件检查更新中.\n源: ${source}` : '伊伊插件检查更新中.'
 }
 
 /**
@@ -836,9 +844,17 @@ const autoUpdate = createIntervalTask({
     lastQuietNote = ''
     log.mark(`插件已更新：${ret.subject || shortSha(ret.after)}`)
     const willRestart = canRestartYunzai()
-    await notifyUpdateMaster(
-      `「${pluginTitle}」有新版本，已经自动更新好了：\n\n${ret.subject || ''}\n${shortSha(ret.before)} → ${shortSha(ret.after)}\n${ret.label ? `源：${ret.source}\n` : ''}\n${willRestart ? '正在重启 Yunzai…' : '这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。'}`
-    )
+    /**
+     * 一行一件事、方括号起头：手机上扫一眼就知道「更到哪了、从哪来」，比一整段话好读。
+     * 源缺了就整行不写（`ret.label` 空 = 连 remote 都没探出来）。
+     */
+    await notifyUpdateMaster([
+      `${pluginTitle}自动更新:`,
+      `[${ret.subject || shortSha(ret.after)}]`,
+      `[${shortSha(ret.before)} → ${shortSha(ret.after)}]`,
+      ret.label ? `[源：${ret.source}]` : '',
+      willRestart ? '开始重启Yunzai...' : '这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。'
+    ].filter(Boolean).join('\n'))
     if (!willRestart) {
       log.warn('框架没给 Bot.restart()，不动进程，已通知主人手动重启')
       return { ...ret, restarted: '' }

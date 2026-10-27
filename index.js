@@ -19,7 +19,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { appsDir, createLogger, emoji, version, author, group, pluginName } from '#yiyi.utils'
+import { appsDir, createLogger, emoji, version, author, group, pluginName, runAfterLoaded } from '#yiyi.utils'
 
 const log = createLogger()
 
@@ -50,6 +50,13 @@ log.mark(`伊伊插件v${version}载入成功${emoji()}~`)
 log.mark(`Created By ${author || pluginName}.`)
 log.mark(`闲聊群：${group || '—'}.`)
 log.mark('-----------------')
+
+/**
+ * 横幅打完才跑「载入后置任务」（自动更新的定时器就是这批）：早一步打日志就插到
+ * 「已加载 Admin」中间去了，用户看不出插件到底起没起完。这里**不 await**——
+ * 后置任务里有拉数据这种慢活，等它等于拖住整个 Yunzai 启动；同步部分照样当场跑完。
+ */
+void runAfterLoaded()
 
 /**
  * 已载入的功能类，供宿主（Yunzai）按文件名取用。
