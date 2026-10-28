@@ -25,6 +25,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { rootDir, dataDir, createLogger, createIntervalTask, pluginTitle } from '#yiyi.utils'
 import { Config } from '#yiyi.components'
+import { canRestartYunzai, restartYunzai } from './restart.js'
 
 const log = createLogger('管理')
 
@@ -683,30 +684,6 @@ export async function notifyUpdateMaster (msg) {
   return false
 }
 
-/**
- * 这个框架给不给重启接口 —— 只认 `Bot.restart()`。
- *
- * 不拿 `Bot.exit()` / `process.exit()` 兜底：Miao 与 TRSS 对「进程退出」的处理完全不是一回事，
- * 有的框架退出就真退出了（没有守护程序托管时不会再有人把它拉起来），更新完把机器人关掉比
- * 干脆不重启糟得多。没有重启接口就只提示主人手动重启，进程一根手指都不动。
- *
- * @returns {boolean} 有 `Bot.restart()` 就是 true
- */
-export function canRestartYunzai () {
-  return typeof globalThis.Bot?.restart === 'function'
-}
-
-/**
- * 调框架的重启接口。
- *
- * @returns {string} 真调了回 `Bot.restart()`；框架没给接口回空串，调用方要提示主人手动重启
- */
-export function restartYunzai () {
-  if (!canRestartYunzai()) return ''
-  globalThis.Bot.restart()
-  return 'Bot.restart()'
-}
-
 /** 间隔的合法范围，单位分钟：1 分钟已经比 git 服务商舒服的上限还快，一天当上限 */
 const UPDATE_INTERVAL_MIN = 1
 const UPDATE_INTERVAL_MAX = 1440
@@ -843,7 +820,7 @@ const autoUpdate = createIntervalTask({
 
     lastQuietNote = ''
     log.mark(`插件已更新：${ret.subject || shortSha(ret.after)}`)
-    const willRestart = canRestartYunzai()
+    const willRestart = await canRestartYunzai()
     /**
      * 一行一件事、方括号起头：手机上扫一眼就知道「更到哪了、从哪来」，比一整段话好读。
      * 源缺了就整行不写（`ret.label` 空 = 连 remote 都没探出来）。
@@ -853,14 +830,19 @@ const autoUpdate = createIntervalTask({
       `[${ret.subject || shortSha(ret.after)}]`,
       `[${shortSha(ret.before)} → ${shortSha(ret.after)}]`,
       ret.label ? `[源：${ret.source}]` : '',
-      willRestart ? '开始重启Yunzai...' : '这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。'
+      willRestart ? '开始重启Yunzai...' : '这个框架没有可用的重启方式（既没有 Bot.restart，也没有 Miao 那种本地重启服务，还不在进程守护里），麻烦手动重启一次 Yunzai 让新版本生效。'
     ].filter(Boolean).join('\n'))
     if (!willRestart) {
-      log.warn('框架没给 Bot.restart()，不动进程，已通知主人手动重启')
+      log.warn('没有可用的重启接口，不动进程，已通知主人手动重启')
       return { ...ret, restarted: '' }
     }
 
-    const how = restartYunzai()
+    const how = await restartYunzai({ reason: 'auto-update' })
+    if (!how) {
+      log.warn('重启没做成，进程没动')
+      await notifyUpdateMaster([`${pluginTitle}自动更新:`, '已更新，但重启没做成（框架的启动脚本没起来），麻烦手动重启一次 Yunzai 让新版本生效。'].join('\n'))
+      return { ...ret, restarted: '' }
+    }
     log.mark(`正在重启 Yunzai（${how}）`)
     return { ...ret, restarted: how }
   }
