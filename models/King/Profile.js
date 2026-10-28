@@ -6,10 +6,10 @@ import { kingReply, kingGuard, kingAuthTip, kingNoBindTip, kingViewUnboundTip, k
 import { resolveKingTarget, targetName } from './Target.js'
 import { renderKing, logoUri, imageUri, imageUris, localIcon } from './Card.js'
 import { getProfile, getSeasonPage, getProfileHeroList, CAMP_REFERER } from './Api.js'
-import { resolveBind, accountForUser, accountForRole, usableAccounts, ownAccounts, authMarkedInvalid, accountOwnsRole, setBind, listAccounts, accountsOwningRole, accountRoleNote, campQueryOf, queryAccountsFor, ownerOf, findAccount, verifiedCampUserOf, rememberCampUser } from './Auth.js'
+import { resolveBind, accountForUser, accountForRole, usableAccounts, ownAccounts, authMarkedInvalid, accountOwnsRole, setBind, listAccounts, accountsOwningRole, accountRoleNote, campQueryOf, campAccountValueOf, queryAccountsFor, ownerOf, findAccount, verifiedCampUserOf, rememberCampUser } from './Auth.js'
 import { readUserPart, writeUserPart } from './Store.js'
 import { kingWhoami, kingAuthFail, platformText, accountText, accountCardView, paintAccountAvatars } from './Account.js'
-import { toText, maskUserId, isProfileHiddenCode, describeProfileDenied, AuthAccountError, describeError, isUsableAuth } from './Common.js'
+import { toText, maskUserId, isProfileHiddenCode, describeProfileDenied, AuthAccountError, describeError, isUsableAuth, cleanText } from './Common.js'
 import { heroNameOf } from './External.js'
 import { kingIconBase64 } from './Icon.js'
 import { readCampSeason, campSeasonBlock, campSeasonRows, campSeasonSummary, readCampBattleTrend, CAMP_PEAK_TREND_GAMES } from './Gallery.js'
@@ -60,24 +60,16 @@ const DAY_KEYS = ['gameDays', 'gameDayCnt', 'playDays', 'dayCnt', 'registerDays'
 
 const ONLINE_TEXT = { 0: '离线', 1: '在线', 2: '游戏中' }
 
-const INVISIBLE_RE = /[\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2064\u206A-\u206F\uFE00-\uFE0F\uFEFF\u2000-\u200A\u202F\u205F\u3000\u3164]/g
-const PRIVATE_USE_RE = /[\u{E000}-\u{F8FF}\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}]/gu
-
 /**
- * 洗净营地回来的名字：去掉私用区字符与不可见控制符，连续空格并成一个，再 trim。
- *
- * 为什么要有这一层：营地偶尔在昵称里夹零宽空格或私用区方块码，直接贴进卡片
- * 要么变成一个方块，要么两个名字看着一模一样却对不上。
+ * 洗净营地回来的名字：规则本身在 `Common.cleanText`（账号卡也要用，不能只住在这儿）。
+ * 为什么要有这一层：营地偶尔在昵称里夹零宽空格、方向控制符（⁨⁩）或私用区方块码，
+ * 直接贴进卡片要么变成一个方块，要么两个名字看着一模一样却对不上。
  *
  * @param {*} value 营地字段的原始值（字符串居多，也可能是数字、null、undefined）
  * @returns {string} 洗干净的字符串；什么都没剩下就给空串（不做「无名召唤师」兜底，那个归 normalizeName）
  */
 export function cleanName (value) {
-  return toText(value)
-    .replace(PRIVATE_USE_RE, '')
-    .replace(INVISIBLE_RE, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
+  return cleanText(value)
 }
 
 /**
@@ -1227,14 +1219,25 @@ export async function kingMyCamp (e) {
     /** 全部号都被 -10107 挡住，才说明是这个号隐藏了主页（单个号被挡只说明拿错号了） */
     let hiddenHits = 0
 
+    /**
+     * 绑定档里存的、或者用户发来的这个 ID，有时是**营地号本身**（「#王者绑定 营地ID」、
+     * 换号查通那次写的都是营地号）。营地拿营地号当角色 ID 去查一律回 -1013
+     * 「获取用户角色信息失败」，看着像号被藏了，其实是两种 ID 搞混了 —— 先认一下。
+     */
+    const campSelf = query.roleId ? '' : toText(campAccountValueOf(campId, owner))
+
     for (const candidate of candidates) {
       try {
-        /** 认不出角色的营地号时，用这个号自己的营地号 + 目标角色去试，别拿角色ID 当营地号（那边只会回 -10107） */
         const target = query.roleId
           ? { userId: query.campUserId, roleId: query.roleId }
-          : { userId: toText(candidate.userId) || toText(candidate.id), roleId: campId }
+          : campSelf
+            ? /** 认出来是营地号：查它自己的主页、让它自己报名下的角色（targetRoleId 不传） */
+              { userId: campSelf, roleId: '' }
+            : /** 认不出归属的角色 ID：用这个号自己的营地号 + 目标角色去试，别拿角色ID 当营地号（那边只会回 -10107） */
+              { userId: toText(candidate.userId) || toText(candidate.id), roleId: campId }
         const answer = await getProfile(target.userId, { accountId: candidate.id, targetRoleId: target.roleId })
-        const code = Number(answer?.returnCode)
+        /** 业务码在包裹对象的 `code` 上（`returnCode` 是营地原始返回体上的字段，这里拿不到） */
+        const code = Number(answer?.code)
         if (isProfileHiddenCode(answer) || (Number.isFinite(code) && code !== 0)) {
           if (isProfileHiddenCode(answer)) hiddenHits += 1
           tried.push(`${toText(candidate.id)}：${describeProfileDenied(answer)}`)
@@ -1295,16 +1298,25 @@ export async function kingMyCamp (e) {
 
     if (toText(account.id) !== toText(picked.id)) {
       kingLog.warn(`营地主页 ${maskUserId(campId)} 换用 ${maskUserId(account.id)} 的登录信息查到了（原来的 ${maskUserId(picked.id)} 查不到）`)
+    }
 
-      /** 换号查通了：绑定上记的那个号不是这次的号，就把绑定改到能查的号上（下次直接挑它） */
-      if (isSelf && fromBind && toText(account.id) !== toText(bindAccountId || picked?.id)) {
-        setBind(owner, {
-          roleId: campId,
-          roleName: bindName || mapped.role.roleName,
-          serverName: bindServer || mapped.role.areaName || '',
-          accountId: toText(account.id),
-          byUser: bindBy || owner
-        })
+    /**
+     * 绑定档自愈：绑定里存的是「营地号」（不是角色 ID）就改成这次真查到的角色 ID ——
+     * 不然后面每次查都拿营地号当角色 ID 去撞 -1013，推送、诊断、在线卡全都跟着瞎。
+     * 换号查通了也顺手把绑定改到能查的号上（下次直接挑它）。
+     */
+    const healRole = Boolean(liveRoleId) && Boolean(campSelf) && Boolean(toText(bind.roleId))
+    const healAccount = fromBind && toText(account.id) !== toText(bindAccountId || toText(picked?.id))
+    if (isSelf && liveRoleId && (healRole || healAccount)) {
+      const saved = setBind(owner, {
+        roleId: liveRoleId,
+        roleName: bindName || mapped.role.roleName,
+        serverName: bindServer || mapped.role.areaName || '',
+        accountId: toText(account.id),
+        byUser: bindBy || owner
+      })
+      if (healRole && campSelf && saved?.ok) {
+        kingLog.mark(`营地主页：绑定里存的是营地号 ${maskUserId(campId)}，已改成角色 ${maskUserId(liveRoleId)}`)
       }
     }
 
@@ -1643,9 +1655,13 @@ export async function kingDiagnose (e) {
 
   const query = await resolveCampQuery(campId, { owner, byUser: bind.byUser })
   const picked = accountForRole({ accountId: bind.accountId, owner, byUser: bind.byUser, roleId: campId })
+  /** 绑定里存的可能就是这个营地号本身：那就查它自己的主页（拿营地号当角色 ID 只会回 -1013） */
+  const campSelf = query.roleId ? '' : toText(campAccountValueOf(campId, owner))
+  const queryUser = query.roleId ? query.campUserId : campSelf
+  const queryRole = query.roleId || ''
 
   /** 连这个角色属于哪个营地号都认不出来：别拿角色ID 当营地号乱试，直接告诉他怎么办 */
-  if (!query.roleId) {
+  if (!queryUser) {
     return kingReply(e, [
       `诊断：「${who}」这个角色没认出来是哪个营地号。`,
       '用这个角色本人的号发一次「#王者QQ扫码」再试，我就能认出来。'
@@ -1662,12 +1678,13 @@ export async function kingDiagnose (e) {
     }
     try {
       /** 逐号试的时候别在单号上重试：这个不行就换下一个号，重试只会让「诊断」更慢 */
-      const result = await getProfile(query.campUserId, { accountId: id, targetRoleId: query.roleId, retry: 0 })
-      const code = Number(result?.returnCode)
+      const result = await getProfile(queryUser, { accountId: id, targetRoleId: queryRole, retry: 0 })
+      /** 业务码在包裹对象的 `code` 上（`returnCode` 只存在于营地原始返回体） */
+      const code = Number(result?.code)
       if (isProfileHiddenCode(result) || (Number.isFinite(code) && code !== 0)) continue
       const mapped = mapProfile(result)
       if (!mapped.role.roleId) continue
-      hit.push(account)
+      hit.push({ account, roleId: toText(mapped.role.roleId) })
     } catch (error) {
       kingLog.info(`诊断试号失败（${maskUserId(id)}）：${toText(error?.message) || describeError(error)}`)
     }
@@ -1681,20 +1698,26 @@ export async function kingDiagnose (e) {
     ].join('\n'))
   }
 
-  const right = hit.find(item => accountOwnsRole(item, campId, owner)) || hit[0]
-  if (toText(right.id) === toText(picked?.id) || bind.from !== 'user') {
+  const right = hit.find(item => accountOwnsRole(item.account, campId, owner)) || hit[0]
+  const rightId = toText(right.account.id)
+  const liveRoleId = toText(right.roleId) || toText(campId)
+  /** 只有「换号才查得到」或「绑定里存的是营地号」才需要改绑定，好好的绑定别乱动 */
+  if ((rightId === toText(picked?.id) && !campSelf) || bind.from !== 'user') {
     return kingReply(e, `诊断：现在用的号就能查到「${who}」，营地偶尔抽风，再发一次「#王者营地」就好。`)
   }
 
   const saved = setBind(owner, {
-    roleId: campId,
+    roleId: liveRoleId,
     roleName: bind.roleName,
     serverName: bind.serverName,
-    accountId: toText(right.id),
+    accountId: rightId,
     byUser: owner
   })
-  kingLog.mark(`营地诊断：角色 ${maskUserId(campId)} 的登录信息改成 ${maskUserId(right.id)}`)
-  return kingReply(e, saved?.ok
-    ? `诊断：「${who}」换成账号 ${toText(right.id)} 才查得到，已经改过来了，再发一次「#王者营地」。`
-    : `诊断：账号 ${toText(right.id)} 查得到「${who}」，但改绑定没存上，发「#王者切换角色n」手动换一个。`)
+  kingLog.mark(`营地诊断：角色 ${maskUserId(campId)} 的登录信息改成 ${maskUserId(rightId)}`)
+  if (!saved?.ok) {
+    return kingReply(e, `诊断：账号 ${rightId} 查得到「${who}」，但改绑定没存上，发「#王者切换角色n」手动换一个。`)
+  }
+  return kingReply(e, campSelf
+    ? `诊断：绑定里存的是营地号 ${campId}，已经换成角色 ${liveRoleId}（账号 ${rightId}），再发一次「#王者营地」。`
+    : `诊断：「${who}」换成账号 ${rightId} 才查得到，已经改过来了，再发一次「#王者营地」。`)
 }

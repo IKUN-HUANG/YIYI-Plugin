@@ -390,6 +390,26 @@ export function campQueryOf (value, owner = '') {
 }
 
 /**
+ * 这个值是不是「营地号本身」（扫码存下的那条登录信息的 ID / 它的 userId），而不是角色 ID。
+ *
+ * 为什么要分：营地对「拿营地号当角色 ID 去查主页」一律回 `-1013 获取用户角色信息失败`，
+ * 看着像「号被藏了」，其实是自己把两种 ID 搞混了。用户发「#王者绑定 营地ID」时给的就是营地号，
+ * 绑进档里之后，查主页、诊断都会拿着它去当角色 ID 用 —— 所以查之前必须先认一下。
+ *
+ * @param {string} value 用户给的那个 ID，或者从绑定档里读出来的值
+ * @param {string} [owner] 归属人 QQ（优先在他名下的号里找，找不到再看全体）
+ * @returns {string} 认出来是营地号就给它的营地 userId（查主页要用它）；不是营地号给空串
+ */
+export function campAccountValueOf (value, owner = '') {
+  const key = toText(value)
+  if (!key) return ''
+
+  const hit = findAccount(key, toText(owner)) || findAccount(key)
+  if (!hit) return ''
+  return toText(hit.userId) || toText(hit.id) || key
+}
+
+/**
  * 账号池里一共几个可用号（给「暂无可用的登录信息」这类提示用）
  * @returns {number} 可用号个数
  */

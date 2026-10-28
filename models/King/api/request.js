@@ -525,8 +525,8 @@ export async function callGameForm (path, fields, opts = {}) {
  * @param {string} name 端点键名或路径
  * @param {object} body 请求体（form 端点按 urlencoded 发）
  * @param {{accountId?: string, pool?: boolean, ttl?: number, retry?: number, method?: string, meta?: boolean, cacheExtra?: string}} opts
- *   ttl 毫秒，0 = 这次不记忆；meta=true 时回 `{ data, account, fromCache }` 而不是裸 data
- * @returns {Promise<*>} 默认裸 `data`；`meta=true` 回带 `account/fromCache/code` 的包裹对象
+ *   ttl 毫秒，0 = 这次不记忆；meta=true 时回 `{ data, account, fromCache, code, message }` 而不是裸 data
+ * @returns {Promise<*>} 默认裸 `data`；`meta=true` 回带 `account/fromCache/code/message` 的包裹对象
  */
 export async function kingCall (name, body = {}, opts = {}) {
   const endpoint = endpointOf(name)
@@ -548,7 +548,12 @@ export async function kingCall (name, body = {}, opts = {}) {
     : await callMain(endpoint, body, callOpts)
 
   if (!opts.meta) return result.data
-  return { data: result.data, account: result.auth, fromCache: Boolean(result.cached), code: result.code }
+  /**
+   * 营地给的那句话术也一并带出去：`code` 只是 -1013 这种数字，
+   * 「获取用户角色信息失败」这句原文在返回体里，不带出来下游只能说「说不清原因」。
+   */
+  const message = toText(result?.raw?.returnMsg ?? result?.raw?.msg ?? result?.raw?.message)
+  return { data: result.data, account: result.auth, fromCache: Boolean(result.cached), code: result.code, message }
 }
 
 /**

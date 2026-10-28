@@ -6,12 +6,12 @@
  * 为什么放在这里而不是 Auth.js：这两件事都要调营地主页接口（取数层），Auth 只该管盘上的档。
  */
 import { createLogger, toText, maskUserId, previewValue } from '#yiyi.utils'
-import { AuthConfigError, AuthAccountError, RateLimitError, CODE_SUCCESS, BUSINESS_CODE, classifyBusinessCode, describeError, isDefiniteAuthFailure, isSuspectedAuthFailure, isUsableAuth } from '../Common.js'
+import { AuthConfigError, AuthAccountError, RateLimitError, CODE_SUCCESS, BUSINESS_CODE, classifyBusinessCode, describeError, isDefiniteAuthFailure, isSuspectedAuthFailure, isUsableAuth, cleanText } from '../Common.js'
 import { getProfile } from '../Api.js'
 import { addAccount, listAccounts, findAccount, accountView, usableAccounts, defaultAccountId, patchAccount, markAuthInvalid } from '../Auth.js'
 import { normalizeAccount } from '../Schema.js'
 import { buildAccountFromLogin, statusResult } from './device.js'
-import { resolveBind, setBind, rememberRoles } from '../Auth.js'
+import { resolveBind, setBind, rememberRoles, campAccountValueOf } from '../Auth.js'
 
 const log = createLogger('营地登录')
 
@@ -31,12 +31,18 @@ export function storedView (account) {
  * @param {string} roleId 角色 ID（字符串，不是营地号）
  * @returns {string} 拼在回执后面的那半句；没绑上给空串
  */
-export function bindNote (roleId) {
-  return roleId ? `\n已经自动绑定你的营地角色：${roleId}（发「#我的营地」看主页）` : ''
+export function bindNote (bound, owner = '') {
+  const value = toText(bound)
+  if (!value) return ''
+  /** 只认出营地号（营地这次没回角色）时别写成「角色」：那是营地 App 里那串号，角色 ID 得查通主页才补上 */
+  if (campAccountValueOf(value, owner)) return `\n先按营地号 ${value} 记下了，发「#我的营地」查通主页就会自动换成角色 ID`
+  return `\n已经自动绑定你的营地角色：${value}（发「#我的营地」看主页）`
 }
 
 /**
  * 只自动绑「还没有绑定」的人：已经手绑过的，扫码换号不该把他的绑定改掉。
+ * 例外是绑定里存着**营地号**（不是角色 ID）的：那种绑定查主页一律 -1013，
+ * 当成没绑、重新绑一次正好把它改对 —— 用户扫码就能自愈，不用自己去解绑。
  * 返回角色 ID（绑上了）或空串（没绑/失败，都不该让扫码整体失败）。
  * @param {string} ownerId 谁的号（发起扫码的 QQ）
  * @param {object} account 刚入库的账号记录
@@ -48,7 +54,8 @@ export async function bindOwnCamp (ownerId, account) {
   if (!user || !campId) return ''
 
   const bind = resolveBind({ userId: user })
-  if (bind.roleId && bind.from === 'user') return ''
+  const boundToCamp = Boolean(bind.roleId) && Boolean(campAccountValueOf(bind.roleId, user))
+  if (bind.roleId && bind.from === 'user' && !boundToCamp) return ''
 
   try {
     const result = await getProfile(campId, { accountId: account?.id })
@@ -57,12 +64,20 @@ export async function bindOwnCamp (ownerId, account) {
     const target = toText(data.targetRoleId)
     const role = roles.find(item => toText(item.roleId) === target) || roles[0] || {}
     const roleId = toText(role.roleId)
-    if (!roleId) return ''
+    /** 营地没回角色（-1013 / 这个号还没真登过游戏）：照样绑，绑的是**营地号**这个合法值 ——
+     *  营地主页/推送都认「这是号不是角色」，等查通主页时再自愈成角色 ID，别让扫码这一步白扫 */
+    if (!roleId) {
+      const kept = setBind(user, { roleId: campId, roleName: '', serverName: '', accountId: toText(account?.id), byUser: user, from: 'user' })
+      log.mark(`扫码后先记下营地号 ${maskUserId(campId)}：这次没读出角色，查通主页时会自动换成角色 ID`)
+      return kept?.ok ? campId : ''
+    }
 
     const saved = setBind(user, {
       roleId,
-      roleName: toText(role.roleName),
-      serverName: toText(role.serverName),
+      /** 名字先洗：营地偶尔给回来的整串都是不可见字符（⁩⁨⁨⁩），照抄下去卡片上就是一对空括号 */
+      roleName: cleanText(role.roleName),
+      /** 营地 roleList 里区服叫 `roleText` / `areaName`，没有 `serverName` —— 直接读 serverName 会是空的 */
+      serverName: cleanText(role.serverName) || cleanText(role.roleText) || cleanText(role.areaName),
       accountId: toText(account?.id),
       byUser: user,
       from: 'user'
@@ -73,8 +88,10 @@ export async function bindOwnCamp (ownerId, account) {
     log.mark(`扫码后自动绑定角色 ${maskUserId(roleId)}`)
     return roleId
   } catch (error) {
+    /** 查不动也把营地号记下：绑定里有营地号比空着强（营地主页会自愈成角色 ID） */
     log.warn(`自动绑定角色失败：${previewValue(toText(error?.message), 200)}`)
-    return ''
+    const kept = setBind(user, { roleId: campId, roleName: '', serverName: '', accountId: toText(account?.id), byUser: user, from: 'user' })
+    return kept?.ok ? campId : ''
   }
 }
 
@@ -96,7 +113,7 @@ export async function settleLoginAccount ({ ownerId = '', payload = {}, platform
   if (!added.ok) return { done: statusResult('error', toText(added.reason) || '登录信息保存失败') }
   log?.mark?.(`${label}扫码登录成功，入库 ${maskUserId(added.account.id)}`)
   const bound = await bindOwnCamp(ownerId, added.account)
-  return { done: statusResult('confirmed', `登录成功，登录信息已保存${bindNote(bound)}`, storedView(added.account)) }
+  return { done: statusResult('confirmed', `登录成功，登录信息已保存${bindNote(bound, ownerId)}`, storedView(added.account)) }
 }
 
 /**
@@ -132,18 +149,21 @@ export async function refreshAccount (id) {
   try {
     /** 绑定时验一次就够，别在同一个号上重试 */
     const result = await getProfile(account.userId, { accountId: account.id, retry: 0 })
-    const raw = result?.raw
+    /** 包裹对象上只有 `code` / `message`（营地原始返回体拿不到），所以按这两个判断，
+     *  别整个对象塞给 `isDefiniteAuthFailure(code, message)` —— 那样两头都认不出来，失效永远判不出来 */
+    const code = result?.code
+    const message = toText(result?.message) || describeError(result)
 
-    if (isDefiniteAuthFailure(raw)) {
-      markAuthInvalid(account.id, `检查时营地明确说这个登录信息不能用了：${describeError(raw)}`)
+    if (isDefiniteAuthFailure(code, message)) {
+      markAuthInvalid(account.id, `检查时营地明确说这个登录信息不能用了：${message}`)
       return { ok: false, message: `账号 ${who} 登录信息已过期，请重新扫码登录` }
     }
 
-    if (isSuspectedAuthFailure(raw)) log.info(`账号 ${who} 校验疑似鉴权文案，不标记：${describeError(raw)}`)
+    if (isSuspectedAuthFailure(code, message)) log.info(`账号 ${who} 校验疑似鉴权文案，不标记：${message}`)
 
-    const kind = classifyBusinessCode(result?.code)
-    if (kind !== BUSINESS_CODE.SUCCESS && kind !== BUSINESS_CODE.NONE && Number(result?.code) !== CODE_SUCCESS) {
-      return { ok: false, message: `账号 ${who} 检查时营地报错：${describeError(raw)}，登录信息暂时还能用` }
+    const kind = classifyBusinessCode(code)
+    if (kind !== BUSINESS_CODE.SUCCESS && kind !== BUSINESS_CODE.NONE && Number(code) !== CODE_SUCCESS) {
+      return { ok: false, message: `账号 ${who} 检查时营地报错：${message}，登录信息暂时还能用` }
     }
 
     const at = new Date().toISOString()
