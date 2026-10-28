@@ -2,8 +2,9 @@
  * @file 王者指令面——65 条指令全部在这里注册：正则决定「用户这么说该进哪个功能」，方法体只做「先回生成提示 → 转调」，不放任何取数与算数。
  * @module apps/King
  */
-import { kingAck, dropKingAck, kingNews, kingNewsDetail, kingHeroList, kingHero, kingItem, kingPower, kingLogin, cancelKingLogin, kingUseAccount, kingDelAccount, kingCheckAccount, kingAccount, kingBindRole, kingBindHelp, kingUnbindRole, kingMyCamp, kingDiagnose, kingSwitchRole, kingHideRole, kingRestoreRole, kingBattleList, kingBattleDetail, kingRank, kingRankRefresh, kingGroupReport, kingGroupReportPush, kingGroupReportStatus, kingGroupReportTick, kingPushSwitch, kingPushStatus, kingGroupPush, kingPushTick, kingWhoIsPlaying, kingWatchSwitch, kingWatchTest, kingOps, kingOpsClearCache, kingCacheSweep, kingKeepAliveTick, kingTier, kingHeroRecord, kingCompare, kingNewsPush, kingSkinPush, kingAlertTick, kingCleanInvalid, kingBackup, kingRestore, kingBlacklist, kingRankTrend, kingPeakTrend, kingSkinCodex, kingSkinMissing, kingMyHeroes, kingExportCsv, kingUserStats, kingHiddenList, kingHiddenClear, parsePeriod, kingReply, AT_HEAD, AT_TAIL } from '#yiyi.king'
+import { kingAck, dropKingAck, kingNews, kingNewsDetail, kingHeroList, kingHero, kingItem, kingPower, kingLogin, cancelKingLogin, kingUseAccount, kingDelAccount, kingCheckAccount, kingAccount, kingBindRole, kingBindHelp, kingUnbindRole, kingMyCamp, kingDiagnose, kingSwitchRole, kingHideRole, kingRestoreRole, kingBattleList, kingBattleDetail, kingRank, kingRankRefresh, kingGroupReport, kingGroupReportPush, kingGroupReportStatus, kingGroupReportTick, kingPushSwitch, kingPushStatus, kingGroupPush, kingPushTick, kingWhoIsPlaying, kingWatchSwitch, kingWatchTest, kingOps, kingOpsClearCache, kingCacheSweep, kingBootCacheSweep, kingKeepAliveTick, kingTier, kingHeroRecord, kingCompare, kingNewsPush, kingSkinPush, kingAlertTick, kingCleanInvalid, kingBackup, kingRestore, kingBlacklist, kingRankTrend, kingPeakTrend, kingSkinCodex, kingSkinMissing, kingMyHeroes, kingExportCsv, kingUserStats, kingHiddenList, kingHiddenClear, parsePeriod, kingReply, AT_HEAD, AT_TAIL } from '#yiyi.king'
 import { Config } from '#yiyi.components'
+import { afterLoaded } from '#yiyi.utils'
 
 /** 65 条指令的正则表：字面写在这个文件里（闸门按文本抠 `{ reg, fnc }`，挪去别的文件会红）。
  * 构造里只 push；新增指令加在这个数组末尾（兜底那条永远最后）。 */
@@ -412,3 +413,10 @@ for (const rule of RULES) {
   wrapped.__kingAckWrapped = true
   King.prototype[name] = wrapped
 }
+
+/**
+ * 启动先清一遍 `cache/`（插件根目录下那份）：里面全是能再生成的东西 ——
+ * 卡片内联副本存的是 `file:///` 绝对路径（换台机器、改个目录名就全废），
+ * 公开表跟游戏版本走（旧表比没有更糟）。登记在 `afterLoaded()` 里，日志才落在版本横幅后面。
+ */
+afterLoaded(kingBootCacheSweep)

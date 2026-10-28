@@ -9,7 +9,7 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import sharp from 'sharp'
-import { iconBase64, fetchImage, bufferToDataUri, pluginName, version, yunzai, resourcesDir, createLogger, readText, fileFingerprint, toText, previewValue } from '#yiyi.utils'
+import { iconBase64, fetchImage, bufferToDataUri, pluginName, version, yunzai, resourcesDir, cacheDir, createLogger, readText, fileFingerprint, toText, previewValue } from '#yiyi.utils'
 import { render, renderData, resPathForTpl, tplFileOf } from '#yiyi.components'
 import { renderImage, shotAvailable } from './Browser.js'
 import { kingAck } from './Ack.js'
@@ -31,8 +31,15 @@ const log = createLogger('王者卡片')
 /** 样式表入口：@import 在这里展开，字体 url() 也会换成绝对地址 */
 const CSS_ENTRY = path.join(resourcesDir, KING_TPL, 'king.css')
 
-/** 内联样式之后的模板副本（渲染器只认磁盘上的 tplFile，所以落一份带 <style> 的副本给它） */
-const INLINE_DIR = path.join(resourcesDir, KING_TPL, '.inline')
+/**
+ * 内联样式之后的模板副本（渲染器只认磁盘上的 tplFile，所以落一份带 <style> 的副本给它）。
+ *
+ * 落 `cacheDir` 而不是 `resourcesDir`：这是**运行期产物**，样式表一变就重写一份，
+ * 放进仓库既会被提交（内容全是 `file:///` 绝对路径，换台机器就是错的），
+ * 又要给「插件目录里只有源码」这条规矩开口子。`cache/` 本来就会自己清（定时任务 + 启动），
+ * 清掉了下次出图自动重生成。
+ */
+const INLINE_DIR = path.join(cacheDir, KING_TPL, '.inline')
 const STYLE_LINK_RE = /<link\b[^>]*rel=["']stylesheet["'][^>]*>/i
 const inlineCache = new Map()
 
@@ -87,11 +94,17 @@ function inlineTplFile (tplPath) {
 
   const parts = tplFileOf(tplPath).split('/')
   const name = parts.pop()
-  const rel = [...parts, '.inline', name].join('/')
+  const file = path.join(INLINE_DIR, name)
+  /**
+   * 渲染器把 tplFile 当「相对 resources 的路径」再拼一次，所以这里给一条**穿出 resources、
+   * 落回插件根 cache 的相对路径**（`../cache/King/.inline/x.html`）：文件不进仓库，
+   * 渲染器照样按老规矩找得到。斜杠统一成正斜杠，Windows 上也当路径吃。
+   */
+  const rel = path.relative(resourcesDir, file).split(path.sep).join('/')
 
   try {
     fs.mkdirSync(INLINE_DIR, { recursive: true })
-    fs.writeFileSync(path.join(INLINE_DIR, name), marked)
+    fs.writeFileSync(file, marked)
   } catch (error) {
     log.info(`内联样式失败（${tplPath}）：${previewValue(toText(error?.message), 160)}`)
     return ''
@@ -231,11 +244,26 @@ export async function renderKingWithoutEvent (tpl, data = {}, opts = {}) {
     ...(opts.data || {})
   }))
 
-  const tplFile = inlineTplFile(tplPath) || tplFileOf(tplPath)
+  const plain = tplFileOf(tplPath)
+  const inline = inlineTplFile(tplPath)
 
   try {
-    return await renderImage(tplPath, { ...merged, tplFile })
+    return await renderImage(tplPath, { ...merged, tplFile: inline || plain })
   } catch (error) {
+    /**
+     * 内联副本走的是 `../cache/…` 这条**穿出 resources** 的相对路径（临时产物不进仓库）。
+     * 万一某版渲染器只肯认 resources 底下的路径，退回「原模板」照样能出图 ——
+     * 内联样式只是为了让 `setContent` 那类渲染器也读得到 css，不是出图的前提。
+     */
+    if (inline) {
+      log.warn(`${tplPath} 内联模板出图失败，退回原模板：${previewValue(toText(error?.message), 160)}`)
+      try {
+        return await renderImage(tplPath, { ...merged, tplFile: plain })
+      } catch (err) {
+        log.warn(`${tplPath} 出图失败：${previewValue(toText(err?.message), 160)}`)
+        return ''
+      }
+    }
     log.warn(`${tplPath} 出图失败：${previewValue(toText(error?.message), 160)}`)
     return ''
   }
