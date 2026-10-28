@@ -2,11 +2,13 @@
  * @file 营地主页取数与视图数据——把营地接口的原始字段拼成营地卡要的视图对象（三栏绶带 / 中间五格 / 本赛季表现），不碰模板也不发指令。
  * @module models/King/Profile
  */
-import { kingReply, kingGuard, kingAuthTip, kingNoBindTip, kingViewUnboundTip, kingLog } from './Say.js'
+import { kingReply, kingHint, kingGuard, kingAuthTip, kingNoBindTip, kingViewUnboundTip, kingLog } from './Say.js'
 import { resolveKingTarget, targetName } from './Target.js'
 import { renderKing, logoUri, imageUri, imageUris, localIcon } from './Card.js'
 import { getProfile, getSeasonPage, getProfileHeroList, CAMP_REFERER } from './Api.js'
 import { resolveBind, accountForUser, accountForRole, usableAccounts, ownAccounts, authMarkedInvalid, accountOwnsRole, setBind, listAccounts, accountsOwningRole, accountRoleNote, campQueryOf, campAccountValueOf, queryAccountsFor, ownerOf, findAccount, verifiedCampUserOf, rememberCampUser } from './Auth.js'
+/** 角色名/区服的历史记录（成员名单缓存）：营地给的昵称是不可见字符时，用它保住已经认出来的名字 */
+import { roleInfoOf } from './auth/roles.js'
 import { readUserPart, writeUserPart } from './Store.js'
 import { kingWhoami, kingAuthFail, platformText, accountText, accountCardView, paintAccountAvatars } from './Account.js'
 import { toText, maskUserId, isProfileHiddenCode, describeProfileDenied, AuthAccountError, describeError, isUsableAuth, cleanText } from './Common.js'
@@ -380,9 +382,13 @@ export function mapProfile (result) {
       if (!heroId || value <= 0) return null
       return { heroId, value: String(value), name: heroNameOf(heroId), icon: kingIconBase64('hero', heroId) }
     })(),
+    /**
+     * 名单里存**原始**昵称，不在这里清成占位：有人昵称就是一串不可见字符（特殊符号名），
+     * 清掉就等于把这个角色的名字永久弄丢。要好看由展示层 `rolePool` 那一处兜底。
+     */
     roles: roles.map(item => ({
       roleId: toText(item.roleId),
-      roleName: cleanName(item.roleName) || '召唤师',
+      roleName: toText(item.roleName),
       serverName: toText(item.roleText) || toText(item.areaName),
       roleLevel: toText(item.gameLevel)
     }))
@@ -1216,8 +1222,12 @@ export async function kingMyCamp (e) {
     const tried = []
     let account = null
     let mapped = null
-    /** 全部号都被 -10107 挡住，才说明是这个号隐藏了主页（单个号被挡只说明拿错号了） */
-    let hiddenHits = 0
+    /** 查通那一次「被查的那个人的营地号」：借别人的登录态查时，`account.userId` 是**查的人的号**，
+     *  不是这个角色所在的营地号，记归属必须用接口回的这个（`data.userId`） */
+    let liveCampUser = ''
+    /** 按「已知归属」那一路查的次数 / 其中被 -10107 挡住的次数：全部被挡才算这个号真藏了主页 */
+    let ownerTried = 0
+    let ownerHidden = 0
 
     /**
      * 绑定档里存的、或者用户发来的这个 ID，有时是**营地号本身**（「#王者绑定 营地ID」、
@@ -1226,40 +1236,67 @@ export async function kingMyCamp (e) {
      */
     const campSelf = query.roleId ? '' : toText(campAccountValueOf(campId, owner))
 
-    for (const candidate of candidates) {
-      try {
-        const target = query.roleId
-          ? { userId: query.campUserId, roleId: query.roleId }
-          : campSelf
-            ? /** 认出来是营地号：查它自己的主页、让它自己报名下的角色（targetRoleId 不传） */
-              { userId: campSelf, roleId: '' }
-            : /** 认不出归属的角色 ID：用这个号自己的营地号 + 目标角色去试，别拿角色ID 当营地号（那边只会回 -10107） */
-              { userId: toText(candidate.userId) || toText(candidate.id), roleId: campId }
-        const answer = await getProfile(target.userId, { accountId: candidate.id, targetRoleId: target.roleId })
-        /** 业务码在包裹对象的 `code` 上（`returnCode` 是营地原始返回体上的字段，这里拿不到） */
-        const code = Number(answer?.code)
-        if (isProfileHiddenCode(answer) || (Number.isFinite(code) && code !== 0)) {
-          if (isProfileHiddenCode(answer)) hiddenHits += 1
-          tried.push(`${toText(candidate.id)}：${describeProfileDenied(answer)}`)
-          continue
-        }
-        const view = mapProfile(answer)
-        if (!view.role.roleId) {
-          tried.push(`${toText(candidate.id)}：这个号看不到这个角色`)
-          continue
-        }
-        account = candidate
-        mapped = view
-        break
-      } catch (error) {
-        tried.push(`${toText(candidate.id)}：${toText(error?.message) || describeError(error)}`)
+    /**
+     * 同一个号要试几种「这个 ID 到底是谁」：认得出归属就按角色查；认出是营地号就按营地号查它自己；
+     * 最后再把它当角色 ID、用这个号自己的营地号兜一次。
+     * 兜底那一步不能省：营地对「拿角色 ID 当营地号」回的是 -10107「召唤师隐藏了主页信息」，
+     * 跟真藏了主页是同一个码，只试一种就把「两种 ID 搞混」误判成「号藏了主页」了。
+     */
+    const targetsOf = candidate => {
+      const own = toText(candidate.userId) || toText(candidate.id)
+      const list = []
+      const add = (userId, roleId, trusted = false) => {
+        const pair = { userId: toText(userId), roleId: toText(roleId), trusted }
+        if (!pair.userId) return
+        if (list.some(item => item.userId === pair.userId && item.roleId === pair.roleId)) return
+        list.push(pair)
       }
+      if (query.roleId) add(query.campUserId, query.roleId, true)
+      /** 认出来是营地号：查它自己的主页、让它自己报名下的角色（targetRoleId 不传） */
+      if (campSelf) add(campSelf, '', true)
+      /** 兜底：这个号自己的营地号 + 目标当角色。这一路是**猜**的（把 ID 当角色）：
+       *  砸了只说明这串数字不是营地号，不能当成「对方藏了主页」去记 24 小时名单 */
+      add(own, campId)
+      return list
+    }
+
+    for (const candidate of candidates) {
+      for (const target of targetsOf(candidate)) {
+        /** 只有「我们已经认定这个 ID 是营地号/角色 ID」的那几路才计入：兜底猜测那路被挡不算数 */
+        const trustedTarget = Boolean(target.trusted)
+        try {
+          const answer = await getProfile(target.userId, { accountId: candidate.id, targetRoleId: target.roleId })
+          /** 业务码在包裹对象的 `code` 上（`returnCode` 是营地原始返回体上的字段，这里拿不到） */
+          const code = Number(answer?.code)
+          if (isProfileHiddenCode(answer) || (Number.isFinite(code) && code !== 0)) {
+            if (trustedTarget) ownerHidden += 1
+            tried.push(`${toText(candidate.id)}：${describeProfileDenied(answer)}`)
+            continue
+          }
+          const view = mapProfile(answer)
+          if (!view.role.roleId) {
+            tried.push(`${toText(candidate.id)}：这个号看不到这个角色`)
+            continue
+          }
+          account = candidate
+          mapped = view
+          liveCampUser = toText(answer?.data?.userId)
+          break
+        } catch (error) {
+          tried.push(`${toText(candidate.id)}：${toText(error?.message) || describeError(error)}`)
+        } finally {
+          if (trustedTarget) ownerTried += 1
+        }
+      }
+      if (mapped) break
+      /** 同一个号两种试法都砸了就没必要再为它多打请求 */
+      if (tried.length >= candidates.length * 2) break
     }
 
     if (!mapped) {
       /** 每个号都被 -10107 挡住 → 记进隐藏主页名单，定时任务那边 24 小时内不再白跑。
        *  只在我们确实知道这个角色属于谁（营地说清是它自己藏的）才记，认错的号不记。 */
-      if (query.roleId && tried.length && hiddenHits === tried.length) {
+      if ((query.roleId || campSelf) && ownerTried && ownerHidden === ownerTried) {
         try {
           const { markProfileHidden } = await import('./Exchange.js')
           markProfileHidden(campId, toText(e?.sender?.card) || '')
@@ -1269,11 +1306,13 @@ export async function kingMyCamp (e) {
       }
       const why = tried.length ? tried.join('；') : '没有可用的号'
       kingLog.warn(`营地主页 ${maskUserId(campId)} 拿不到数据：${why}`)
-      /** 回话里只讲人话（主页被藏 / 号不对），每个号的具体返回码留在日志与「#王者诊断」里 */
+      /** 回话里只讲人话，每个号的具体返回码留在日志与「#王者诊断」里。
+       *  -10107 不能一口咬定「对方关了主页」：拿角色 ID 当营地号查，营地回的也是这个码 */
       return kingReply(e, [
         `营地ID ${campId} 的主页读不到。`,
-        '大概率是这个号在营地关了「主页可见范围」，只有他本人的号能看。',
-        '用角色本人的号发一次「#王者QQ扫码」，或者发「#王者诊断」我逐个号试给你看。'
+        '营地这次回的是「召唤师隐藏了主页信息」（-10107）：要么这个号在营地关了「主页可见范围」，',
+        '要么这串数字不是营地号 —— 角色 ID 和营地号都是 9～10 位，看着一样。',
+        '先核对一下 ID（营地 App → 我的 → 复制营地ID），或者发「#王者诊断」，我把每个号试出来的返回码列给你。'
       ].join('\n'))
     }
 
@@ -1293,7 +1332,11 @@ export async function kingMyCamp (e) {
      * 用主页回的 roleId 记键（传进来的值有时是营地号、有时是角色 ID）。
      */
     const liveRoleId = toText(mapped.role.roleId)
-    const campAccount = toText(account.userId) || toText(account.id)
+    /** 归属里要写的是「这个角色在谁的名下」，不是借来查的那个号的营地号：
+     *  绑定值本来就是营地号时，那个号就是答案；否则认命中的那个号的营地号（缓存认错归属时，
+     *  能查通的这个号才是真的，`query.campUserId` 反而是错的那条）。
+     *  营地自己回了 `userId` 就优先信它。 */
+    const campAccount = campSelf || liveCampUser || toText(account.userId) || toText(account.id)
     if (liveRoleId && campAccount) rememberCampUser(owner, liveRoleId, campAccount)
 
     if (toText(account.id) !== toText(picked.id)) {
@@ -1305,14 +1348,31 @@ export async function kingMyCamp (e) {
      * 不然后面每次查都拿营地号当角色 ID 去撞 -1013，推送、诊断、在线卡全都跟着瞎。
      * 换号查通了也顺手把绑定改到能查的号上（下次直接挑它）。
      */
-    const healRole = Boolean(liveRoleId) && Boolean(campSelf) && Boolean(toText(bind.roleId))
+    /** `fromBind` = 这次要查的 ID 本来就是绑定里存的那个。`kingMyCamp` 里没有 `bind` 这个变量，
+     *  以前这里手写成 `bind.roleId`，一查通就 ReferenceError，整条营地主页回「bind is not defined」 */
+    const healRole = Boolean(liveRoleId) && Boolean(campSelf) && fromBind
     const healAccount = fromBind && toText(account.id) !== toText(bindAccountId || toText(picked?.id))
+    /**
+     * 名字和区服只往「更清楚」的方向改：营地给的昵称可能是一串不可见字符（真的是特殊符号名），
+     * mapProfile 会把它清成占位「召唤师」。这时候别拿占位去覆盖绑定里、成员名单缓存里已经存好的名字，
+     * 不然一次查通反而把「女神初心负」之类的旧名字糊掉了。
+     */
+    const usableName = value => {
+      const text = toText(value)
+      return Boolean(text) && text !== '召唤师'
+    }
+    const cachedRole = liveRoleId ? roleInfoOf(liveRoleId) : {}
+    const nextName = [mapped.role.roleName, bindName, cachedRole.roleName].find(usableName) || toText(mapped.role.roleName)
+    /** 区服是不会变的东西：绑定里、名单缓存里存着更准的「安卓手Q186区」，就别拿接口那个粗的「手Q安卓」顶掉 */
+    const nextServer = [bindServer, cachedRole.serverName, toText(mapped.role.areaName), toText(mapped.role.roleText)].find(value => Boolean(toText(value))) || ''
     if (isSelf && liveRoleId && (healRole || healAccount)) {
       const saved = setBind(owner, {
         roleId: liveRoleId,
-        roleName: bindName || mapped.role.roleName,
-        serverName: bindServer || mapped.role.areaName || '',
-        accountId: toText(account.id),
+        roleName: nextName,
+        serverName: nextServer,
+        /** 绑定里的 accountId 是「这个角色在哪个营地号名下」，不是这次借来查的那个号的 ID：
+         *  存成借号的话，下次查它就拿着别人的营地号去查，-1013/-10107 全跟着来 */
+        accountId: campAccount || toText(account.id),
         byUser: bindBy || owner
       })
       if (healRole && campSelf && saved?.ok) {
@@ -1644,7 +1704,8 @@ export async function kingDiagnose (e) {
   if (!tries.length) return kingReply(e, kingAuthTip())
 
   const who = bind.roleName || campId
-  await kingReply(e, `诊断：挨个试 ${tries.length} 个号，几秒钟…`)
+  /** 后面还有诊断结果卡，这句提示走文字（一条指令最多一张图） */
+  await kingHint(e, `诊断：挨个试 ${tries.length} 个号，几秒钟…`)
 
   /** 诊断就是来查问题的：先强制刷一遍角色名单，别信可能已经空壳的缓存 */
   try {
@@ -1690,11 +1751,33 @@ export async function kingDiagnose (e) {
     }
   }
 
+  /**
+   * 第一轮全砸了再换一种解读试一轮：营地回 -10107 有两种来源 —— 他真关了主页可见，
+   * 或者这串数字根本不是营地号（是角色 ID / 抄错一位）。只报第一种就会让人白折腾。
+   */
+  if (!hit.length && campSelf) {
+    for (const account of tries) {
+      const id = toText(account.id)
+      if (!isUsableAuth(account)) continue
+      try {
+        const own = toText(account.userId) || id
+        const result = await getProfile(own, { accountId: id, targetRoleId: campId, retry: 0 })
+        const code = Number(result?.code)
+        if (isProfileHiddenCode(result) || (Number.isFinite(code) && code !== 0)) continue
+        const mapped = mapProfile(result)
+        if (!mapped.role.roleId) continue
+        hit.push({ account, roleId: toText(mapped.role.roleId) })
+      } catch (error) {
+        kingLog.info(`诊断（当角色 ID 再试一次）失败（${maskUserId(id)}）：${toText(error?.message) || describeError(error)}`)
+      }
+    }
+  }
+
   if (!hit.length) {
     return kingReply(e, [
       `诊断：「${who}」的主页读不到，试了 ${tries.length} 个号${badAuth ? `（${badAuth} 个号要重新扫一次）` : ''}。`,
-      '这个号大概在营地关了「主页可见范围」，只有本人的号能看。',
-      '用角色本人的号发一次「#王者QQ扫码」，或者在营地里把「主页可见范围」放开。'
+      '营地回的是 -10107「召唤师隐藏了主页信息」：要么他真关了「主页可见范围」，要么这串数字不是营地号（角色 ID 也一样长，抄错一位也是这个结果）。',
+      '先在营地 App 里核对 ID（我的 → 点头像 → 复制营地ID）；对得上就让他本人发一次「#王者QQ扫码」。'
     ].join('\n'))
   }
 

@@ -190,6 +190,31 @@ export async function kingReply (e, text) {
 }
 
 /**
+ * 回一条**纯文字**的临时提示（不图片）。
+ *
+ * 用法只限「等一会儿」这类过程话：那种话随后一定还有一张正式卡片，
+ * 再给提示配张图，一条指令就变成两张图 —— QQ 里连着刷两张大图又慢又吵。
+ * 2026-10-28 端到端走查里「#王者周报」「#王者诊断」就是这么发了两张。
+ *
+ * @param {object} e 框架事件
+ * @param {string} text 文本内容（`[CQ:at,qq=…]` 会被换成真的 @）
+ * @returns {Promise<object|null> 发送回执}
+ */
+export async function kingHint (e, text) {
+  if (!text) return false
+
+  const { body } = noticeView(text)
+  if (!body) return false
+
+  try {
+    return await e.reply(body)
+  } catch (error) {
+    kingLog.warn(`文字提示发不出去：${toText(error?.message) || toText(error)}`)
+    return null
+  }
+}
+
+/**
  * 从发送回执里抠消息 ID（各适配器字段不一致）
  *
  * @param {object} ret 发送回执

@@ -91,7 +91,7 @@ export function calcRankSort (rankName, rankStar = 0) {
  *
  * @param {object} result 营地 profile 响应
  * @returns {object} `{roleId, roleName, roleIcon, roleText, rankName, rankStar, rankScore, peakScore, peakDesc}`；
- *   roleName 取不到时是「无名召唤师」，其余缺项为空串或 0
+ *   roleName 取不到时是**空串**（留给 `buildRow` 用绑定里记的名字兜底、最后才写「无名召唤师」），其余缺项为空串或 0
  */
 export function extractRankInfo (result) {
   const data = result?.data || {}
@@ -109,7 +109,12 @@ export function extractRankInfo (result) {
 
   return {
     roleId: toText(role.roleId) || targetRoleId,
-    roleName: normalizeName(role.roleName),
+    /**
+     * 这里**不能**直接吐「无名召唤师」：榜单每行还有绑定里记下的名字可用，
+     * 一旦在这里兜了底，`buildRow` 的 `record.roleName || target.roleName` 就永远选中占位符 ——
+     * 2026-10-28 端到端走查就是这样，一整张榜单全是「无名召唤师」。
+     */
+    roleName: cleanName(role.roleName),
     roleIcon: toText(role.roleIcon),
     roleText: cleanName(role.roleText),
     rankName,
@@ -324,12 +329,21 @@ export function rankAccountList (target = {}) {
   })
 }
 
+/** 占位名字不算名字：缓存里翻出它时当作没取到 */
+function skipPlaceholder (value) {
+  const name = toText(value)
+  return name && name !== '无名召唤师' ? name : ''
+}
+
 function buildRow (target, record, { stale = false, hidden = false, failed = false, reason = '' } = {}) {
   const roleId = toText(target.roleId)
 
   return {
     roleId,
-    name: normalizeName(record?.roleName || target.roleName),
+    /**
+     * 快照里可能躺着上一版写进去的「无名召唤师」（占位符），它不该盖掉绑定里记着的真名。
+     */
+    name: normalizeName(skipPlaceholder(record?.roleName) || target.roleName),
     qq: (target.qq || []).map(item => toText(item)).join('、'),
     campId: toText(roleId),
     roleIcon: toText(record?.roleIcon),

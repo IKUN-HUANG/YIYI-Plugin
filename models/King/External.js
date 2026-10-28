@@ -183,6 +183,28 @@ export async function heroNameById (heroId) {
 }
 
 /**
+ * 出战绩前先把英雄名表备好：表是空的（新装 / 缓存被清 / 进程刚起）就现拉一次官网表。
+ *
+ * 为什么要有这一条：`fillHeroNames` 只补本地表里**已经有**的名字，而这张表要有人手动查过一次
+ * 「英雄列表 / 皮肤图鉴」才会落盘。于是新机器上第一张战绩卡全是「只有头像、没有英雄名」的空行 ——
+ * 2026-10-28 端到端走查发现的就是这个（30 条战绩 heroName 全空、本命英雄也没名字）。
+ *
+ * 拉不到不算错：网络不通时后面照常出卡，只是名字空着，下次再用时再试。
+ *
+ * @returns {Promise<boolean>} 真 = 本地表现在有内容（本来就有，或刚拉成功）
+ */
+export async function ensureHeroTable () {
+  if (heroNames().size) return true
+  try {
+    await fetchHeroTable()
+  } catch (error) {
+    log.info(`英雄表补拉失败，这次先不带英雄名：${error.message || error}`)
+    return false
+  }
+  return heroNames().size > 0
+}
+
+/**
  * 营地列表只给 heroId，名字要么自己有、要么这里补上。
  * 就地改写数组里的对象，只填空着的 heroName，已有的不覆盖。
  *
