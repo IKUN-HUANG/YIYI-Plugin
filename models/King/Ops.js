@@ -287,6 +287,28 @@ export function kingCacheSweep () {
 }
 
 /**
+ * 启动清缓存：插件每次载入，先把这个「删了也能自己长回来」的目录清空一遍。
+ *
+ * 为什么启动时也要清：缓存里有两类东西经不起跨机器/跨版本复用 ——
+ * ① 卡片内联副本（`cache/King/.inline/`）里存的是 `file:///` 绝对路径，换台服务器、改个目录名全是死路；
+ * ② 公开表（英雄/装备/皮肤）跟游戏版本走，旧表比没有更糟（查不到新英雄）。
+ * 定时任务（`cacheSweepCron`）每天还会清一次，这里补的是「重启后第一眼就是干净的」。
+ *
+ * 自己不抛错：清失败只记一条 warn，让插件照常起来。
+ * @returns {{count: number, total: number}} 与 sweepKingCache 同形状；出错时给 {count: 0, total: 0}
+ */
+export function kingBootCacheSweep () {
+  try {
+    const swept = sweepKingCache()
+    if (swept.count) kingLog.mark(`启动清缓存 ${sizeText(swept.total)} / ${swept.count} 个文件`)
+    return swept
+  } catch (error) {
+    kingLog.warn(`启动清缓存失败：${toText(error?.message) || error}`)
+    return { count: 0, total: 0 }
+  }
+}
+
+/**
  * 「#王者清理缓存」入口：内存里的接口记忆与磁盘缓存一起清（仅主人可用）。
  * 为什么两处必须一起清，见函数体里那段说明。
  * @param {object} e Yunzai 的消息事件对象
@@ -572,4 +594,4 @@ export async function kingBlacklist (e) {
  * 挂到各自的处理函数上，表里少一个那条指令就没反应。
  * @type {object}
  */
-export default { kingOps, kingOpsClearCache, kingCacheSweep, sweepKingCache, opsReport, kingCleanInvalid, kingBackup, kingRestore, kingBlacklist }
+export default { kingOps, kingOpsClearCache, kingCacheSweep, kingBootCacheSweep, sweepKingCache, opsReport, kingCleanInvalid, kingBackup, kingRestore, kingBlacklist }
