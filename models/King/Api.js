@@ -11,7 +11,7 @@ import { createLogger, toText } from '#yiyi.utils'
 import { kingCall as sendRequest, requestCacheStats, clearRequestCache } from './api/request.js'
 import { RateLimitError, maskUserId } from './Common.js'
 import { BASE_GAME, BASE_MAIN, CAMP_REFERER, DEFAULT_PUBLIC_KEY, ENDPOINTS, MIN_REQUEST_GAP_MS, PROFILE_API_VERSION, PROFILE_MODS } from './api/endpoints.js'
-import { fillHeroNames } from './External.js'
+import { fillHeroNames, ensureHeroTable } from './External.js'
 
 /** 把端点表里的常量与请求缓存的读数一起透出去：调用方只 import 这个文件就够 */
 export { CAMP_REFERER, BASE_GAME, BASE_MAIN, DEFAULT_PUBLIC_KEY, MIN_REQUEST_GAP_MS, requestCacheStats, clearRequestCache }
@@ -153,7 +153,15 @@ export async function getBattleList ({ friendUserId, option = 0, lastTime = 0, r
   const list = Array.isArray(data.list) ? data.list : []
   if (!list.length) return res
 
+  /**
+   * 英雄名是「本地表里有才补」的，而表要被人手动查过一次英雄列表才会落盘：
+   * 新机器上第一张战绩卡就会整片空名。所以这里补一次表，补完再补名字。
+   */
   fillHeroNames(list)
+  if (list.some(item => !toText(item?.heroName))) {
+    await ensureHeroTable()
+    fillHeroNames(list)
+  }
   const wanted = toText(roleId)
   if (!wanted) return data
   const mine = list.filter(item => !battleRoleOf(item) || battleRoleOf(item) === wanted)

@@ -102,7 +102,7 @@ export function mapBattleItem (item = {}) {
     gameTime: timeText(item.gametime),
     gameDuration: durationCnText(item.usedTime),
     heroIcon: toText(item.heroIcon),
-    heroName: toText(item.heroName),
+    heroName: toText(item.heroName) || heroNameOf(item.heroId ?? item.heroid),
     desc: desc === mvp.label ? '' : desc,
     gradeGame: toText(item.gradeGame),
     killCnt: num(item.killcnt),

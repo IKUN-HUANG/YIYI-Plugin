@@ -106,7 +106,8 @@ export function decideMain (raw, account, endpoint = PROFILE_ENDPOINT) {
   }
 
   if (isProfileHiddenCode(code) && endpoint === PROFILE_ENDPOINT) {
-    warnBusinessOnce(`hidden:${who}`, `账号 ${who} 查的这个营地号藏了主页（-10107）：已记进隐藏名单，24 小时内不再自动重试，手动查仍会再试一次`)
+    /** -10107 有两个来源：对方真关了主页可见，或者我们自己把角色 ID 当营地号发了 —— 文案别只报第一种 */
+    warnBusinessOnce(`hidden:${who}`, `账号 ${who} 查的这个营地号营地不给看主页（-10107）：可能关了主页可见，也可能这串数字不是营地号；推送那边会把它记进隐藏名单，24 小时内不再自动重试`)
     return { action: 'return' }
   }
 

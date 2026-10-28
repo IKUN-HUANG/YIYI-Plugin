@@ -9,6 +9,7 @@ import { describeError, maskUserId } from '../Common.js'
 import { isWin } from '../Field.js'
 import { isHiddenCamp } from '../Hidden.js'
 import { cleanName, normalizeName } from '../Profile.js'
+import { heroNameOf } from '../External.js'
 import { kingLog } from '../Say.js'
 import { campQueryOf, pushAccountFor } from '../auth/roles.js'
 import { AWARD_DEFS, PERIOD_PAGES, PERIOD_TEXT, REPORT_MAX_MEMBERS, SWITCH_OFF_RE, SWITCH_ON_RE } from './consts.js'
@@ -145,9 +146,11 @@ export function summarizeBattles (battles = []) {
 
     const heroId = toText(item.heroId)
     if (!heroId) continue
-    const hit = heroes.get(heroId) || { heroId, heroName: cleanName(item.heroName), heroIcon: toText(item.heroIcon), count: 0 }
+    /** 老归档里可能只存了 heroId（英雄名表那时还没落盘），本地表能翻出来就补上 */
+    const name = cleanName(item.heroName) || heroNameOf(heroId)
+    const hit = heroes.get(heroId) || { heroId, heroName: name, heroIcon: toText(item.heroIcon), count: 0 }
     hit.count += 1
-    if (!hit.heroName) hit.heroName = cleanName(item.heroName)
+    if (!hit.heroName) hit.heroName = name
     if (!hit.heroIcon) hit.heroIcon = toText(item.heroIcon)
     heroes.set(heroId, hit)
   }

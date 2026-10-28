@@ -14,7 +14,7 @@ import { groupPushOn, groupPushText } from '../GroupPush.js'
 import { normalizeName } from '../Profile.js'
 import { expandRankTargets, groupRankTargets, memberIdsOf } from '../Rank.js'
 /** `kingGroupNoBindTip` 是这条路径上第一个会用到的东西：本群一个人都没绑角色时立刻就走到那一行 */
-import { kingGroupNoBindTip, kingGuard, kingLog, kingOn, kingReply, sendGroupImage } from '../Say.js'
+import { kingGroupNoBindTip, kingGuard, kingHint, kingLog, kingOn, kingReply, sendGroupImage } from '../Say.js'
 import { buildAwards, collectRows, formatTs, parseReportSwitch } from './build.js'
 import { PERIOD_PAGES, PERIOD_TEXT, REPORT_FETCH_NOTICE_SEC, REPORT_MAX_MEMBERS, REPORT_MAX_ROWS } from './consts.js'
 import { loadPushes, pushFlags, pushText, setPush } from './store.js'
@@ -42,7 +42,8 @@ export async function kingGroupReport (e, period = 'weekly') {
     const upper = estimateSeconds(Math.min(targets.length, REPORT_MAX_MEMBERS) * (PERIOD_PAGES[period] || 3))
     if (upper > REPORT_FETCH_NOTICE_SEC) {
       /** 拆成两行：提示卡别太扁，不然 QQ 里没点开的预览会把卡片底部切掉 */
-      await kingReply(e, `正在查 ${targets.length} 个角色的对局记录\n最多要 ${upper} 秒，稍等一下～`)
+      /** 这句后面还有一张正式的周报卡，提示别再出图（一条指令最多一张图） */
+      await kingHint(e, `正在查 ${targets.length} 个角色的对局记录，最多要 ${upper} 秒，稍等一下～`)
     }
 
     const { rows, failed, pages, from, to } = await collectRows(targets, period)
