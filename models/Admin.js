@@ -2,7 +2,7 @@
  * @file `#伊伊设置` 的全流程：项表、命令匹配、校验、落盘、回执。
  * @module models/Admin
  *
- * 帮助菜单的数据面在 ./Admin/help.js、更新检查在 ./Admin/update.js；本文件只管
+ * 帮助菜单的数据面在 ./Admin/help.js、更新检查在 ./Admin/update.js、重启在 ./Admin/restart.js；本文件只管
  * 「用户说了一句话 → 该改哪个键 → 改成什么 → 回什么」，末尾把另两块原样转出。
  *
  * 副作用：写 config.yaml（见 writeSetting）。
@@ -414,6 +414,10 @@ export function settingApplied (item, value, { action = 'set', items = null } = 
  */
 export * from './Admin/help.js'
 /**
- * 更新检查（`#伊伊更新` 与每日自动检查）。
+ * 更新检查（`#伊伊更新` 与每 N 分钟一次的上游轮询）。
  */
 export * from './Admin/update.js'
+/**
+ * 重启 Yunzai（TRSS 的 `Bot.restart()` / pm2 / Miao 重启服务）与重启后的耗时回报。
+ */
+export * from './Admin/restart.js'

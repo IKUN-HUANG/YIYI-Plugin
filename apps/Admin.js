@@ -8,7 +8,7 @@
 import path from 'node:path'
 import { createLogger, pluginTitle, version, yunzai, rootDir, afterLoaded } from '#yiyi.utils'
 import { render, Config } from '#yiyi.components'
-import { extractMsgId, extractSrcId, loadChangelog, loadHelpConfig, loadHelpBg, persistBg, takeCachedBg, highlightCmds, settingsGroups, settingRest, matchSetting, writeSetting, settingUsage, settingApplied, GROUP_CMD_RE, findGroupCmd, groupIndex, GROUP_CMDS, LIST_CMD_RE, findListCmd, updateMasterList, runPluginUpdate, probeUpdateSource, resetUpdateHold, updateCheckingText, canRestartYunzai, restartYunzai, startUpdateCheck, shortSha, isPluginMaster, masterOnlyText } from '#yiyi.models'
+import { extractMsgId, extractSrcId, loadChangelog, loadHelpConfig, loadHelpBg, persistBg, takeCachedBg, highlightCmds, settingsGroups, settingRest, matchSetting, writeSetting, settingUsage, settingApplied, GROUP_CMD_RE, findGroupCmd, groupIndex, GROUP_CMDS, LIST_CMD_RE, findListCmd, updateMasterList, runPluginUpdate, probeUpdateSource, resetUpdateHold, updateCheckingText, canRestartYunzai, restartYunzai, reportRestartDone, startUpdateCheck, shortSha, isPluginMaster, masterOnlyText } from '#yiyi.models'
 
 const log = createLogger('管理')
 
@@ -152,7 +152,8 @@ export class Admin extends plugin {
 
   /**
    * `#伊伊更新`：先探环境（是不是 git 仓库、源是 GitHub 还是 Gitee），再检查上游并快进；
-   * 更完只在框架给了 `Bot.restart()` 时才重启，没给就提示主人手动重启一次，绝不让进程自己退出。
+   * 更完走 `restartYunzai()`（TRSS 的 `Bot.restart()` / pm2 / Miao 重启服务，见 models/Admin/restart.js），
+   * 一条路都没有就提示主人手动重启一次，绝不让进程自己退出。
    *
    * @param {object} e 消息事件
    * @returns {Promise<*>} e.reply 的结果
@@ -182,17 +183,22 @@ export class Admin extends plugin {
 
     log.mark(`手动更新：${ret.subject || shortSha(ret.after)}`)
     const via = ret.mirror ? `\n[原源拉不动，已换官方镜像：${ret.mirror}]` : ''
-    const willRestart = canRestartYunzai()
+    const willRestart = await canRestartYunzai()
     await e.reply(
-      `已更新 ${ret.incoming} 个提交：\n[${ret.subject || shortSha(ret.after)}]\n[${shortSha(ret.before)} → ${shortSha(ret.after)}]${via}\n${willRestart ? '开始重启Yunzai…' : '这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。'}`,
+      `已更新 ${ret.incoming} 个提交：\n[${ret.subject || shortSha(ret.after)}]\n[${shortSha(ret.before)} → ${shortSha(ret.after)}]${via}\n${willRestart ? '开始重启Yunzai…' : '这个框架没有可用的重启方式（既没有 Bot.restart，也没有 Miao 那种本地重启服务，还不在进程守护里），麻烦手动重启一次 Yunzai 让新版本生效。'}`,
       true
     )
     if (!willRestart) {
-      log.warn('框架没给 Bot.restart()，不动进程，已提示主人手动重启')
+      log.warn('没有可用的重启接口，不动进程，已提示主人手动重启')
       return
     }
 
-    const how = restartYunzai()
+    const how = await restartYunzai({ reason: 'manual-update' })
+    /** 只有「前台转后台」那条路会失败（框架的 start 脚本没起来）：进程没动，得说清楚，别让主人干等 */
+    if (!how) {
+      log.warn('重启没做成，进程没动')
+      return e.reply('重启没做成：框架的启动脚本没起来（进程守护那块没配好），麻烦手动重启一次 Yunzai 让新版本生效。', true)
+    }
     log.mark(`正在重启 Yunzai（${how}）`)
   }
 
@@ -231,14 +237,19 @@ export class Admin extends plugin {
 
     log.mark(`强制更新：${shortSha(ret.before)} → ${shortSha(ret.after)}${ret.discarded ? `，还原 ${ret.discarded} 个文件` : ''}`)
 
-    const willRestart = canRestartYunzai()
+    const willRestart = await canRestartYunzai()
     if (!willRestart) {
-      log.warn('框架没给 Bot.restart()，不动进程，已提示主人手动重启')
-      return e.reply(`${lines.join('\n')}\n\n这个框架没有重启接口（没给 Bot.restart），麻烦手动重启一次 Yunzai 让新版本生效。`, true)
+      log.warn('没有可用的重启接口，不动进程，已提示主人手动重启')
+      return e.reply(`${lines.join('\n')}\n\n这个框架没有可用的重启方式（既没有 Bot.restart，也没有 Miao 那种本地重启服务，还不在进程守护里），麻烦手动重启一次 Yunzai 让新版本生效。`, true)
     }
 
     await e.reply(`${lines.join('\n')}\n\n开始重启Yunzai…`, true)
-    const how = restartYunzai()
+    const how = await restartYunzai({ reason: 'manual-update' })
+    /** 只有「前台转后台」那条路会失败（框架的 start 脚本没起来）：进程没动，得说清楚，别让主人干等 */
+    if (!how) {
+      log.warn('重启没做成，进程没动')
+      return e.reply('重启没做成：框架的启动脚本没起来（进程守护那块没配好），麻烦手动重启一次 Yunzai 让新版本生效。', true)
+    }
     log.mark(`正在重启 Yunzai（${how}）`)
   }
 
@@ -380,3 +391,11 @@ export class Admin extends plugin {
  * 模块顶层挂的话这行会挤在「已加载 Admin」中间，用户分不清插件到底起没起完。
  */
 if (Config.pluginAutoUpdate) afterLoaded(startUpdateCheck)
+
+/**
+ * 「上一次重启到底成没成、花了多久」：重启前在 data 里留了时间戳，新进程载入完成后私聊主人。
+ *
+ * 跟自动更新一样挂 `afterLoaded`：那几秒机器人刚连上，私聊才发得出去（`reportRestartDone`
+ * 自己还会隔 5 秒重试一分钟）。没重启过时读不到标记，静默返回。
+ */
+afterLoaded(reportRestartDone)

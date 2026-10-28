@@ -6,11 +6,10 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { createHash } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import sharp from 'sharp'
-import { iconBase64, fetchImage, bufferToDataUri, pluginName, version, yunzai, resourcesDir, cacheDir, createLogger, readText, fileFingerprint, toText, previewValue } from '#yiyi.utils'
-import { render, renderData, resPathForTpl, tplFileOf } from '#yiyi.components'
+import { iconBase64, fetchImage, bufferToDataUri, pluginName, version, yunzai, resourcesDir, createLogger, readText, fileFingerprint, toText, previewValue } from '#yiyi.utils'
+import { render, renderData, tplFileOf } from '#yiyi.components'
 import { renderImage, shotAvailable } from './Browser.js'
 import { kingAck } from './Ack.js'
 
@@ -32,16 +31,10 @@ const log = createLogger('王者卡片')
 const CSS_ENTRY = path.join(resourcesDir, KING_TPL, 'king.css')
 
 /**
- * 内联样式之后的模板副本（渲染器只认磁盘上的 tplFile，所以落一份带 <style> 的副本给它）。
- *
- * 落 `cacheDir` 而不是 `resourcesDir`：这是**运行期产物**，样式表一变就重写一份，
- * 放进仓库既会被提交（内容全是 `file:///` 绝对路径，换台机器就是错的），
- * 又要给「插件目录里只有源码」这条规矩开口子。`cache/` 本来就会自己清（定时任务 + 启动），
- * 清掉了下次出图自动重生成。
+ * 这台宿主认哪种 tplFile 写法（见 renderKingWithoutEvent 的注释）。
+ * 空串 = 还没试出来，每张卡都要从最便宜的那种开始试；一旦试通就锁死，不再无谓重试。
  */
-const INLINE_DIR = path.join(cacheDir, KING_TPL, '.inline')
-const STYLE_LINK_RE = /<link\b[^>]*rel=["']stylesheet["'][^>]*>/i
-const inlineCache = new Map()
+let workingForm = ''
 
 /**
  * 卡片样式：把 @import 展开、把 url() 换成 file:// 绝对地址。
@@ -77,41 +70,6 @@ function cssStamp (file) {
   const css = cssText(abs)
   cssStampCache.set(abs, { stamp, css })
   return css
-}
-
-/** 生成（并缓存）带内联样式的模板副本，返回给渲染器用的 tplFile 相对路径 */
-function inlineTplFile (tplPath) {
-  const tplAbs = path.join(resourcesDir, `${tplPath}.html`)
-  const html = readText(tplAbs)
-  const css = html ? cssStamp(CSS_ENTRY) : ''
-  if (!html || !css) return ''
-
-  const style = `<style>\n${css}\n</style>`
-  const marked = STYLE_LINK_RE.test(html) ? html.replace(STYLE_LINK_RE, style) : html.replace('</head>', `${style}\n</head>`)
-  const key = createHash('sha1').update(marked).digest('hex').slice(0, 16)
-  const hit = inlineCache.get(tplPath)
-  if (hit?.key === key) return hit.rel
-
-  const parts = tplFileOf(tplPath).split('/')
-  const name = parts.pop()
-  const file = path.join(INLINE_DIR, name)
-  /**
-   * 渲染器把 tplFile 当「相对 resources 的路径」再拼一次，所以这里给一条**穿出 resources、
-   * 落回插件根 cache 的相对路径**（`../cache/King/.inline/x.html`）：文件不进仓库，
-   * 渲染器照样按老规矩找得到。斜杠统一成正斜杠，Windows 上也当路径吃。
-   */
-  const rel = path.relative(resourcesDir, file).split(path.sep).join('/')
-
-  try {
-    fs.mkdirSync(INLINE_DIR, { recursive: true })
-    fs.writeFileSync(file, marked)
-  } catch (error) {
-    log.info(`内联样式失败（${tplPath}）：${previewValue(toText(error?.message), 160)}`)
-    return ''
-  }
-
-  inlineCache.set(tplPath, { key, rel })
-  return rel
 }
 
 /** 本地素材是静态的（resources 里的 PNG 运行时不变），而 localIcon/logoUri 每张卡要调十几次，
@@ -170,6 +128,27 @@ const isImagePayload = value =>
 
 /** 纯文字卡（提示/说明）和自动推送不算「卡片类」，出图前不打扰用户 */
 const ACK_SKIP_TPL = new Set(['notice', 'bind-help', 'push'])
+
+/**
+ * 挑这个宿主认的 tplFile 写法（见 renderKingWithoutEvent 的注释）。
+ *
+ * @param {string} tplPath 模板名，例如 `King/battle-detail`
+ * @returns {string[]} `rel` / `yunzai` 的尝试顺序，前者是 resources 相对写法
+ */
+function tplForms (tplPath) {
+  const rel = `${tplPath}.html`
+  const rooted = tplFileOf(tplPath)
+  const landed = file => {
+    try {
+      return fs.existsSync(path.resolve(file))
+    } catch {
+      return false
+    }
+  }
+  if (landed(rel)) return ['rel']
+  if (landed(rooted)) return ['yunzai']
+  return ['rel', 'yunzai']
+}
 
 /**
  * 出一张王者卡片并（按需）自己发出去，是各业务模块唯一该调的出图函数。
@@ -235,7 +214,20 @@ export async function renderKing (e, tpl, data = {}, opts = {}) {
  */
 export async function renderKingWithoutEvent (tpl, data = {}, opts = {}) {
   const tplPath = `${KING_TPL}/${tpl}`
-  const merged = renderData({ ...data, _res_path: resPathForTpl(tplPath) }, ({ data: base }) => ({
+
+  /**
+   * 样式**直接塞进页面**（模板里是 `<style>{{@css}}</style>`），不走 `<link>`、也不另存模板副本。
+   *
+   * 云崽的渲染器分两派：一派 `file://` 打开页面，相对路径能自己找；另一派读完模板再
+   * `page.setContent`，页面没有基地址，`<link href="../../resources/…">` 一律 404。
+   * 另存一份「带 <style> 的模板副本」能同时喂饱两派，但副本得放在渲染器找得到的地方——
+   * 放 `resources/` 会被提交进仓库，放 `cache/` 就得给它一条 `../cache/…` 的路径，
+   * 而 `../cache/…` 只在「渲染器会先拼上 resources 目录」时才成立：Miao / TRSS 都是拿
+   * `process.cwd()`（Yunzai 根）直接 `readFileSync(tplFile)`，于是这条路径落到 Yunzai 根的
+   * 上一级去，读不到就打一行 `加载html错误`、不抛异常、只交回空图（2026-10-28 线上就是这么炸的）。
+   * 把 CSS 当数据传进去，两派都吃得到，也就不需要副本了。
+   */
+  const merged = renderData({ ...data, css: cssStamp(CSS_ENTRY) }, ({ data: base }) => ({
     ...base,
     pluginTitle,
     pluginName,
@@ -244,29 +236,36 @@ export async function renderKingWithoutEvent (tpl, data = {}, opts = {}) {
     ...(opts.data || {})
   }))
 
-  const plain = tplFileOf(tplPath)
-  const inline = inlineTplFile(tplPath)
+  /**
+   * tplFile 的写法不同宿主认的不一样：有的渲染器会先拼上 resources 目录（认 `King/x.html`），
+   * 有的直接拿 cwd 去读（认 `plugins/YIYI-Plugin/resources/King/x.html`）。
+   * 两种写法哪个能落到真实文件，磁盘上一问就知道 —— 所以先按现成的挑，别靠「先试错一次」：
+   * 错的那次在 TRSS / Miao 上会打一行 `加载html错误` 再交空图，既吵又白渲染一遍。
+   * 两种都不落地（罕见的目录结构）才退化成两个都试。
+   */
+  const order = workingForm ? [workingForm] : tplForms(tplPath)
+  let failed = ''
 
-  try {
-    return await renderImage(tplPath, { ...merged, tplFile: inline || plain })
-  } catch (error) {
-    /**
-     * 内联副本走的是 `../cache/…` 这条**穿出 resources** 的相对路径（临时产物不进仓库）。
-     * 万一某版渲染器只肯认 resources 底下的路径，退回「原模板」照样能出图 ——
-     * 内联样式只是为了让 `setContent` 那类渲染器也读得到 css，不是出图的前提。
-     */
-    if (inline) {
-      log.warn(`${tplPath} 内联模板出图失败，退回原模板：${previewValue(toText(error?.message), 160)}`)
-      try {
-        return await renderImage(tplPath, { ...merged, tplFile: plain })
-      } catch (err) {
-        log.warn(`${tplPath} 出图失败：${previewValue(toText(err?.message), 160)}`)
-        return ''
+  for (const kind of order) {
+    const file = kind === 'rel' ? `${tplPath}.html` : tplFileOf(tplPath)
+    try {
+      const out = await renderImage(tplPath, { ...merged, tplFile: file })
+      if (out) {
+        if (kind !== workingForm) {
+          workingForm = kind
+          if (kind !== 'rel') log.mark(`卡片模板用 ${kind} 写法出图（${tplPath}）`)
+        }
+        return out
       }
+      failed = '渲染器返回空'
+    } catch (error) {
+      failed = previewValue(toText(error?.message), 160)
     }
-    log.warn(`${tplPath} 出图失败：${previewValue(toText(error?.message), 160)}`)
-    return ''
+    if (workingForm) break
   }
+
+  log.warn(`${tplPath} 出图失败：${failed}`)
+  return ''
 }
 
 /**
