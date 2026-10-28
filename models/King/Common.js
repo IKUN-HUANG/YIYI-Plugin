@@ -12,6 +12,28 @@ export {
   buildUuid, decodeHeaderValue, parseJson, previewValue
 } from '#yiyi.utils'
 
+/**
+ * 营地昵称里夹的脏字符：零宽空格、方向控制符（⁨⁩ 这种）、私用区方块码。
+ * 为什么放公共层：账号卡（Account）和营地主页（Profile）都要洗名字，而后者依赖前者，
+ * 规则只能摆在两边都能引用的地方，不然就成了两份迟早走样的正则。
+ */
+const PRIVATE_USE_CHARS_RE = /[\u{E000}-\u{F8FF}\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}]/gu
+const INVISIBLE_CHARS_RE = /[\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFE00-\uFE0F\uFEFF\u2000-\u200A\u202F\u205F\u3000\u3164]/g
+
+/**
+ * 洗净营地回来的名字/文本：去掉私用区字符与不可见控制符，连续空格并成一个，再 trim。
+ * 洗完什么都不剩就给空串 —— 「无名召唤师」那种兜底归 `normalizeName`，不在这里做。
+ * @param {*} value 营地字段的原始值（字符串居多，也可能是数字、null、undefined）
+ * @returns {string} 洗干净的字符串
+ */
+export function cleanText (value) {
+  return toText(value)
+    .replace(PRIVATE_USE_CHARS_RE, '')
+    .replace(INVISIBLE_CHARS_RE, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
 /** 成功 */
 export const CODE_SUCCESS = 0
 /** -30107 太频繁：这个号要静默一阵子，继续撞只会更久 */
@@ -22,6 +44,8 @@ export const CODE_ACCOUNT_INVALID = -30003
 export const CODE_PROFILE_HIDDEN = -10107
 /** -10103 比赛详情被藏（跟主页隐藏是两回事，文案要分开说） */
 export const CODE_BATTLE_HIDDEN = -10103
+/** -1013 获取用户角色信息失败：拿「营地号」当「角色 ID」查、或这个角色不归这个营地号，都是它 */
+export const CODE_ROLE_UNKNOWN = -1013
 
 /**
  * `classifyBusinessCode()` 的返回值集合：调用方拿它做 switch，别再自己比数字码。
@@ -161,6 +185,8 @@ export function describeProfileDenied (raw) {
   const reason = toText(raw?.returnMsg ?? raw?.message)
   if (code === CODE_PROFILE_HIDDEN) return '这个营地号把主页藏起来了（-10107）'
   if (code === CODE_BATTLE_HIDDEN) return '这场对局的详情被藏起来了（-10103）'
+  /** 这句营地说得含糊，最容易看岔：其实是「ID 对不上号」，不是被隐藏 */
+  if (code === CODE_ROLE_UNKNOWN) return reason ? `营地认不出这个角色（-1013：${reason}）` : '营地认不出这个角色（-1013）：这个 ID 可能不是角色 ID，或者这个角色不归这个营地号'
   return reason || `营地没给数据（${code || '无错误码'}）`
 }
 
@@ -173,6 +199,7 @@ export function hiddenScopeHint (code) {
   const num = Number(code)
   if (num === CODE_BATTLE_HIDDEN) return '被藏的是这场对局的详情（在营地「隐私设置」里放开战绩可见范围）'
   if (num === CODE_PROFILE_HIDDEN) return '被藏的是主页（在营地「隐私设置」里放开主页可见范围）'
+  if (num === CODE_ROLE_UNKNOWN) return '-1013 是「认不出这个角色」：多半把营地号当角色 ID 用了，或者这个角色不归这个营地号'
   return '营地这次的返回说不清原因'
 }
 

@@ -6,17 +6,17 @@
  *
  * @module models/King/Account
  */
-import { toText, maskUserId, isUsableAuth, normRoleId, sleep, AuthAccountError, ACCOUNT_INVALID_MESSAGE_RE } from './Common.js'
+import { toText, cleanText, maskUserId, isUsableAuth, normRoleId, sleep, AuthAccountError, ACCOUNT_INVALID_MESSAGE_RE, describeError } from './Common.js'
 import {
   listAccounts, findAccount, usableAccounts, defaultAccountId,
   setDefaultAccount, removeAccount, accountLine, ownerOf,
   setBind, delBind, resolveBind, silenceLeftMs,
-  roleInfoOf, accountsOwningRole
+  roleInfoOf, accountsOwningRole, rememberRoles, campAccountValueOf
 } from './Auth.js'
 import { startWechatLogin, startQQLogin, refreshAccount } from './Login.js'
 import { kingReply, kingGuard, kingFail, kingAuthTip, kingRecall, loginImage, loginNotice, kingLog } from './Say.js'
 import { renderKing, logoUri, imageUris, timeText } from './Card.js'
-import { CAMP_REFERER } from './Api.js'
+import { CAMP_REFERER, getProfile } from './Api.js'
 import { rankFaceOf } from './Face.js'
 
 const log = kingLog
@@ -153,7 +153,7 @@ export function accountRows (userId = '') {
     const id = toText(account.id || account.userId)
     const nick = toText(account.nick)
     const owner = ownerOf(account)
-    const role = toText(account.roleName || account.roleId)
+    const role = cleanText(account.roleName) || toText(account.roleId)
     const server = toText(account.serverName)
     const level = toText(account.roleLevel)
     const usable = isUsableAuth(account)
@@ -210,13 +210,17 @@ export async function paintAccountAvatars (rows = [], { rolesByAccount = null } 
     const roleId = toText(first?.roleId) || toText(row.roleId)
     if (!first) return { ...row, roleId, roleCount: roles.length || row.roleCount }
 
-    const name = toText(first.roleName)
+    /** 角色名有可能是空的（营地对某些号不给 roleName）：再回角色关系里找一遍，
+     *  还找不到就挂上角色 ID —— 别让卡片上只剩「角色：（区服 · 30 级）」这一截，看着像坏了 */
+    const name = [first.roleName, row.roleName, roleInfoOf(roleId)?.roleName]
+      .map(cleanText)
+      .find(Boolean) || (roleId ? `#${roleId}` : '未读出角色')
     const server = toText(first.serverName)
     const level = toText(first.roleLevel)
     return {
       ...row,
       roleId,
-      roleName: name || row.roleName,
+      roleName: name,
       roleCount: roles.length || row.roleCount,
       roleText: `角色：${name}${server ? `（${server}${level ? ` · ${level} 级` : ''}）` : ''}`
     }
@@ -514,6 +518,40 @@ export async function kingCheckAccount (e) {
 }
 
 /**
+ * 「#王者绑定」收到的那串数字可能是**营地号**而不是角色 ID（营地把营地号当角色 ID 一律回 -1013）。
+ * 认出来是营地号，就用本人能用的号查一次主页，把它名下第一个角色（营地给的那个目标角色优先）认出来。
+ * 查不动、或根本不是营地号，就把原值当角色 ID 交回去，让调用方照旧处理。
+ *
+ * @param {string} value 用户发来的那串数字
+ * @param {string} owner 谁的号（优先用他自己的登录信息去查）
+ * @returns {Promise<{roleId: string, roleName?: string, serverName?: string, campUser?: string, roles?: Array<object>}>} `roleId` 为空表示「是营地号但没查出角色」
+ */
+async function resolveCampBindValue (value, owner) {
+  const campUser = campAccountValueOf(value, owner)
+  if (!campUser) return { roleId: toText(value) }
+
+  const account = usableAccounts(owner).find(isUsableAuth) || findAccount(campUser)
+  if (!account) return { roleId: '', campUser }
+
+  try {
+    const result = await getProfile(campUser, { accountId: account.id, retry: 0 })
+    const data = result?.data && typeof result.data === 'object' ? result.data : {}
+    const roles = Array.isArray(data.roleList) ? data.roleList : []
+    const target = toText(data.targetRoleId)
+    const role = roles.find(item => toText(item.roleId) === target) || roles[0] || {}
+    const roleId = toText(role.roleId)
+    if (!roleId) {
+      log.info(`绑定的是营地号 ${maskUserId(campUser)}，这次没查出角色：${toText(result?.message) || describeError(result)}`)
+      return { roleId: '', campUser }
+    }
+    return { roleId, roleName: cleanText(role.roleName), serverName: cleanText(role.serverName) || cleanText(role.roleText) || cleanText(role.areaName), campUser, roles }
+  } catch (error) {
+    log.info(`绑定的是营地号 ${maskUserId(campUser)}，查角色失败：${toText(error?.message) || describeError(error)}`)
+    return { roleId: '', campUser }
+  }
+}
+
+/**
  * `#王者绑定 营地ID`：只记看哪个角色，不存登录信息，所以别人的 ID 也能绑。
  *
  * @param {object} e Yunzai 消息事件
@@ -523,10 +561,30 @@ export async function kingBindRole (e) {
   if (!(await kingGuard(e))) return false
 
   const owner = toText(e.user_id)
-  const roleId = normRoleId(grab(e.msg, /绑定[^\d]*?(\d+)/))
-  if (!roleId) return kingReply(e, BIND_USAGE)
+  const given = normRoleId(grab(e.msg, /绑定[^\d]*?(\d+)/))
+  if (!given) return kingReply(e, BIND_USAGE)
 
-  const info = roleInfoOf(roleId)
+  /**
+   * 「#王者绑定」收的本来就是**营地号**（营地 App 里那串），角色 ID 是查通主页之后才补上的 ——
+   * 所以：能查通就存角色 ID；这会儿查不通（没这个号的登录信息 / 营地不回角色）也照收，
+   * 先把营地号记进绑定。营地号当绑定值是合法状态：营地主页/推送都认得出「这是号不是角色」。
+   */
+  const resolved = await resolveCampBindValue(given, owner)
+  const givenIsCamp = Boolean(resolved.campUser) || Boolean(campAccountValueOf(given, owner))
+  if (!resolved.roleId && givenIsCamp) {
+    const kept = setBind(owner, { roleId: given, roleName: '', serverName: '', accountId: resolved.campUser || '', byUser: owner })
+    if (!kept.ok) return kingReply(e, kept.reason)
+    log.mark(`营地号绑定：${maskUserId(owner)} → 营地号 ${maskUserId(given)}（没读出角色，等查通再换）`)
+    return kingReply(e, [
+      `先按营地号 ${given} 记下了 —— 这会儿还没从营地读出它名下的角色。`,
+      '发一次「#王者营地」查通主页，我会自动把绑定换成真正的角色 ID（查数据不受影响）；',
+      `想立刻认出角色，就先发「#王者QQ扫码」把 ${given} 登进来，再来一次「#王者绑定 ${given}」。`
+    ].join('\n'))
+  }
+
+  const roleId = resolved.roleId
+  const info = resolved.roleName ? { roleId, roleName: cleanText(resolved.roleName), serverName: cleanText(resolved.serverName), accountId: owner } : roleInfoOf(roleId)
+  if (resolved.roles && resolved.roles.length) rememberRoles(owner, resolved.campUser, resolved.roles)
   const mine = accountsOwningRole(roleId, owner)
   const usable = usableAccounts(owner)
   const done = setBind(owner, {
@@ -538,9 +596,11 @@ export async function kingBindRole (e) {
   })
   if (!done.ok) return kingReply(e, done.reason)
 
-  log.mark(`营地ID绑定：${maskUserId(owner)} → ${maskUserId(roleId)}`)
+  log.mark(`营地ID绑定：${maskUserId(owner)} → ${maskUserId(roleId)}${givenIsCamp ? `（发来的是营地号 ${maskUserId(given)}，已换成角色 ID）` : ''}`)
 
   const lines = [`已经绑定营地角色 ${roleId}${info.roleName ? `（${info.roleName}${info.serverName ? ` · ${info.serverName}` : ''}）` : ''}`]
+
+  if (givenIsCamp) lines.push(`${given} 是营地号，营地这次给了它名下这个角色，我就按角色 ID 存了 —— 往后查主页、推送都用它`)
 
   lines.push(info.accountId
     ? (info.accountId === owner
@@ -582,8 +642,10 @@ export function kingWhoami (e, { mask = false } = {}) {
   const account = findAccount(defaultAccountId(e.user_id), e.user_id)
   const bits = []
 
+  /** 绑定记录里的角色名是扫码时照抄营地返回的，可能整串都是不可见字符（⁩⁨⁨⁩），洗完再贴 */
+  const bindName = cleanText(bind.roleName)
   bits.push(bind.roleId
-    ? `绑定的营地角色：${bind.roleId}${bind.roleName ? `（${bind.roleName}）` : ''}`
+    ? `绑定的营地角色：${bind.roleId}${bindName ? `（${bindName}）` : ''}`
     : '还没绑定营地角色：发「#王者绑定 营地ID」绑一个，或者发「#王者QQ扫码」扫上会自动绑本人角色')
 
   if (account) {
