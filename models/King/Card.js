@@ -167,7 +167,12 @@ export async function renderKing (e, tpl, data = {}, opts = {}) {
 
   const tplPath = `${KING_TPL}/${tpl}`
   const viaFramework = async () => {
-    const out = await render(tplPath, data, {
+    /**
+     * 样式必须跟着**这一份**数据进去：模板里写的是 `<style>{{@css}}</style>`，
+     * 框架渲染这条路上没人替我们填 `css`，漏了就是整张卡没有样式
+     * （2026-10-29 线上就是这样：卡有内容、一点 css 都没有）。
+     */
+    const out = await render(tplPath, { ...data, css: cssStamp(CSS_ENTRY) }, {
       e,
       retType: opts.retType,
       retMsgId: opts.retType ? opts.retMsgId : (opts.retMsgId ?? true),
