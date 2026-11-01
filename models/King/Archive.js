@@ -8,7 +8,7 @@
  *
  * @module models/King/Archive
  */
-import { toInt, toText as textOf, fileFingerprint, toText } from '#yiyi.utils'
+import { toInt, fileFingerprint, toText } from '#yiyi.utils'
 import { kingArchiveDir, kingArchiveFile, readYaml, writeYamlDoc, listArchiveIds } from './Store.js'
 import { getBattleList } from './Api.js'
 import { fillHeroNames } from './External.js'

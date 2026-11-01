@@ -3,7 +3,7 @@
  * @module models/King/Alerts
  */
 import { createLogger, toText, maskUserId } from '#yiyi.utils'
-import { kingReply, kingGuard, kingFail } from './Say.js'
+import { kingReply, kingGuard } from './Say.js'
 import { readUserPart, writeUserPart, listUserIds, readCache, writeCache } from './core/store.js'
 import { fetchNewsList, fetchSkinTable } from './External.js'
 import { hotLockRun } from './Hot.js'

@@ -93,7 +93,6 @@ export async function runPushTickInner ({ now = Date.now(), send, sendDetail, ma
       /** 藏了主页 / 不存在的号：打进隐藏名单再记账，免得每圈都打一条注定失败的请求 */
       if (result.hide) {
         applyPushPatch(data, qq, result.sub, unavailablePatch(result.sub, result.campId, now))
-        savePushData(data)
       }
       summary.failed += 1
       continue
@@ -107,9 +106,10 @@ export async function runPushTickInner ({ now = Date.now(), send, sendDetail, ma
     }
     /** 这一圈没有新东西：把认到的营地号等补丁写回存档，下一圈直接用 */
     applyPushPatch(data, qq, result.sub, result.patch)
-    savePushData(data)
   }
 
+  // 无推送的状态集中保存一次；有消息的游标仍在该群发送完成后保存。
+  savePushData(data)
   await flushBuffered(buffered, { data, send, sendDetail, summary })
   savePushData(data)
   logRound(summary)
@@ -133,7 +133,6 @@ async function collectSubs (data, baseSubs) {
       const kept = { ...(sub.roles || {}) }
       for (const roleId of stale) delete kept[roleId]
       data.pushList[qq] = { ...sub, roles: kept }
-      savePushData(data)
       log.info(`${qq} 清掉 ${stale.length} 个已经不在角色名单里的推送存档`)
     }
     for (const extra of extraRoleSubs(qq, sub)) subs.push([qq, extra])
@@ -330,14 +329,15 @@ async function flushBuffered (buffered, { data, send, sendDetail, summary }) {
    *
    * 有行 / 有详情的那批走的是「先发卡、末尾才 savePushData」，所以进程如果正好崩在
    * 「卡片已经发出去、游标还没落盘」之间，重启后这一圈会对该群再推一张：at-least-once，
-   * 上限是「崩一次多一张卡」；纯查询、没攒行的订阅在 checkOneSub 那侧就已经先存后走，不存在这个窗口。
+   * 上限是「崩一次多一张卡」；纯查询的状态在发卡前统一保存。
    * 反过来改成「先存游标再发」会变 at-most-once —— 发卡失败就永远补不回来，所以保持现状。
    */
   for (const [groupId, queued] of buffered) {
     /** 同一营地账号只留一条「开始对局」：`morebattlelist` 的 isGaming 是账号级的，一个 Q 名下几个角色会各自报同一场 */
     const { dropped } = dedupeAccountRows(queued)
     summary.gaming = Math.max(0, summary.gaming - dropped)
-    await flushPushQueue(groupId, queued, { data, sendCard: sendPushCard, sendDetail, summary })
+    await flushPushQueue(groupId, queued, { data, sendCard: sendPushCard, sendDetail, summary, save: () => {} })
+    savePushData(data)
     /** 卡片发完再起轮询：链接跟的是「开局卡」，不能抢在卡前面 */
     for (const item of queued) {
       const job = item.watchJob

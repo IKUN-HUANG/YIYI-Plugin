@@ -192,8 +192,9 @@ function writeDoc (file, doc) {
   }
   ensureDir(path.dirname(file))
   try {
-    writeText(file, doc === null ? '' : YAML.stringify(doc, { lineWidth: 0 }))
-    docCache.set(file, { fp: fileFingerprint(file) || '', doc })
+    const text = doc === null ? '' : YAML.stringify(doc, { lineWidth: 0 })
+    if (readText(file, null) !== text) writeText(file, text)
+    rememberDoc(file, fileFingerprint(file) || '', doc)
     return true
   } catch (err) {
     log.error(`数据文件写不进去：${file}（${err?.message || err}）`)

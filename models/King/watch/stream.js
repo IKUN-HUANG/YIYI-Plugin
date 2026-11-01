@@ -66,7 +66,7 @@ export function pickWatching (list = []) {
       item,
       slot,
       /** 营地给的 canBeWatch 最可信，其次是 isGaming，最后才是「有深链就算」 */
-      rank: Boolean(item.canBeWatch) ? 0 : (Boolean(item.isGaming) ? 1 : 2)
+      rank: item.canBeWatch ? 0 : (item.isGaming ? 1 : 2)
     })
   }
   return out.sort((a, b) => a.rank - b.rank)

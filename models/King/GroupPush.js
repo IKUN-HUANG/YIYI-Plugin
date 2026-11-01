@@ -131,7 +131,6 @@ export function clearGroupPushMuted (groupId, by = '') {
   const id = toText(groupId)
   if (!id) return false
 
-  const ctl = loadGroupPush(id)
   return saveGroupPush(id, { auto: true, muted: [], updatedAt: `${Date.now()}:${toText(by)}` })
 }
 

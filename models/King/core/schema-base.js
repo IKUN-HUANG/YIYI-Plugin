@@ -73,13 +73,6 @@ export function compact (obj) {
   return out
 }
 
-/** 数字字段：空 / 0 / 认不出 → 不落盘（读回来仍是空） */
-function numField (obj, key, value) {
-  if (value === '' || value === null || value === undefined) return
-  const num = toNum(value)
-  if (num) obj[key] = num
-}
-
 /**
  * 布尔字段：只有真值才写（省一半体积）。
  *

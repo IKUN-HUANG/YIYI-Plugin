@@ -15,7 +15,7 @@ import {
 } from './Auth.js'
 import { startWechatLogin, startQQLogin, refreshAccount } from './Login.js'
 import { kingReply, kingGuard, kingFail, kingAuthTip, kingRecall, loginImage, loginNotice, kingLog } from './Say.js'
-import { renderKing, logoUri, imageUris, timeText } from './Card.js'
+import {  logoUri, imageUris, timeText } from './Card.js'
 import { CAMP_REFERER, getProfile } from './Api.js'
 import { rankFaceOf } from './Face.js'
 

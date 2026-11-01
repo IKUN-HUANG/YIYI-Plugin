@@ -29,9 +29,10 @@ const CAMP_USER_TTL_MS = 12 * 60 * 60 * 1000
  * @param {string} [owner] 只看这个人的档
  * @returns {string[]} 账号 ID 列表（可能是空数组）
  */
-export function accountsOwningRole (roleId, owner = '') {
+export function accountsOwningRole (roleId, owner = '', accounts) {
   const wanted = toText(roleId)
   if (!wanted) return []
+  const pool = accounts || listAccounts()
 
   const keys = toText(owner) ? [toText(owner)] : listUserIds()
   const ids = []
@@ -46,7 +47,7 @@ export function accountsOwningRole (roleId, owner = '') {
        * 否则角色 → 营地号会算到陌生账号上，营地对那个组合一律回 -1013 / -10107，卡片一片「没查到」。
        * 已经不在池子里的老数据不做判断，保持原样。
        */
-      const keeper = ownerOf(findAccount(accountId))
+      const keeper = ownerOf(pool.find(item => item.id === accountId || item.userId === accountId))
       if (toText(keeper) && toText(keeper) !== key) continue
       const roles = Array.isArray(saved?.roles) ? saved.roles : []
       if (roles.some(item => toText(item?.roleId) === wanted)) ids.push(accountId)
@@ -218,6 +219,10 @@ export function accountForRole ({ accountId = '', owner = '', byUser = '', roleI
  * @returns {object[]} 按优先级排好的候选号（已去掉静默中的）
  */
 export function queryAccountsFor ({ accountId = '', owner = '', byUser = '', roleId = '', limit = 0, rotate = false } = {}) {
+  // 同一次候选解析共用号池快照，不因逐个 find/own/public 查询反复扫描用户目录。
+  const accounts = listAccounts()
+  const find = id => id ? accounts.find(item => item.id === id || item.userId === id) : null
+  const own = id => accounts.filter(item => !id || toText(ownerOf(item)) === id)
   const out = []
   const seen = new Set()
   const push = account => {
@@ -231,12 +236,12 @@ export function queryAccountsFor ({ accountId = '', owner = '', byUser = '', rol
   const key = toText(owner)
   const wanted = toText(roleId)
 
-  if (wanted) for (const id of accountsOwningRole(wanted, key)) push(findAccount(id))
-  for (const account of ownAccounts(key)) push(account)
-  push(findAccount(toText(accountId)))
-  if (wanted) for (const id of accountsOwningRole(wanted)) push(findAccount(id))
-  for (const account of ownAccounts(toText(byUser))) push(account)
-  for (const account of publicAccounts()) push(account)
+  if (wanted) for (const id of accountsOwningRole(wanted, key, accounts)) push(find(id))
+  for (const account of own(key)) push(account)
+  push(find(toText(accountId)))
+  if (wanted) for (const id of accountsOwningRole(wanted, '', accounts)) push(find(id))
+  for (const account of own(toText(byUser))) push(account)
+  for (const account of accounts) push(account)
 
   /**
    * 轮换只在**自己名下的号**之间转：整份列表一起轮再按 limit 截断的话，截出来的常常全是别人的号，

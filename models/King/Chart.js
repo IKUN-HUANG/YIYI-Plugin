@@ -202,7 +202,7 @@ export function lineChart (points = [], {
     .map(seg => {
       const pts = toPoints(seg)
       if (seg.length < 2) return ''
-      const [fx, fy] = xy(seg[0][0], seg[0][1])
+      const [fx] = xy(seg[0][0], seg[0][1])
       const [lx] = xy(seg[seg.length - 1][0], seg[seg.length - 1][1])
       const base = round(padTop + innerH)
       return `<polygon points="${fx},${base} ${pts} ${lx},${base}" fill="${color}" fill-opacity="0.16"/>`

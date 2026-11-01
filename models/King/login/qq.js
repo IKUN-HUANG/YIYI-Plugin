@@ -6,7 +6,7 @@
  * 拦截要同时挂 `request` 与 `framenavigated`：页面会自己跳好几次（授权页 → 回调 → 错误页），只挂一个会漏掉回调。
  */
 import crypto from 'node:crypto'
-import { createLogger, toText, pickValue, maskValue, previewValue, sleep, buildUuid } from '#yiyi.utils'
+import { createLogger, toText, maskValue, previewValue, sleep, buildUuid } from '#yiyi.utils'
 import { AuthConfigError } from '../Common.js'
 import { acquirePage } from '../Browser.js'
 import { BASE_GAME, httpJson, CAMP_HEADERS, FORM_HEADERS, deviceParams, specialEncodeParam, statusResult } from './device.js'

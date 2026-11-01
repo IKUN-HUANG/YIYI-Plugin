@@ -18,16 +18,6 @@ import { resourcesDir } from './Path.js'
 
 const log = createLogger('图片')
 
-/** 扩展名 → MIME（`loadBg` 与模板里判断视频/图片用） */
-const MIME = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  webp: 'image/webp',
-  gif: 'image/gif',
-  svg: 'image/svg+xml'
-}
-
 /** `fetchImage` 的超时，单位毫秒：图床拖太久就先出卡，不要卡在取图上 */
 const ICON_TTL = 8 * 1000
 
@@ -44,22 +34,24 @@ const iconCache = new Map()
 export async function fetchImage (url, referer = 'https://www.douyin.com/') {
   if (!url) return null
   try {
-    const res = await withTimeout(
-      signal => fetch(url, { headers: { Referer: referer, 'User-Agent': 'Mozilla/5.0' }, signal }),
-      ICON_TTL,
-      '图片'
-    )
-    if (!res.ok) return null
+    return await withTimeout(async signal => {
+      const res = await fetch(url, { headers: { Referer: referer, 'User-Agent': 'Mozilla/5.0' }, signal })
+      if (!res.ok) return null
 
-    const buffer = Buffer.from(await res.arrayBuffer())
-    const mime = res.headers.get('content-type') || 'image/jpeg'
-    /** 图床 200 但其实是错误页 / JSON 的情况不少：明说是网页或 JSON 的直接当没图 */
-    if (/^\s*(text\/|application\/(json|xhtml|xml))/i.test(mime)) return null
-    return {
-      buffer,
-      mime,
-      base64: `data:${mime};base64,${buffer.toString('base64')}`
-    }
+      const mime = res.headers.get('content-type') || 'image/jpeg'
+      /** 图床 200 但其实是错误页 / JSON：不下载无用的正文。 */
+      if (/^\s*(text\/|application\/(json|xhtml|xml))/i.test(mime)) {
+        await res.body?.cancel()
+        return null
+      }
+      /** 超时覆盖整个响应体，收到响应头后仍由同一个 signal 中止下载。 */
+      const buffer = Buffer.from(await res.arrayBuffer())
+      return {
+        buffer,
+        mime,
+        base64: `data:${mime};base64,${buffer.toString('base64')}`
+      }
+    }, ICON_TTL, '图片')
   } catch (err) {
     log.info(`取图失败 ${url}：${err.message}`)
     return null

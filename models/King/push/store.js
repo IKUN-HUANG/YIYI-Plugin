@@ -2,63 +2,10 @@
  * @file 推送存档：订阅人、开关、待发详情都落在各自的 user part 里
  * @module models/King/push/store
  */
-import { createLogger, toText } from '#yiyi.utils'
+import { toText } from '#yiyi.utils'
 import { cachedVisibleRoles, cleanName } from '../Profile.js'
-import { listUserIds, readUserPart, writeUserPart } from '../core/store.js'
 import { PUSH_FLAGS, PUSH_FLAG_TEXT } from './consts.js'
-
-const log = createLogger('推送')
-
-/**
- * 全量 part 映射：用户 ID → 该 part 的内容（读不到的用户跳过）
- *
- * @param {string} part part 名
- * @returns {Map<string, object> 用户 ID 到内容的映射}
- */
-export function readUserParts (part) {
-  const out = {}
-  for (const id of listUserIds()) {
-    const value = readUserPart(id, part)
-    if (value && typeof value === 'object') out[id] = value
-  }
-  return out
-}
-
-/**
- * 读出所有推送订阅；文件坏了就当空，不让推送整块停摆
- * @returns {{pushList: object} 订阅存档}
- */
-export function loadPushData () {
-  const pushList = {}
-
-  for (const [id, record] of Object.entries(readUserParts('push') || {})) {
-    if (record && typeof record === 'object' && !Array.isArray(record)) pushList[id] = { ...record }
-  }
-
-  return { pushList }
-}
-
-/**
- * 写回推送存档：只写变了的用户，避免每圈全量重写
- *
- * @param {object} data 订阅存档
- * @returns {void}
- */
-export function savePushData (data) {
-  const pushList = {}
-  for (const [qq, sub] of Object.entries(data?.pushList || {})) {
-    if (sub && typeof sub === 'object' && !Array.isArray(sub)) pushList[toText(qq)] = sub
-  }
-
-  for (const id of listUserIds()) if (!pushList[id]) writeUserPart(id, 'push', null)
-
-  let saved = true
-  for (const [id, sub] of Object.entries(pushList)) {
-    if (!writeUserPart(id, 'push', sub)) saved = false
-  }
-
-  return saved
-}
+export { readUserParts, loadPushData, savePushData } from './persistence.js'
 
 /**
  * 列出所有订阅记录

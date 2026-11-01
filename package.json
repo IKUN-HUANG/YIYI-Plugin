@@ -52,11 +52,17 @@
     "node": ">=18.17"
   },
   "scripts": {
-    "check": "node --check index.js"
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "check:modules": "node --experimental-vm-modules scripts/check-modules.js",
+    "test": "node --experimental-vm-modules --test tests/*.test.js",
+    "check": "pnpm lint && pnpm check:modules && pnpm test"
   },
   "dependencies": {
+    "chalk": "^5.6.2",
     "mediabunny": "^1.61.3",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "yaml": "^2.9.1"
   },
   "imports": {
     "#yiyi.utils": "./utils/index.js",
@@ -66,5 +72,10 @@
     "#yiyi.components": "./components/index.js"
   },
   "qqGroup": "695596638",
-  "qq": "2608259582"
+  "qq": "2608259582",
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "globals": "17.13.0"
+  }
 }

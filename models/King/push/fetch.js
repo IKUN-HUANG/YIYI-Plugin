@@ -9,7 +9,7 @@ import { archiveBattles } from '../Archive.js'
 import { CODE_PROFILE_HIDDEN, describeError } from '../Common.js'
 import { cleanName, mapProfile, resolveCampUser } from '../Profile.js'
 import { HIDDEN, USER_NOT_EXIST } from './consts.js'
-import { fetchOnlineState, rememberHidden } from './state.js'
+import {  rememberHidden } from './state.js'
 
 const log = createLogger('推送')
 

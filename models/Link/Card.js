@@ -73,21 +73,23 @@ export function truncateDesc (desc, isVideo) {
 
 /** 封面 / 头像 / 音乐封面 / 触发者头像，一次并发取完
  *
- * @param {Array<string>} urls
+ * @param {{cover: string, avatar: string, mcover: string, tavatar: string}} urls
  * @param {string} referer
  * @returns {Promise<object>}
  */
 export async function processImages (urls, referer) {
   const { cover, avatar, mcover, tavatar } = urls
-  const coverImg = await fetchImage(cover, referer)
-  const [accent, dim] = await Promise.all([
-    extractAccent(coverImg?.buffer),
-    getDimensions(coverImg?.buffer)
-  ])
-  const [avatarImg, mCoverImg, tAvatarImg] = await Promise.all([
+  const coverTask = fetchImage(cover, referer)
+  const detailsTask = coverTask.then(image => Promise.all([
+    extractAccent(image?.buffer),
+    getDimensions(image?.buffer)
+  ]))
+  const [coverImg, avatarImg, mCoverImg, tAvatarImg, [accent, dim]] = await Promise.all([
+    coverTask,
     fetchImage(avatar, referer),
     fetchImage(mcover, referer),
-    fetchImage(tavatar, referer)
+    fetchImage(tavatar, referer),
+    detailsTask
   ])
   return {
     coverSrc: coverImg?.base64 || cover,

@@ -2,7 +2,7 @@
  * @file 小红书适配：签名取数、图文/视频/实况归一。
  * @module models/Link/Xiaohongshu.js
  */
-import { createHash } from 'node:crypto'
+
 import { Config } from '#yiyi.components'
 import { createLogger, formatDuration, formatTime, httpsify } from '#yiyi.utils'
 import { DEFAULT_UA, buildUrl } from './xhs/Util.js'
@@ -149,7 +149,7 @@ const fetchHomeFeed = (data, options) => xiaohongshuRequest(buildHomeFeed(data),
 
 const HOST_SUFFIXES = ['xiaohongshu.com', 'xhslink.com', 'xhslink.cn']
 
-const XHS_URL_RE = /https?:\/\/(?:[A-Za-z\d-]+\.)*(?:xiaohongshu\.com|xhslink\.com|xhslink\.cn)\/[A-Za-z\d._?%&+\-=\/#]*/
+const XHS_URL_RE = /https?:\/\/(?:[A-Za-z\d-]+\.)*(?:xiaohongshu\.com|xhslink\.com|xhslink\.cn)\/[A-Za-z\d._?%&+\-=/#]*/
 
 const ITEM_RE = /xiaohongshu\.com\/discovery\/item\/([0-9a-zA-Z]+)/
 const EXPLORE_RE = /xiaohongshu\.com\/explore\/([0-9a-zA-Z]+)/

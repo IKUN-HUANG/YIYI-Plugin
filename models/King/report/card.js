@@ -9,7 +9,7 @@ import { filterArchive } from '../Archive.js'
 /** 拆分时漏掉的：`describeError` 用在三条 warn/error 兜底里，缺了它一进错误分支就 ReferenceError */
 import { describeError } from '../Common.js'
 import { imageUri, imageUris, logoUri, renderKing, renderKingWithoutEvent } from '../Card.js'
-import { kdaText, percentText } from '../Field.js'
+import {  percentText } from '../Field.js'
 import { groupPushOn, groupPushText } from '../GroupPush.js'
 import { normalizeName } from '../Profile.js'
 import { expandRankTargets, groupRankTargets, memberIdsOf } from '../Rank.js'

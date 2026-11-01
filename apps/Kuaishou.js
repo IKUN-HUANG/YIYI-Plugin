@@ -7,7 +7,7 @@ import { createLogger } from '#yiyi.utils'
 
 const log = createLogger('快手')
 
-const URL_RE = /https?:\/\/v\.kuaishou\.com\/[A-Za-z\d._?%&+\-=\/#]*/
+const URL_RE = /https?:\/\/v\.kuaishou\.com\/[A-Za-z\d._?%&+\-=/#]*/
 
 /**
  * 快手解析入口：规则与文案是对外契约，不许顺手改；字段映射交给 Link 流水线，取数在 models/Link/Kuaishou.js。

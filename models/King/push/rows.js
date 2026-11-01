@@ -3,7 +3,7 @@
  * @module models/King/push/rows
  */
 import { toText, truncInt } from '#yiyi.utils'
-import { decoratePushRows } from './card.js'
+
 import { parseBattleTime } from '../Archive.js'
 import { logoUri } from '../Card.js'
 import { resolveEvaluate } from '../Field.js'

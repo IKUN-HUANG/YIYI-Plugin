@@ -3,7 +3,7 @@
  * @module models/Link/xhs/Config.js
  */
 
-import { Config } from '#yiyi.components'
+
 
 import { ALPHABET_CUSTOM, ALPHABET_STANDARD, ALPHABET_X3, XHS_SESSION_START_MS, XYW_ENV_FLAGS_BROWSER } from './Codec.js'
 

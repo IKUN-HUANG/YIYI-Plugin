@@ -3,3 +3,4 @@ data/
 cache/
 config/config/
 .git/
+.eslintcache

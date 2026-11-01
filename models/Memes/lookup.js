@@ -5,12 +5,10 @@
  * 一条群消息到底是哪个表情、后面跟的是文案还是参数、里面有没有 QQ 号 —— 全在这里算。
  * 算完交给 apps/Memes.js 去取图：这里不发请求、不写文件、不出图。
  */
-import { createLogger, qqAllRe } from '#yiyi.utils'
+import { qqAllRe } from '#yiyi.utils'
 import { Config } from '#yiyi.components'
 import { loadMemeData, memeParams, isMemeDisabled } from './store.js'
 import { memeArgHints } from './args.js'
-
-const log = createLogger('表情包')
 
 /** 关键词最长的合理长度：再长就不像在叫表情了，是普通聊天 */
 const MEME_LOOKUP_MAX = 60

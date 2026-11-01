@@ -2,7 +2,7 @@
  * @file 推送里的观战：开启开关、被拒记录、轮询排期
  * @module models/King/push/watch
  */
-import { createLogger, sleep, toText } from '#yiyi.utils'
+import { createLogger, toText } from '#yiyi.utils'
 import { normalizeName } from '../Profile.js'
 import { kingGuard, kingReply } from '../Say.js'
 /** 拆分时漏掉的导入：缺了它一进错误分支/日志行就 ReferenceError */

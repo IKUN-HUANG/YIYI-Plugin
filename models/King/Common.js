@@ -18,6 +18,8 @@ export {
  * 规则只能摆在两边都能引用的地方，不然就成了两份迟早走样的正则。
  */
 const PRIVATE_USE_CHARS_RE = /[\u{E000}-\u{F8FF}\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}]/gu
+// 控制符和变体选择符本身就是需要移除的字符，保留完整范围。
+// eslint-disable-next-line no-control-regex, no-misleading-character-class
 const INVISIBLE_CHARS_RE = /[\u0000-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFE00-\uFE0F\uFEFF\u2000-\u200A\u202F\u205F\u3000\u3164]/g
 
 /**

@@ -22,7 +22,7 @@ export class Bilibili extends plugin {
     super(linkMeta({
       name: 'YIYI:B站解析',
       dsc: 'B站视频/图文解析',
-      rules: [{ reg: 'bilibili.com|bili2233.cn|b23.tv|^BV\w{10}', fnc: 'bili' }]
+      rules: [{ reg: 'bilibili.com|bili2233.cn|b23.tv|^BV\\w{10}', fnc: 'bili' }]
     }))
     ensureProxy()
   }

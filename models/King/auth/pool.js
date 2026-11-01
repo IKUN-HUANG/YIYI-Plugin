@@ -8,7 +8,7 @@
  */
 import fs from 'node:fs'
 import { createLogger, toText } from '#yiyi.utils'
-import { kingPoolFile, writeYamlDoc, readUserPart, writeUserPart, listUserIds } from '../core/store.js'
+import { kingPoolFile, readUserPart, writeUserPart, listUserIds } from '../core/store.js'
 import { normalizeAccount } from '../core/schema.js'
 import { readPoolIds, writePoolIds } from '../core/pool.js'
 import { isUsableAuth } from '../Common.js'
@@ -131,9 +131,8 @@ export function savePool (accounts) {
  * @returns {object[]} 账号列表（可能是空数组）
  */
 export function listAccounts (userId = '') {
-  const accounts = loadPool()
   const key = toText(userId)
-  return key ? accounts.filter(item => ownerOf(item) === key) : accounts
+  return key ? accountsFromFile(key) : loadPool()
 }
 
 /**

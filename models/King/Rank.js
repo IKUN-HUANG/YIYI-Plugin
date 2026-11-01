@@ -11,7 +11,7 @@ import { kingRanksFile, readYaml, writeYamlDoc } from './Store.js'
 import { normalizeRankRow, rankRowToDisk } from './Schema.js'
 import { cleanName, normalizeName, parseModParam, readOwnerRoleEntries, readHiddenRoles, campRoleName } from './Profile.js'
 import { toText, maskUserId, isProfileHiddenCode, describeError } from './Common.js'
-import { rankView, rankSectionLabel, rankSections } from './view/rank.js'
+import { rankView, rankSections } from './view/rank.js'
 
 /** 榜单快照落在哪个文件（走 Store 的统一路径，别在这儿拼目录）。@type {string} */
 export const RANK_SNAPSHOT_FILE = kingRanksFile
@@ -478,7 +478,6 @@ export async function collectRankRows ({ targets = [], force = false } = {}) {
 export async function renderRank (e, { mode = 'rank', scope = 'group', rows = [], at = 0, modes } = {}) {
   const keys = Array.isArray(modes) && modes.length ? modes : [mode === 'peak' ? 'peak' : 'rank']
   /** 全服榜已经下线：只剩本群榜（scope 参数留着兼容老调用，传 all 也按本群画） */
-  const scopeKey = 'group'
   /** scope==='all' 只在私聊（没有群可排）时出现，标签写「全部」 */
   const group = scope !== 'all'
   const limit = RANK_SECTION_ROWS.group
@@ -559,7 +558,6 @@ export async function kingRank (e) {
   const peak = text.includes('巅峰')
   const rank = text.includes('排位')
   /** 全服榜下线：一律查本群 */
-  const scope = 'group'
   const modes = peak ? ['peak'] : (rank ? ['rank'] : ['rank', 'peak'])
   const modeLabel = peak ? '巅峰' : (rank ? '排位' : '排位·巅峰')
 
@@ -623,7 +621,7 @@ export async function kingRankRefresh (e) {
   }
 
   try {
-    const { rows, fetched, failed, hidden, at } = await collectRankRows({ targets, force: true })
+    const { rows, fetched, failed, hidden } = await collectRankRows({ targets, force: true })
     const view = rankView(rows, 'rank')
     const reason = fetched === 0 ? (rows.map(row => toText(row.reason)).find(Boolean) || '') : ''
     await kingReply(e, `榜单刷新完成：查了 ${targets.length} 个角色，更新 ${fetched} 个${reason ? `（${reason}）` : ''}${failed ? `，失败 ${failed} 个` : ''}${hidden ? `，战绩隐藏 ${hidden} 个（都不上榜）` : ''}${view.length ? '' : '；暂时没有能上榜的数据'}`)
