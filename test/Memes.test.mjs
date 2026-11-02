@@ -7,6 +7,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import path from 'node:path'
+import os from 'node:os'
+import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { read, load, PLUGIN, ROOT } from './Harness.mjs'
 
@@ -68,27 +70,39 @@ test('最后一条是数据关键词规则，不是「什么短句都收」的�
 
 test('数据里的关键词决定规则，换一份数据规则跟着换', () => {
   /**
-   * 关键词表在 `data/Memes/keyMap.json`（运行期数据，插件仓里没有），
-   * 所以另开一个进程、把 `YIYI_DATA_DIR` 指到工作区那份真实数据上再跑，
-   * 免得进程内已经缓存过一份空索引。
+   * 关键词表是运行期数据（`data/Memes/keyMap.json`，插件仓里没有），
+   * 所以现造一份最小数据：另开进程、把 `YIYI_DATA_DIR` 指过去，
+   * 既避开进程内已缓存的空索引，也不依赖跑测试的机器上有没有真数据。
    */
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'yiyi-memes-'))
+  fs.mkdirSync(path.join(sandbox, 'Memes'), { recursive: true })
+  fs.writeFileSync(path.join(sandbox, 'Memes', 'keyMap.json'), JSON.stringify({ 摸头: 'a', 摸鱼: 'b', 点歌: 'c' }))
+  fs.writeFileSync(path.join(sandbox, 'Memes', 'infos.json'), JSON.stringify({ a: {}, b: {}, c: {} }))
   const script = `
     const { memeMatchReg } = await import(${JSON.stringify('file://' + PLUGIN + '/models/Memes/Lookup.js')})
     const re = memeMatchReg()
     process.stdout.write(JSON.stringify({
       isRegExp: re instanceof RegExp,
+      source: re.source,
       hit: re.test('#摸头'),
+      hitBare: re.test('摸鱼'),
       missCmd: re.test('#点歌 晴天'),
       missWord: re.test('#随便一句并不存在的话')
     }))
   `
-  const out = execFileSync(process.execPath, ['--input-type=module', '-e', script], {
-    env: { ...process.env, YIYI_DATA_DIR: path.join(ROOT, 'data') },
-    encoding: 'utf8'
-  })
-  const { isRegExp, hit, missCmd, missWord } = JSON.parse(out)
-  assert.ok(isRegExp)
-  assert.ok(hit, '数据里的关键词必须能命中')
-  assert.ok(!missCmd, '别家指令不该被表情的规则接走')
-  assert.ok(!missWord, '不在关键词表里的短句不该命中')
+  try {
+    const out = execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      env: { ...process.env, YIYI_DATA_DIR: sandbox },
+      encoding: 'utf8'
+    })
+    const { isRegExp, source, hit, hitBare, missCmd, missWord } = JSON.parse(out)
+    assert.ok(isRegExp)
+    assert.ok(hit, '数据里的关键词必须能命中')
+    assert.ok(hitBare, '不带 # 的关键词也要命中')
+    assert.ok(!missCmd, '别家指令不该被表情的规则接走')
+    assert.ok(!missWord, '不在关键词表里的短句不该命中')
+    assert.ok(!source.includes('点歌'), '与别家指令重名的关键词要被剔掉')
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true })
+  }
 })
