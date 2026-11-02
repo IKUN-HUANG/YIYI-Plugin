@@ -5,35 +5,35 @@
 import { Config } from '#yiyi.components'
 import { createLogger } from '#yiyi.utils'
 import { buildCardData, forwardFullDesc, loadIcons, truncateDesc } from './Card.js'
-import { failText, findLink, guardTimeout, normalizeJob, sendMediaJob } from './pipeline.js'
+import { failText, findLink, guardTimeout, normalizeJob, sendMediaJob } from './Pipeline.js'
 import { createPack, mergeForwardEnabled, renderCard } from '../Message.js'
 
 /** 四个平台的公共信息：名字、模板、Referer、图标。模板名与 resources/Link/ 下的文件一一对应 */
 export const PLATFORMS = {
   douyin: {
     name: '抖音',
-    template: 'Link/douyin',
+    template: 'Link/Douyin',
     referer: 'https://www.douyin.com/',
     icon: 'douyin',
     icons: ['res', 'fps', 'dur', 'like', 'comment', 'collect', 'share']
   },
   kuaishou: {
     name: '快手',
-    template: 'Link/kuaishou',
+    template: 'Link/Kuaishou',
     referer: 'https://www.kuaishou.com/',
     icon: 'kuaishou',
     icons: ['res', 'fps', 'dur', 'like', 'comment', 'collect', 'share']
   },
   bilibili: {
     name: 'B站',
-    template: 'Link/bilibili',
+    template: 'Link/Bilibili',
     referer: 'https://www.bilibili.com/',
     icon: 'bili',
     icons: ['res', 'fps', 'dur', 'danmaku', 'online', 'like', 'coin', 'comment', 'collect', 'share']
   },
   xiaohongshu: {
     name: '小红书',
-    template: 'Link/xiaohongshu',
+    template: 'Link/Xiaohongshu',
     referer: 'https://www.xiaohongshu.com/',
     icon: 'xiaohongshu',
     icons: ['res', 'fps', 'dur', 'like', 'comment', 'collect', 'share']

@@ -2,7 +2,8 @@
  * @file 小红书指令入口：识别分享链接并交给 Link 流水线。
  * @module apps/Xiaohongshu.js
  */
-import { ensureSize, linkFailText, parseAndSend, parseXiaohongshu, probeFps, XHS_URL_RE, linkMeta } from '#yiyi.link'
+import { ensureSize, linkFailText, parseAndSend, parseXiaohongshu, probeFps, XHS_URL_RE } from '#yiyi.link'
+import { Config, gateRules } from '#yiyi.components'
 import { createLogger } from '#yiyi.utils'
 
 const log = createLogger('小红书')
@@ -14,14 +15,18 @@ const REFERER = 'https://www.xiaohongshu.com/'
  */
 export class Xiaohongshu extends plugin {
   constructor () {
-    super(linkMeta({
+    super({
       name: 'YIYI:小红书解析',
       dsc: '小红书笔记/视频解析',
-      rules: [
+      event: 'message',
+      priority: Config.priority,
+      rule: [
         { reg: 'xiaohongshu.com', fnc: 'XHS' },
         { reg: 'xhslink', fnc: 'XHS' }
       ]
-    }))
+    })
+    /** 解析总开关或小红书单平台开关一关，这两条链接规则整块消失 */
+    gateRules(this, () => Config.parseEnable && Config.isEnabled('xiaohongshu'))
   }
 
   async XHS (e) {

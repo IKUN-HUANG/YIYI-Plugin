@@ -6,7 +6,7 @@
  * 业务都在 models/Music.js，这里只取参数、回包，以及「语音怎么发出去」的三级兜底。
  */
 import { createLogger, pluginTitle, version, yunzai, mbText } from '#yiyi.utils'
-import { render, Config } from '#yiyi.components'
+import { render, Config, gateRules } from '#yiyi.components'
 import { searchSongs, songAudio, albumDate, musicStats, musicCardData, musicShareUrl, musicCardSegment, fetchAudio, setMusicSession, getMusicSession, musicPageOf, saveMusicPage, highlightCmds, loadHelpBg, persistBg, extractMsgId } from '#yiyi.models'
 
 const log = createLogger('点歌')
@@ -39,6 +39,8 @@ export class Music extends plugin {
         { reg: /^#?(听|选)(上|下|前|后)?(一)?页$/, fnc: 'turn' }
       ]
     })
+    /** 点歌关掉后三条规则整块消失：`#点歌 晴天` 直接归别的插件 */
+    gateRules(this, () => Config.musicEnable)
   }
 
   get musicOn () {
@@ -154,7 +156,7 @@ export class Music extends plugin {
 
     const bgSrc = await loadHelpBg()
 
-    const ret = await render('Music/list', {
+    const ret = await render('Music/List', {
       pluginTitle,
       version,
       yunzai,

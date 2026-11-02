@@ -4,8 +4,8 @@
  *
  * 铁律：`watch/` 内部不许 import 这个文件；门面只做转出，子目录之间互相 import 才不会绕成环。
  */
-export * from './watch/consts.js'
-export * from './watch/engine.js'
-export * from './watch/commands.js'
-export * from './watch/stream.js'
-export * from './watch/link.js'
+export * from './Watch/Consts.js'
+export * from './Watch/Engine.js'
+export * from './Watch/Commands.js'
+export * from './Watch/Stream.js'
+export * from './Watch/Link.js'

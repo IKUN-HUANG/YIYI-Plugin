@@ -18,16 +18,6 @@ import { resourcesDir } from './Path.js'
 
 const log = createLogger('图片')
 
-/** 扩展名 → MIME（`loadBg` 与模板里判断视频/图片用） */
-const MIME = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  webp: 'image/webp',
-  gif: 'image/gif',
-  svg: 'image/svg+xml'
-}
-
 /** `fetchImage` 的超时，单位毫秒：图床拖太久就先出卡，不要卡在取图上 */
 const ICON_TTL = 8 * 1000
 
@@ -44,22 +34,28 @@ const iconCache = new Map()
 export async function fetchImage (url, referer = 'https://www.douyin.com/') {
   if (!url) return null
   try {
-    const res = await withTimeout(
-      signal => fetch(url, { headers: { Referer: referer, 'User-Agent': 'Mozilla/5.0' }, signal }),
-      ICON_TTL,
-      '图片'
-    )
-    if (!res.ok) return null
+    /**
+     * 超时要罩住**整个响应体**：只给响应头戴 8 秒的话，头部秒回、正文慢慢吐的图床照样能把
+     * 出图拖到几十秒（signal 传给 fetch 后仍对该响应生效，abort 会把 arrayBuffer 一起打断）。
+     */
+    return await withTimeout(async signal => {
+      const res = await fetch(url, { headers: { Referer: referer, 'User-Agent': 'Mozilla/5.0' }, signal })
+      if (!res.ok) return null
 
-    const buffer = Buffer.from(await res.arrayBuffer())
-    const mime = res.headers.get('content-type') || 'image/jpeg'
-    /** 图床 200 但其实是错误页 / JSON 的情况不少：明说是网页或 JSON 的直接当没图 */
-    if (/^\s*(text\/|application\/(json|xhtml|xml))/i.test(mime)) return null
-    return {
-      buffer,
-      mime,
-      base64: `data:${mime};base64,${buffer.toString('base64')}`
-    }
+      const mime = res.headers.get('content-type') || 'image/jpeg'
+      /** 图床 200 但其实是错误页 / JSON 的情况不少：先把正文掐掉，别把整页 HTML 读进内存 */
+      if (/^\s*(text\/|application\/(json|xhtml|xml))/i.test(mime)) {
+        await res.body?.cancel()
+        return null
+      }
+
+      const buffer = Buffer.from(await res.arrayBuffer())
+      return {
+        buffer,
+        mime,
+        base64: `data:${mime};base64,${buffer.toString('base64')}`
+      }
+    }, ICON_TTL, '图片')
   } catch (err) {
     log.info(`取图失败 ${url}：${err.message}`)
     return null
@@ -154,7 +150,7 @@ export function bufferToDataUri (buffer, ext) {
 }
 
 /**
- * 本地图标 → data URI：`iconBase64('cube.png', 'King')` 读 `resources/Icon/King/cube.png`。
+ * 本地图标 → data URI：`iconBase64('Brand/Cube.png', 'King')` 读 `resources/Icon/King/Brand/Cube.png`。
  * 文件不在给空串（模板里 `{{if icon}}` 直接跳过），不抛。
  *
  * @param {string} file 文件名（含扩展名）

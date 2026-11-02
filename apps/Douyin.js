@@ -2,7 +2,8 @@
  * @file 抖音指令入口：识别分享链接并交给 Link 流水线。
  * @module apps/Douyin.js
  */
-import { commentEnabled, fetchDouyinComments, linkFailText, normalizeDouyinComments, parseAndSend, parseDouyin, pickVideoStream, probeFps, sendCommentCard, linkMeta } from '#yiyi.link'
+import { commentEnabled, fetchDouyinComments, linkFailText, normalizeDouyinComments, parseAndSend, parseDouyin, pickVideoStream, probeFps, sendCommentCard } from '#yiyi.link'
+import { Config, gateRules } from '#yiyi.components'
 import { createLogger, formatDuration, formatTime } from '#yiyi.utils'
 
 const log = createLogger('抖音')
@@ -15,11 +16,15 @@ const URL_RE = /https?:\/\/(?:v\.|www\.ies)douyin\.com\/[A-Za-z\d._?%&+\-=\/#]*/
  */
 export class Douyin extends plugin {
   constructor () {
-    super(linkMeta({
+    super({
       name: 'YIYI:抖音解析',
       dsc: '抖音视频/图集解析',
-      rules: [{ reg: 'douyin.com', fnc: 'DY' }]
-    }))
+      event: 'message',
+      priority: Config.priority,
+      rule: [{ reg: 'douyin.com', fnc: 'DY' }]
+    })
+    /** 解析总开关或抖音单平台开关一关，这条链接规则整块消失 */
+    gateRules(this, () => Config.parseEnable && Config.isEnabled('douyin'))
   }
 
   async DY (e) {

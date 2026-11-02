@@ -2,7 +2,8 @@
  * @file B站指令入口：识别链接并交给 Link 流水线，回包文案不变。
  * @module apps/Bilibili.js
  */
-import { biliFailText, biliMedia, commentEnabled, ensureProxy, fetchBiliComments, normalizeBiliComments, parseAndSend, parseBili, probeFps, sendCommentCard, linkMeta } from '#yiyi.link'
+import { biliFailText, biliMedia, commentEnabled, ensureProxy, fetchBiliComments, normalizeBiliComments, parseAndSend, parseBili, probeFps, sendCommentCard } from '#yiyi.link'
+import { Config, gateRules } from '#yiyi.components'
 import { createLogger } from '#yiyi.utils'
 
 const log = createLogger('B站')
@@ -19,11 +20,15 @@ const joinTitleDesc = D => D.title + (D.desc && D.desc !== '-' ? '\n' + D.desc :
  */
 export class Bilibili extends plugin {
   constructor () {
-    super(linkMeta({
+    super({
       name: 'YIYI:B站解析',
       dsc: 'B站视频/图文解析',
-      rules: [{ reg: 'bilibili.com|bili2233.cn|b23.tv|^BV\w{10}', fnc: 'bili' }]
-    }))
+      event: 'message',
+      priority: Config.priority,
+      rule: [{ reg: 'bilibili.com|bili2233.cn|b23.tv|^BV\\w{10}', fnc: 'bili' }]
+    })
+    /** 解析总开关或 B 站单平台开关一关，这条链接规则整块消失：消息原样让给别的插件 */
+    gateRules(this, () => Config.parseEnable && Config.isEnabled('bilibili'))
     ensureProxy()
   }
 

@@ -175,6 +175,9 @@ export default {
   /** 王者功能总开关 */
   get kingEnable () { return this.king.enable !== false },
 
+  /** 四个平台解析的总开关（`parse.enable`）：关掉后 B站 / 抖音 / 快手 / 小红书都让给别的插件 */
+  get parseEnable () { return this.cfg.parse?.enable !== false },
+
   /** 相邻两次营地请求的最小间隔，毫秒：低于 200ms 等于没节流，直接抬到 200 */
   get kingMinGapMs () { return clamp(numOf(this.king.minGapMs, this.defaultOf('king', 'minGapMs')), 200, Infinity) },
 

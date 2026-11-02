@@ -15,6 +15,8 @@ import YAML from 'yaml'
 
 /** file → { stamp, text }：指纹没变就不再读盘 */
 const textCache = new Map()
+/** 读缓存的条数上限：长跑进程里模板 / 归档文件会越读越多，Map 不能无限长 */
+const TEXT_CACHE_MAX = 400
 
 /** 文件指纹（`mtimeMs:size`）；不在 / 读不到给空串 */
 function stampOf (file) {
@@ -51,13 +53,18 @@ export function ensureDir (dir) {
  */
 export function readText (file, fallback = '') {
   const stamp = stampOf(file)
-  if (!stamp) return fallback
+  if (!stamp) {
+    /** 文件没了 / 读不到：旧条目必须清掉，不然它占着容量还留着上次的正文 */
+    forget(file)
+    return fallback
+  }
 
   const hit = textCache.get(file)
   if (hit && hit.stamp === stamp) return hit.text
 
   try {
     const text = fs.readFileSync(file, 'utf8')
+    if (textCache.size >= TEXT_CACHE_MAX && !textCache.has(file)) textCache.delete(textCache.keys().next().value)
     textCache.set(file, { stamp, text })
     return text
   } catch {

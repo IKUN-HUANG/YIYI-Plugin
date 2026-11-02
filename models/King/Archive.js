@@ -8,7 +8,7 @@
  *
  * @module models/King/Archive
  */
-import { toInt, toText as textOf, fileFingerprint, toText } from '#yiyi.utils'
+import { toInt, fileFingerprint, toText } from '#yiyi.utils'
 import { kingArchiveDir, kingArchiveFile, readYaml, writeYamlDoc, listArchiveIds } from './Store.js'
 import { getBattleList } from './Api.js'
 import { fillHeroNames } from './External.js'
@@ -71,9 +71,9 @@ const FIELD_SPEC = {
   dtEventTime: 'time',
   battleType: 'int',
   gameresult: 'int',
-  heroId: 'text',
-  heroName: 'text',
-  heroIcon: 'text',
+  HeroId: 'text',
+  HeroName: 'text',
+  HeroIcon: 'text',
   gradeGame: 'float',
   mvpcnt: 'int',
   losemvp: 'int',
@@ -110,23 +110,25 @@ export function parseBattleTime (item = {}) {
 }
 
 /**
- * 英雄 ID 的三种写法（heroId / heroid / heroID）统一取一个。
+ * 英雄 ID 的三种写法（HeroId / Heroid / HeroID）统一取一个。
  * 三个都试是因为营地不同接口的大小写不一样，漏一个头像和战绩就挂不上。
  *
  * @param {object} [item={}] 战绩一条
  * @returns {string} 英雄 ID；没有是空串
  */
 export function pickHeroId (item = {}) {
-  return toText(item?.heroId ?? item?.heroid ?? item?.heroID).trim()
+  return toText(item?.heroId ?? item?.HeroId ?? item?.Heroid ?? item?.HeroID).trim()
 }
 
 /**
  * 营地战绩一条 → 归档一条：只留 `FIELD_SPEC` 里的字段，并统一类型。
  *
  * @param {object} [item={}] 营地战绩列表里的一条
- * @returns {{gameSeq: string, dtEventTime: number, battleType: number, gameresult: number, heroId: string, heroName: string, heroIcon: string, gradeGame: number, mvpcnt: number, losemvp: number, mapName: string, usedTime: number, killcnt: number, deadcnt: number, assistcnt: number, roleJobName: string, roleJob: number, stars: number, oldMasterMatchScore: number, newMasterMatchScore: number, desc: string}|null} 归档一条；没有 gameSeq 的脏数据返回 null
+ * @returns {{gameSeq: string, dtEventTime: number, battleType: number, gameresult: number, HeroId: string, HeroName: string, HeroIcon: string, gradeGame: number, mvpcnt: number, losemvp: number, mapName: string, usedTime: number, killcnt: number, deadcnt: number, assistcnt: number, roleJobName: string, roleJob: number, stars: number, oldMasterMatchScore: number, newMasterMatchScore: number, desc: string}|null} 归档一条；没有 gameSeq 的脏数据返回 null
  */
 export function mapArchiveBattle (item = {}) {
+  /** 营地给的是小写驼峰（heroId/heroName/heroIcon），归档文件里沿用 Pascal 键名，读的时候两边都认 */
+  const RAW_KEY = { HeroId: 'heroId', HeroName: 'heroName', HeroIcon: 'heroIcon' }
   const gameSeq = toText(item?.gameSeq).trim()
   if (!gameSeq) return null
 
@@ -134,13 +136,25 @@ export function mapArchiveBattle (item = {}) {
   for (const [key, type] of Object.entries(FIELD_SPEC)) {
     if (key === 'gameSeq') continue
     if (type === 'time') battle[key] = parseBattleTime(item)
-    else if (key === 'heroId') battle[key] = pickHeroId(item)
-    else if (type === 'int') battle[key] = toInt(item?.[key])
-    else if (type === 'float') battle[key] = toFloat(item?.[key])
-    else battle[key] = toText(item?.[key]).trim()
+    else if (key === 'HeroId') battle[key] = pickHeroId(item)
+    else if (type === 'int') battle[key] = toInt(pickRaw(item, key, RAW_KEY))
+    else if (type === 'float') battle[key] = toFloat(pickRaw(item, key, RAW_KEY))
+    else battle[key] = toText(pickRaw(item, key, RAW_KEY)).trim()
   }
   return battle
 }
+
+/** 读原始字段：营地小写驼峰优先，归档 / 老版本的 Pascal 也认
+ *
+ * @param {object} item 原始条目
+ * @param {string} key 归档键名
+ * @param {Record<string, string>} rawKey 归档键 → 营地键
+ * @returns {*} 取到的值
+ */
+function pickRaw (item, key, rawKey) {
+  return item?.[rawKey[key] ?? key] ?? item?.[key]
+}
+
 
 /** 营地ID → { fp, bucket }：同一进程里连着查几次只解析一次，别人改了文件立刻能读到新的 */
 const buckets = new Map()
@@ -206,7 +220,7 @@ export function loadArchive (campId) {
  * @param {string|number} campId 营地 ID
  * @returns {Array<object>} 过滤后的场次
  */
-export function rankedArchive (campId) {
+export function RankedArchive (campId) {
   return loadArchive(campId).filter(isRankedBattle)
 }
 

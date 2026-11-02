@@ -1,0 +1,46 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 插件可能整仓发布，也可能放在子目录里一起发布：这里先认出插件根
+      - name: 找到插件根目录
+        shell: bash
+        run: |
+          if [ -f index.js ] && [ -f package.json ]; then
+            echo "PLUGIN_DIR=." >> "$GITHUB_ENV"
+          elif [ -f YIYI-Plugin/index.js ]; then
+            echo "PLUGIN_DIR=YIYI-Plugin" >> "$GITHUB_ENV"
+          else
+            echo "没找到插件根目录（index.js）" >&2
+            exit 1
+          fi
+
+      - name: 语法检查
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: node --check index.js
+
+      - name: 源码体检
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: node test/Lint.mjs
+
+      - name: 单元测试
+        working-directory: ${{ env.PLUGIN_DIR }}
+        # 交给 shell 展开，Node 20 与 24 都能跑（Node 24 不吃目录参数）
+        run: node --test test/*.test.mjs

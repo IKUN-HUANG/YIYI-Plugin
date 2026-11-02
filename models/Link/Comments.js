@@ -25,8 +25,8 @@ const PLATFORM_NAMES = {
 }
 
 const PLATFORM_ICONS = {
-  douyin: 'douyin.png',
-  bilibili: 'bili.png'
+  douyin: 'Douyin.png',
+  bilibili: 'Bili.png'
 }
 
 /** 总开关 + 分平台开关都开着才出评论卡
@@ -132,7 +132,7 @@ export async function buildCommentData ({ platform, link, comments = [] }) {
       nick: c.nick || '匿名用户',
       avatarSrc: avatars[i]?.base64 || '',
       likeFmt: c.like > 0 ? fmtNum(c.like) : '',
-      likeIcon: iconBase64('like.png'),
+      likeIcon: iconBase64('Like.png'),
       text: cutCommentText(c.text),
       more: c.replies > 0 ? `共 ${c.replies} 条回复` : ''
     }))
@@ -169,10 +169,10 @@ export async function sendCommentCard (e, { platform, link, load, normalize, pac
     const data = await buildCommentData({ platform, link, comments })
 
     if (pack) {
-      const base64 = await render('Link/comments', data, { e, retType: 'base64' })
+      const base64 = await render('Link/Comments', data, { e, retType: 'base64' })
       pack.image(base64)
     } else {
-      await render('Link/comments', data, { e })
+      await render('Link/Comments', data, { e })
     }
 
     log.mark(`评论卡已发（${platform}）：${comments.length} 条`)

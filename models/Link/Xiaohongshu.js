@@ -2,18 +2,18 @@
  * @file 小红书适配：签名取数、图文/视频/实况归一。
  * @module models/Link/Xiaohongshu.js
  */
-import { createHash } from 'node:crypto'
+
 import { Config } from '#yiyi.components'
 import { createLogger, formatDuration, formatTime, httpsify } from '#yiyi.utils'
-import { DEFAULT_UA, buildUrl } from './xhs/Util.js'
-import { CryptoConfig } from './xhs/Config.js'
-import { FingerprintGenerator } from './xhs/Fingerprint.js'
-import { SessionManager, xRapParam } from './xhs/Xrap.js'
+import { DEFAULT_UA, buildUrl } from './Xhs/Util.js'
+import { CryptoConfig } from './Xhs/Config.js'
+import { FingerprintGenerator } from './Xhs/Fingerprint.js'
+import { SessionManager, xRapParam } from './Xhs/Xrap.js'
 import {
   EDITH, Xhshow, createXiaohongshuCryptoConfig, createXiaohongshuGuestCookie,
   toCookieString, updateCookiesFromResponse
-} from './xhs/Signer.js'
-import { timeoutSignal } from './http.js'
+} from './Xhs/Signer.js'
+import { timeoutSignal } from './Http.js'
 
 const log = createLogger('小红书')
 
@@ -243,7 +243,7 @@ const collectVideoStreams = (video) => { const fromMedia = collectStreams(video?
 
 const QUALITY_ORDER = ['4K', '2K', '1080P', '720P', '流畅']
 
-const tierOf = (quality) => { const map = { '4k': '4K', '2k': '2K', '1080p': '1080P', '720p': '720P', '540p': '流畅', '480p': '流畅' }
+const TierOf = (quality) => { const map = { '4k': '4K', '2k': '2K', '1080p': '1080P', '720p': '720P', '540p': '流畅', '480p': '流畅' }
   return map[String(quality ?? '').toLowerCase()] ?? ''
 }
 
@@ -259,7 +259,7 @@ const pickXhsStream = (streams, quality = 'adapt', maxBytes = 0) => { const all 
     return sorted[0]
   }
 
-  const want = tierOf(quality)
+  const want = TierOf(quality)
   const inTier = sorted.filter((s) => s.quality === want)
   if (inTier.length) return inTier[0]
 

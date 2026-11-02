@@ -6,8 +6,8 @@
  * 所有判断/取数/文案都在 models/Memes.js 那一侧，这里不写业务规则。
  */
 import { createLogger, pluginTitle, version, yunzai, qqAllRe, afterLoaded } from '#yiyi.utils'
-import { render, Config } from '#yiyi.components'
-import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
+import { render, Config, gateRules } from '#yiyi.components'
+import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, OTHER_CMD_RE, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
 
 const log = createLogger('表情包')
 
@@ -60,6 +60,15 @@ export class Memes extends plugin {
         { reg: /^#?(\S{1,60})(?:\s+([\s\S]+))?$/, fnc: 'meme' }
       ]
     })
+
+    /**
+     * 关掉表情功能时 `rule` 直接给空数组：宿主根本不会拿这些规则去试消息。
+     *
+     * 光靠「处理函数里 return false」不够 —— 兜底规则 `/^#?(\S{1,60})…/` 能匹配几乎所有短消息，
+     * 宿主会先记一条「开始处理」再放行，用户侧看到的就是「表情关了还在抢指令」。
+     * 改成 getter 后开关一关，这张规则表整块消失，别的插件正常接单。
+     */
+    gateRules(this, () => this.memeOn)
   }
 
   get memeOn () {
@@ -75,11 +84,20 @@ export class Memes extends plugin {
     )
   }
 
-  /** 本地没数据就先拉一次；第一次会先说明一句，别让人以为没反应 */
-  async ensureData (e) {
+  /**
+   * 本地没数据就先拉一次；第一次会先说明一句，别让人以为没反应。
+   *
+   * `quiet` 给兜底规则用：那条规则什么消息都走过一遍，没数据时先回一句「正在同步」等于替别的
+   * 插件回答（用户发「#点歌 晴天」却收到表情同步提示，就是这么来的），所以兜底路径只静默拉取。
+   *
+   * @param {object} e 事件对象
+   * @param {{quiet?: boolean}} [opts] quiet = 不往群里说话
+   * @returns {Promise<boolean>} 数据可用给 true
+   */
+  async ensureData (e, { quiet = false } = {}) {
     if (hasMemeData()) return true
 
-    const first = !isMemePulling()
+    const first = !quiet && !isMemePulling()
     if (first) await e.reply(`本地还没有表情数据，正在从 ${Config.memesApiUrl} 同步（第一次会慢一点）…`)
 
     const ret = await ensureMemeData()
@@ -95,7 +113,7 @@ export class Memes extends plugin {
   async card (e, { title, subtitle, data, hint }) {
     log.mark(`发送表情菜单第 ${data.page}/${data.pageCount} 页（${data.items.length} 个）`)
 
-    return await this.panel(e, 'Memes/list', {
+    return await this.panel(e, 'Memes/List', {
       title,
       subtitle,
       hint,
@@ -178,7 +196,7 @@ export class Memes extends plugin {
 
     log.mark(`发送表情帮助卡片（${data.total} 个表情包）`)
 
-    return await this.panel(e, 'Memes/help', data)
+    return await this.panel(e, 'Memes/Help', data)
   }
 
   async detail (e, code) {
@@ -187,7 +205,7 @@ export class Memes extends plugin {
 
     log.mark(`发送表情详情卡片：${code}`)
 
-    return await this.panel(e, 'Memes/detail', data)
+    return await this.panel(e, 'Memes/Detail', data)
   }
 
   async update (e) {
@@ -213,11 +231,19 @@ export class Memes extends plugin {
   /**
    * 兜底规则：任何「1~60 字的词 + 可选内容」都进来，认得出是表情才动手，
    * 认不出就返回 false 让别的插件接手（这条规则在最后，最宽松）。
+   *
+   * 两步都要「先认后说」：没数据时静默拉取（`quiet`），认不出立刻 false —— 这条规则经过的消息
+   * 比别的插件多得多，任何一句多余的回话都是替别人回答。
    */
   async meme (e) {
     if (!this.memeOn) return false
 
-    if (!hasMemeData() && !await this.ensureData(e)) return false
+    /**
+     * 没数据时要先拉一遍，但「拉」这句提示不该替别的插件说：
+     * `#点歌 xxx` 这种已经能认出归属的指令一律静默（pull 完还是认不出就 return false 放行），
+     * 剩下的短消息按表情试一把 —— 真是表情就顺带把「第一次会慢一点」的提示发出去。
+     */
+    if (!hasMemeData() && !await this.ensureData(e, { quiet: OTHER_CMD_RE.test(String(e.msg ?? '').trim()) })) return false
 
     const hit = lookupMeme(e.msg)
     if (!hit) return false
@@ -267,7 +293,7 @@ export class Memes extends plugin {
 
     log.mark(`随机表情：${code}${onlyImage ? '（带图 / @ → 只挑图像表情）' : ''}`)
     const card = await memeDetailData(code, { picture: res.buffer, picLabel: '生成结果' })
-    if (card) await this.panel(e, 'Memes/detail', card)
+    if (card) await this.panel(e, 'Memes/Detail', card)
     return e.reply(segment.image(res.buffer))
   }
 

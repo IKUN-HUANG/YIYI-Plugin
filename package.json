@@ -52,7 +52,9 @@
     "node": ">=18.17"
   },
   "scripts": {
-    "check": "node --check index.js"
+    "check": "node --check index.js",
+    "lint": "node test/Lint.mjs",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "mediabunny": "^1.61.3",

@@ -2,7 +2,8 @@
  * @file 快手指令入口：识别分享链接并交给 Link 流水线。
  * @module apps/Kuaishou.js
  */
-import { ensureSize, linkFailText, parseAndSend, parseKuaishou, linkMeta } from '#yiyi.link'
+import { ensureSize, linkFailText, parseAndSend, parseKuaishou } from '#yiyi.link'
+import { Config, gateRules } from '#yiyi.components'
 import { createLogger } from '#yiyi.utils'
 
 const log = createLogger('快手')
@@ -14,11 +15,15 @@ const URL_RE = /https?:\/\/v\.kuaishou\.com\/[A-Za-z\d._?%&+\-=\/#]*/
  */
 export class Kuaishou extends plugin {
   constructor () {
-    super(linkMeta({
+    super({
       name: 'YIYI:快手解析',
       dsc: '快手视频/图集解析',
-      rules: [{ reg: 'kuaishou.com', fnc: 'KS' }]
-    }))
+      event: 'message',
+      priority: Config.priority,
+      rule: [{ reg: 'kuaishou.com', fnc: 'KS' }]
+    })
+    /** 解析总开关或快手单平台开关一关，这条链接规则整块消失 */
+    gateRules(this, () => Config.parseEnable && Config.isEnabled('kuaishou'))
   }
 
   async KS (e) {

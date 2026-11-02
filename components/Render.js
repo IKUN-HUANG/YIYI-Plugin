@@ -1,14 +1,6 @@
 /**
- * @file 出图：把模板交给 Yunzai 的渲染器，负责编码格式、`_res_path` 与版权行的拼装。
- * @module components/Render
- */
-
-import Config from './Config.js'
-import { pluginName, pluginTitle, resPath } from '../utils/Path.js'
-import { version, yunzai } from '../utils/Version.js'
-import { logTag } from '../utils/Logger.js'
-
-/**
+ * @file 出图门面：模板名 → 宿主渲染器，中间只补编码格式、`_res_path` 与版权行。
+ *
  * 这一层归 components 不归 utils —— 它要读配置（出图格式）、要拼插件标题与版本、
  * 还要拿 `e.runtime`，属于「跟框架打交道」的零件。
  *
@@ -18,83 +10,21 @@ import { logTag } from '../utils/Logger.js'
  * 线上必崩 `template not found: ENOENT ... '/King/partials/xxx.html'`；
  * 预览器/自检里我们给 art-template 设了 `root: resources/`，所以测试全过、线上全崩。
  * 公共片段（页头 / 卡壳 / 玩家格）因此**拍平进各模板**，不再抽文件；
- * `check-render` 里有一条闸门盯着「resources 下不许出现 `{{include`」。
- */
-
-/** 出图后端认的编码格式（见 Yunzai 渲染器的 screenshot 实现） */
-const IMG_TYPES = ['png', 'jpeg', 'webp']
-
-/**
- * 卡片用什么格式编码。
+ * `check-tpl-form` 里有一条闸门盯着「resources 下不许出现 `{{include`」。
  *
- * 2026-10-24 实测（1080 宽面板卡，同机 Chromium 截图）：webp(100) 787ms / png 561ms / jpeg(92) 109ms
- * —— 慢的是**编码**不是排版（同一次截图换 jpeg(20) 只要 66ms）。
- * 所以默认 png：像素跟 webp(100) 逐字节一致，编码却快三到四成；webp 在微信适配器上还会被当文件发出去。
- *
- * @returns {string} `png` / `jpeg` / `webp`
+ * @module components/Render
  */
-function imgTypeOf () {
-  try {
-    const raw = String(Config.get('config')?.imgType ?? '').trim().toLowerCase()
-    if (raw === 'jpg') return 'jpeg'
-    return IMG_TYPES.includes(raw) ? raw : 'png'
-  } catch {
-    /** 配置读不出来也要能出图，格式退回 png */
-    return 'png'
-  }
-}
+import { renderData } from './Render/Data.js'
+import { pluginName } from '../utils/Path.js'
+import { logTag } from '../utils/Logger.js'
 
-/**
- * 只有有损格式才带 quality；png 传了也没用，索性不传。
- *
- * @param {string} imgType 编码格式
- * @returns {number} 1~100 的质量；png 给 0 表示不传
- */
-function qualityOf (imgType) {
-  if (imgType === 'png') return 0
-  try {
-    const q = Math.round(Number(Config.get('config')?.quality ?? 100))
-    return Number.isFinite(q) ? Math.min(100, Math.max(1, q)) : 100
-  } catch {
-    return 100
-  }
-}
-
-/**
- * 给模板数据补齐渲染器要的字段（`_plugin`、`_res_path`、`imgType`、`copyright`…）。
- *
- * @param {object} [baseData={}] 业务视图对象（可自带 `_res_path` 覆盖默认值）
- * @param {(ctx: {data: object}) => object} [beforeRender] 渲染器回调；传了就只返回它的结果
- * @returns {object} 补齐后的数据（或 `beforeRender` 的返回值）
- */
-export function renderData (baseData = {}, beforeRender) {
-  const base = baseData._res_path || resPath
-
-  const _imgUrl = img =>
-    /^[a-z][a-z0-9+.-]*:/i.test(img) ? img : `${base}${img}`
-
-  const imgType = imgTypeOf()
-  const quality = qualityOf(imgType)
-
-  const merged = {
-    ...baseData,
-    _plugin: pluginName,
-    _res_path: base,
-    imgType,
-    ...(quality ? { quality } : {}),
-    omitBackground: true,
-    _imgUrl,
-    copyright: `${yunzai.label}${yunzai.version ? ` <span class="version">v${yunzai.version}</span>` : ''}`
-      + ` · ${pluginTitle} <span class="version">v${version}</span>`
-  }
-
-  return beforeRender ? beforeRender({ data: merged }) : merged
-}
+/** 渲染数据的拼装函数：业务侧想自己拼数据时也用它，口径与 `render` 内一致 */
+export { renderData }
 
 /**
  * 模板里引资源用的相对路径：`<tpl>` 有几段就往上退几层，再进插件 resources。
  *
- * @param {string} tpl 模板名（`King/camp` 这种带子目录的形式）
+ * @param {string} tpl 模板名（`King/Camp` 这种带子目录的形式）
  * @returns {string} 形如 `../../../../plugins/YIYI-Plugin/resources/`
  */
 export function resPathForTpl (tpl) {
@@ -115,13 +45,13 @@ export function tplFileOf (tpl) {
 /**
  * 出图：把模板和视图数据交给宿主渲染器。
  *
- * @param {string} tpl 模板名，例如 `King/camp`
+ * @param {string} tpl 模板名，例如 `King/Camp`
  * @param {object} [data={}] 视图对象
  * @param {object} [cfg={}] 渲染配置
  * @param {object} [cfg.e] 消息事件对象（要带 `e.runtime.render`）
  * @param {boolean} [cfg.retMsgId=false] 传真则 `retType` 用 `msgId`（返回消息 id）
  * @param {string} [cfg.retType] 直接指定 `retType`，优先于 `retMsgId`
- * @param {Function} [cfg.beforeRender] 业务侧改数据的回调
+ * @param {(ctx: {data: object}) => object} [cfg.beforeRender] 业务侧改数据的回调
  * @returns {Promise<any>} 渲染器的结果（图片或消息 id）
  * @throws {Error} 模板名为空、或宿主不支持 `e.runtime.render`
  */

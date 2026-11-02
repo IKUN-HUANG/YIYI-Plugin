@@ -14,8 +14,8 @@ import { Config } from '#yiyi.components'
 import {
   memeDir, memePreviewDir, MEME_INFO_FILE, MEME_KEY_FILE,
   ensureMemeDirs, hasMemeData, writeMemeData, resetMemeStore
-} from './Memes/store.js'
-import { clearMemeThumbs } from './Memes/catalog.js'
+} from './Memes/Store.js'
+import { clearMemeThumbs } from './Memes/Catalog.js'
 
 const log = createLogger('表情包')
 
@@ -371,7 +371,7 @@ export function clearMemeData () {
 }
 
 /** 导出面：与旧版逐名对齐（闸门会逐个查），顺序与分组保持旧版的样子 */
-export { memeDir, memePreviewDir, ensureMemeDirs, loadMemeData, hasMemeData, memeCodes, memeParams, isMemeDisabled, enabledMemeCodes, isMemeCountered, memePreview, writeMemeData } from './Memes/store.js'
-export { memeArgSchema, parseMemeArgs, memeArgHints } from './Memes/args.js'
-export { lookupMeme, memeDetail, memePreviewUrl, isMemeRepeated, markMemeHandled } from './Memes/lookup.js'
-export { MEME_PAGE_SIZE, isTextMeme, randomMemePool, memeListCodes, memeThumb, memeListPage, clearMemeThumbs, memeHelpData, memeDetailData } from './Memes/catalog.js'
+export { memeDir, memePreviewDir, ensureMemeDirs, loadMemeData, hasMemeData, memeCodes, memeParams, isMemeDisabled, enabledMemeCodes, isMemeCountered, memePreview, writeMemeData } from './Memes/Store.js'
+export { memeArgSchema, parseMemeArgs, memeArgHints } from './Memes/Args.js'
+export { lookupMeme, OTHER_CMD_RE, memeDetail, memePreviewUrl, isMemeRepeated, markMemeHandled } from './Memes/Lookup.js'
+export { MEME_PAGE_SIZE, isTextMeme, randomMemePool, memeListCodes, memeThumb, memeListPage, clearMemeThumbs, memeHelpData, memeDetailData } from './Memes/Catalog.js'

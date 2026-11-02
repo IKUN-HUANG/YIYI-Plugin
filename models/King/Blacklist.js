@@ -5,8 +5,8 @@
  *
  * 副作用：拉黑 / 放人 / 清空都立刻整份重写 yaml（没有写队列，靠调用点自己串行）。
  */
-import { kingBlacklistFile, readYaml, writeYamlDoc } from './core/store.js'
-import { blacklistToDisk, normalizeBlacklistEntry } from './core/schema.js'
+import { kingBlacklistFile, readYaml, writeYamlDoc } from './Core/Store.js'
+import { blacklistToDisk, normalizeBlacklistEntry } from './Core/Schema.js'
 import { toText, maskUserId } from './Common.js'
 
 /**

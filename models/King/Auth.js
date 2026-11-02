@@ -8,20 +8,20 @@
  * @module models/King/Auth
  */
 import { createLogger, toText, pickValue } from '#yiyi.utils'
-import { readUserPart, writeUserPart, listUserIds, listGroupIds, readGroupPart, writeGroupPart } from './core/store.js'
+import { readUserPart, writeUserPart, listUserIds, listGroupIds, readGroupPart, writeGroupPart } from './Core/Store.js'
 import { normRoleId, maskUserId } from './Common.js'
-import { patchAccount, findAccount } from './auth/pool.js'
-import { hoursOf } from './auth/marks.js'
-import { normalizeBind } from './core/schema.js'
+import { patchAccount, findAccount } from './Auth/Pool.js'
+import { hoursOf } from './Auth/Marks.js'
+import { normalizeBind } from './Core/Schema.js'
 
 /** 号池：读写账号记录、找默认号、列可用号（`auth/pool.js` 的实现） */
-export * from './auth/pool.js'
+export * from './Auth/Pool.js'
 /** 账号状态：静默剩余时间、登录信息够不够用（`auth/state.js`） */
-export * from './auth/state.js'
+export * from './Auth/State.js'
 /** 状态标记：失效 / 限频的时长与读写（`auth/marks.js`） */
-export * from './auth/marks.js'
+export * from './Auth/Marks.js'
 /** 角色关系：哪个号名下有哪个角色、角色信息查询（`auth/roles.js`） */
-export * from './auth/roles.js'
+export * from './Auth/Roles.js'
 
 const log = createLogger('营地账号')
 

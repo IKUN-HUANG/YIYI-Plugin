@@ -3,54 +3,54 @@
  * @module apps/King
  */
 import { kingAck, dropKingAck, kingNews, kingNewsDetail, kingHeroList, kingHero, kingItem, kingPower, kingLogin, cancelKingLogin, kingUseAccount, kingDelAccount, kingCheckAccount, kingAccount, kingBindRole, kingBindHelp, kingUnbindRole, kingMyCamp, kingDiagnose, kingSwitchRole, kingHideRole, kingRestoreRole, kingBattleList, kingBattleDetail, kingRank, kingRankRefresh, kingGroupReport, kingGroupReportPush, kingGroupReportStatus, kingGroupReportTick, kingPushSwitch, kingPushStatus, kingGroupPush, kingPushTick, kingWhoIsPlaying, kingWatchSwitch, kingWatchTest, kingOps, kingOpsClearCache, kingCacheSweep, kingBootCacheSweep, kingKeepAliveTick, kingTier, kingHeroRecord, kingCompare, kingNewsPush, kingSkinPush, kingAlertTick, kingCleanInvalid, kingBackup, kingRestore, kingBlacklist, kingRankTrend, kingPeakTrend, kingSkinCodex, kingSkinMissing, kingMyHeroes, kingExportCsv, kingUserStats, kingHiddenList, kingHiddenClear, parsePeriod, kingReply, AT_HEAD, AT_TAIL } from '#yiyi.king'
-import { Config } from '#yiyi.components'
+import { Config, gateRules } from '#yiyi.components'
 import { afterLoaded } from '#yiyi.utils'
 
 /** 65 条指令的正则表：字面写在这个文件里（闸门按文本抠 `{ reg, fnc }`，挪去别的文件会红）。
  * 构造里只 push；新增指令加在这个数组末尾（兜底那条永远最后）。 */
 const RULES = [
-  { reg: '^#?王者(?:荣耀|农药)?(?:扫码|登录)(?:取消|撤销)', fnc: 'cancelLogin' },
-  { reg: '^#?取消(?:王者(?:荣耀|农药)?)?(?:扫码|登录)', fnc: 'cancelLogin' },
-  { reg: '^#?王者(?:荣耀|农药)?[Qq][Qq](?:扫码|登录)?', fnc: 'loginQQ' },
-  { reg: '^#?王者(?:荣耀|农药)?(?:微信|[VvWw][Xx])(?:扫码|登录)?', fnc: 'loginWechat' },
-  { reg: '^#?王者(?:荣耀|农药)?(?:扫码|登录)?$', fnc: 'loginHelp' },
-  { reg: '^#?王者(?:荣耀|农药)?切换角色\\s*\\d*', fnc: 'switchRole' },
-  { reg: '^#?王者(?:荣耀|农药)?隐藏角色\\s*\\d*', fnc: 'hideRole' },
-  { reg: '^#?王者(?:荣耀|农药)?恢复角色\\s*\\d*', fnc: 'restoreRole' },
-  { reg: '^#?王者(?:荣耀|农药)?切换(?:账号)?', fnc: 'useAccount' },
-  { reg: '^#?王者(?:荣耀|农药)?删除(?:账号)?', fnc: 'delAccount' },
-  { reg: '^#?王者(?:荣耀|农药)?校验(?:账号)?', fnc: 'checkAccount' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:扫码|登[录陆])(?:取消|撤销)$', fnc: 'cancelLogin' },
+  { reg: '^#?取消(?:王者(?:荣耀|农药)?)?(?:扫码|登[录陆])$', fnc: 'cancelLogin' },
+  { reg: '^#?王者(?:荣耀|农药)?[Qq][Qq](?:扫码登[录陆]|扫码|登[录陆])?$', fnc: 'loginQQ' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:微信|[VvWw][Xx])(?:扫码登[录陆]|扫码|登[录陆])?$', fnc: 'loginWechat' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:扫码|登[录陆])?$', fnc: 'loginHelp' },
+  { reg: '^#?王者(?:荣耀|农药)?切换角色(?:\\s*\\d+)?$', fnc: 'switchRole' },
+  { reg: '^#?王者(?:荣耀|农药)?隐藏角色(?:\\s*\\d+)?$', fnc: 'hideRole' },
+  { reg: '^#?王者(?:荣耀|农药)?恢复角色(?:\\s*\\d+)?$', fnc: 'restoreRole' },
+  { reg: '^#?王者(?:荣耀|农药)?切换(?:账号)?(?:\\s*\\d+)?$', fnc: 'useAccount' },
+  { reg: '^#?王者(?:荣耀|农药)?删除(?:账号)?(?:\\s*\\d+)?$', fnc: 'delAccount' },
+  { reg: '^#?王者(?:荣耀|农药)?校验(?:账号)?(?:\\s*\\d+)?$', fnc: 'checkAccount' },
   { reg: '^#?王者(?:荣耀|农药)?账[号户](?:列表|池)?$', fnc: 'account' },
-  { reg: '^#?王者(?:荣耀|农药)?绑定\\s*(?:说明|帮助|教程|指南)', fnc: 'bindHelp' },
-  { reg: '^#?王者(?:荣耀|农药)?绑定(?!群)(?:营地|角色|营地ID|id)?\\s*\\d*', fnc: 'bindRole' },
-  { reg: '^#?王者(?:荣耀|农药)?解绑(?:营地|角色)?', fnc: 'unbindRole' },
+  { reg: '^#?王者(?:荣耀|农药)?绑定\\s*(?:说明|帮助|教程|指南)$', fnc: 'bindHelp' },
+  { reg: '^#?王者(?:荣耀|农药)?绑定(?!群)(?:营地|角色|营地ID|id)?(?:\\s*\\d+)?$', fnc: 'bindRole' },
+  { reg: '^#?王者(?:荣耀|农药)?解绑(?:营地|角色)?$', fnc: 'unbindRole' },
   /** 已合并 / 已下线的老指令只回一句指路：赛季数据与称号都并进了营地卡，好友列表不再做 */
   { reg: '^#?王者(?:荣耀|农药)?(?:(?:我的)?(?:营地|主页)?\\s*(?:赛季(?:表现|数据|报表|汇总)?|好友(?:列表)?)|(?:全部|所有)?(?:排位|赛季|巅峰)(?:表现|数据)(?:\\s+\\S+)*|(?:荣耀)?(?:称号墙|我的称号|荣耀称号|称号列表|称号|边框)(?:\\s+\\d+)?)$', fnc: 'retiredCard' },
   /** 签到 / 营地币 / 福利任务 / 兑换整块下线：命中了也别装没听见 */
   { reg: '^#?王者(?:荣耀|农药)?(?:自动签到|签到|营地币|金币|福利任务|福利|任务|领奖|领取奖励|领取福利|营地兑换|兑换)(?:\\s*\\S*)*$', fnc: 'retiredDaily' },
-  { reg: AT_HEAD + '#?王者(?:荣耀|农药)?(?:段位|排位)(?:趋势|走势|曲线)\\s*\\S*' + AT_TAIL, fnc: 'rankTrend' },
-  { reg: AT_HEAD + '#?王者(?:荣耀|农药)?巅峰(?:分)?(?:趋势|走势|曲线)\\s*\\S*' + AT_TAIL, fnc: 'peakTrend' },
-  { reg: '^#?王者(?:荣耀|农药)?皮肤推送\\s*(?:开启|关闭|打开|关|开|状态)?$', fnc: 'skinPush' },
+  { reg: AT_HEAD + '#?王者(?:荣耀|农药)?(?:段位|排位)(?:趋势|走势|曲线)(?:\\s+\\S+)?' + AT_TAIL, fnc: 'RankTrend' },
+  { reg: AT_HEAD + '#?王者(?:荣耀|农药)?巅峰(?:分)?(?:趋势|走势|曲线)(?:\\s+\\S+)?' + AT_TAIL, fnc: 'PeakTrend' },
+  { reg: '^#?王者(?:荣耀|农药)?皮肤推送\\s*(?:开启|关闭|打开|关|开|状态)?$', fnc: 'SkinPush' },
   { reg: '^#?王者(?:荣耀|农药)?公告推送\\s*(?:开启|关闭|打开|关|开|状态)?$', fnc: 'newsPush' },
   { reg: '^#?王者(?:荣耀|农药)?(?:营地)?(?:导出战绩|战绩导出)(?:\\s+\\S+)*$', fnc: 'exportCsv' },
   { reg: '^#?王者用户统计$', fnc: 'userStats' },
   { reg: '^#?王者隐藏主页名单$', fnc: 'hiddenList' },
   { reg: '^#?王者清除隐藏名单(?:\\s+\\S+)*$', fnc: 'hiddenClear' },
-  { reg: '^#?王者(?:荣耀|农药)?(?:(?:我的)?皮肤(?:图鉴|墙|收藏)|我的皮肤)(?:\\s*\\S+)?$', fnc: 'skinCodex' },
-  { reg: '^#?王者(?:荣耀|农药)?(?:皮肤(?:缺失|缺少)|(?:还)?(?:缺|少|差|没有)(?:什么|哪些)?(?:的)?皮肤)(?:\\s*\\S+)?$', fnc: 'skinMissing' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:(?:我的)?皮肤(?:图鉴|墙|收藏)|我的皮肤)(?:\\s*\\S+)?$', fnc: 'SkinCodex' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:皮肤(?:缺失|缺少)|(?:还)?(?:缺|少|差|没有)(?:什么|哪些)?(?:的)?皮肤)(?:\\s*\\S+)?$', fnc: 'SkinMissing' },
   { reg: '^#?王者(?:荣耀|农药)?(?:我的|常用)英雄(?:\\s*\\d+)?$', fnc: 'myHeroes' },
   { reg: '^#?王者(?:荣耀|农药)?(?:英雄)?(?:梯度|强度)(?:榜)?\\s*\\S*$', fnc: 'tier' },
-  { reg: '^#?王者(?:荣耀|农药)?(?:出装|铭文|攻略)(?:\\s*\\S+)?$', fnc: 'heroEquip' },
-  { reg: '^#?王者(?:荣耀|农药)?英雄战绩(?:\\s*\\S+)?$', fnc: 'heroRecord' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:出装|铭文|攻略)(?:\\s*\\S+)?$', fnc: 'HeroEquip' },
+  { reg: '^#?王者(?:荣耀|农药)?英雄战绩(?:\\s*\\S+)?$', fnc: 'HeroRecord' },
   { reg: AT_HEAD + '#?王者(?:荣耀|农药)?对比.*$', fnc: 'compare' },
   { reg: '^#?王者(?:荣耀|农药)?清理(?:失效|过期)(?:账号|登录态)?$', fnc: 'opsCleanInvalid' },
   { reg: '^#?王者(?:荣耀|农药)?备份$', fnc: 'opsBackup' },
   { reg: '^#?王者(?:荣耀|农药)?还原\\s*\\S*$', fnc: 'opsRestore' },
-  { reg: '^#?王者(?:荣耀|农药)?黑名单\\s*.*$', fnc: 'blacklist' },
-  { reg: AT_HEAD + '#?王者(?:荣耀|农药)?战绩(?:详情|数据|明细)\\s*\\d*', fnc: 'battleDetail' },
-  { reg: '^#?王者(?:荣耀|农药)?(?:排位|巅峰)总?排名', fnc: 'rank' },
-  { reg: '^#?王者(?:荣耀|农药)?排行(?:榜)?刷新', fnc: 'rankRefresh' },
-  { reg: '^#?王者(?:荣耀|农药)?(?:(?:排位|巅峰)总?)?排行(?:榜)?', fnc: 'rank' },
+  { reg: '^#?王者(?:荣耀|农药)?黑名单(?:\\s+\\S+.*)?$', fnc: 'blacklist' },
+  { reg: AT_HEAD + '#?王者(?:荣耀|农药)?战绩(?:详情|数据|明细)(?:\\s*\\d+)?' + AT_TAIL, fnc: 'battleDetail' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:排位|巅峰)总?排名$', fnc: 'rank' },
+  { reg: '^#?王者(?:荣耀|农药)?排行(?:榜)?刷新$', fnc: 'RankRefresh' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:(?:排位|巅峰)总?)?排行(?:总|榜)?$', fnc: 'rank' },
   { reg: '^(?:#?王者(?:荣耀|农药)?[日周月]报|#?(?:王者(?:荣耀|农药)?|战绩)?群[日周月]报)$', fnc: 'groupReport' },
   { reg: '^(?:#?(?:开启|关闭)(?:王者(?:荣耀|农药)?|战绩)?(?:群)?[日周月]报推送|#?王者(?:荣耀|农药)?(?:群)?[日周月]报(?:推送)?(?:开启|关闭))$', fnc: 'groupReportPush' },
   { reg: '^#?王者(?:荣耀|农药)?(?:推送状态|群报(?:推送)?状态|群?[日周月]报推送(?:状态)?)$', fnc: 'groupReportStatus' },
@@ -64,17 +64,17 @@ const RULES = [
   { reg: '^#?(?:谁在(?:打游戏|打王者|玩王者|上号|排位|玩农)|王者(?:荣耀|农药)?(?:在线(?:列表|状态)?|状态)|在线列表|农批在线|在线农批)$', fnc: 'whoIsPlaying' },
   { reg: '^#?王者(?:荣耀|农药)?(?:运维|运行状态)$', fnc: 'ops' },
   { reg: '^#?王者(?:荣耀|农药)?清理缓存$', fnc: 'opsClearCache' },
-  { reg: AT_HEAD + '#?王者(?:荣耀|农药)?战绩', fnc: 'battleList' },
-  { reg: AT_HEAD + '#?(?:王者(?:荣耀|农药)?(?:我的)?(?:营地|主页)|我的营地|我的主页)(?:\\s*\\S*)?' + AT_TAIL, fnc: 'myCamp' },
+  { reg: AT_HEAD + '#?王者(?:荣耀|农药)?战绩(?:\\s*\\d+)?' + AT_TAIL, fnc: 'battleList' },
+  { reg: AT_HEAD + '#?(?:王者(?:荣耀|农药)?(?:我的)?(?:营地|主页)|我的营地|我的主页)(?:\\s+\\S+)?' + AT_TAIL, fnc: 'myCamp' },
   { reg: '^#?王者(?:荣耀|农药)?诊断$', fnc: 'diagnose' },
   { reg: '^#?王者(?:荣耀|农药)?(?:公告|资讯|新闻)(?:列表)?\\s*(?:下一页|上一页|下页|上页)$', fnc: 'news' },
   { reg: '^#?王者(?:荣耀|农药)?(?:公告|资讯|新闻)列表', fnc: 'news' },
   { reg: '^#?王者(?:荣耀|农药)?(?:公告|资讯|新闻)\\s*\\d+(?:\\s*-\\s*\\d+|\\s+\\d+)?$', fnc: 'newsDetail' },
   { reg: '^#?王者(?:荣耀|农药)?(?:公告|资讯|新闻)$', fnc: 'news' },
-  { reg: '^#?王者(?:荣耀|农药)?英雄(?:列表|大全)', fnc: 'heroList' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:法师|射手|刺客|坦克|战士|辅助)?英雄(?:列表|大全)(?:[\\s·]*(?:法师|射手|刺客|坦克|战士|辅助))?\\s*\\d{0,3}$', fnc: 'HeroList' },
   { reg: '^#?王者(?:荣耀|农药)?英雄(?:\\s*\\S+(?:\\s+\\S+)*)?$', fnc: 'hero' },
-  { reg: '^#?王者(?:荣耀|农药)?装备', fnc: 'item' },
-  { reg: '^#?王者(?:荣耀|农药)?(?:战力|查战力)', fnc: 'power' },
+  { reg: '^#?王者(?:荣耀|农药)?装备(?:\\s+\\S+)?$', fnc: 'item' },
+  { reg: '^#?王者(?:荣耀|农药)?(?:战力|查战力)(?:\\s+\\S+)?$', fnc: 'power' },
   /** 兜底：认得出是王者指令、但没有一条规则接住时，别再装没听见 */
   { reg: '^#王者(?:荣耀|农药)?(?![帮菜])(?:\\s*\\S+)*$', fnc: 'unknownCommand' }
 ]
@@ -96,6 +96,18 @@ export class King extends plugin {
       priority: Config.priority,
       rule: RULES
     })
+    /**
+     * 王者总开关（king.yaml 的 `enable`，现在也摆在基础设置里）：关掉后 65 条规则整块消失。
+     * 关键的不是「处理函数 return false」—— 那要先被规则命中、先记一条「开始处理」，
+     * 别的插件才轮得上；规则拿不到才是真正的放行。
+     */
+    gateRules(this, () => Config.kingEnable)
+
+    /**
+     * 定时任务也认总开关：关掉后这些 cron 到点就空转，不请求营地、不推消息。
+     * 包一层而不是靠每个 tick 自己判，是为了「新加的定时任务不会再漏」。
+     */
+    const guard = fnc => async (...args) => (Config.kingEnable ? fnc(...args) : undefined)
 
     this.task = [
       {
@@ -140,7 +152,7 @@ export class King extends plugin {
         log: false,
         fnc: () => kingAlertTick()
       }
-    ]
+    ].map(task => ({ ...task, fnc: guard(task.fnc) }))
   }
 
   async loginQQ (e) {
@@ -230,7 +242,7 @@ export class King extends plugin {
     return kingRank(e)
   }
 
-  async rankRefresh (e) {
+  async RankRefresh (e) {
     return kingRankRefresh(e)
   }
 
@@ -254,7 +266,7 @@ export class King extends plugin {
     return kingNewsDetail(e)
   }
 
-  async heroList (e) {
+  async HeroList (e) {
     return kingHeroList(e)
   }
 
@@ -324,27 +336,27 @@ export class King extends plugin {
   }
 
   /** `#王者出装 李白` 与 `#王者英雄 李白` 现在出同一张卡：技能、称号、出装铭文、皮肤都在里面 */
-  async heroEquip (e) {
+  async HeroEquip (e) {
     return kingHero(e)
   }
 
-  async rankTrend (e) {
+  async RankTrend (e) {
     return kingRankTrend(e)
   }
 
-  async peakTrend (e) {
+  async PeakTrend (e) {
     return kingPeakTrend(e)
   }
 
-  async heroRecord (e) {
+  async HeroRecord (e) {
     return kingHeroRecord(e)
   }
 
-  async skinCodex (e) {
+  async SkinCodex (e) {
     return kingSkinCodex(e)
   }
 
-  async skinMissing (e) {
+  async SkinMissing (e) {
     return kingSkinMissing(e)
   }
 
@@ -378,7 +390,7 @@ export class King extends plugin {
     return kingNewsPush(e)
   }
 
-  async skinPush (e) {
+  async SkinPush (e) {
     return kingSkinPush(e)
   }
 

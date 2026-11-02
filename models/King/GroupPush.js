@@ -7,6 +7,10 @@ import { toText } from './Common.js'
 
 /** 群推送存档的 part 名 */
 export const GROUP_PUSH_PART = 'groupPush'
+/** 群级提醒的两类：公告、皮肤上新 */
+const GROUP_ALERT_KEYS = ['news', 'skin']
+/** 群级提醒的中文名 */
+export const GROUP_ALERT_LABEL = { news: '公告推送', skin: '皮肤上新' }
 /**
  * 群推送总开关在回执里的名字
  */
@@ -34,6 +38,10 @@ export function loadGroupPush (groupId) {
   return {
     auto: raw?.auto !== false,
     muted: muteList(raw),
+    alerts: {
+      news: raw?.alerts?.news !== false,
+      skin: raw?.alerts?.skin !== false
+    },
     updatedAt: toText(raw?.updatedAt)
   }
 }
@@ -51,11 +59,17 @@ export function saveGroupPush (groupId, ctl = {}) {
 
   const auto = ctl.auto !== false
   const muted = muteList(ctl)
-  if (auto && !muted.length) return writeGroupPart(id, GROUP_PUSH_PART, null)
+  const alerts = {
+    news: ctl.alerts?.news !== false,
+    skin: ctl.alerts?.skin !== false
+  }
+  const allOn = alerts.news && alerts.skin
+  if (auto && allOn && !muted.length) return writeGroupPart(id, GROUP_PUSH_PART, null)
 
   return writeGroupPart(id, GROUP_PUSH_PART, {
     auto,
     muted,
+    alerts,
     updatedAt: toText(ctl.updatedAt) || String(Date.now())
   })
 }
@@ -121,6 +135,39 @@ export function setGroupPushAuto (groupId, on, by = '') {
 }
 
 /**
+ * 这个群的某类提醒（公告 / 皮肤上新）开着吗。没设置过算开。
+ *
+ * @param {string} groupId 群号
+ * @param {string} key 提醒键（`GROUP_ALERT_KEYS`）
+ * @returns {boolean 是否开着}
+ */
+export function groupAlertOn (groupId, key) {
+  return loadGroupPush(groupId).alerts[key] !== false
+}
+
+/**
+ * 改本群某一类提醒的开关，记下是谁改的
+ *
+ * @param {string} groupId 群号
+ * @param {string} key 提醒键（`GROUP_ALERT_KEYS`）
+ * @param {boolean} on 开还是关
+ * @param {object} [by=""] 操作人 QQ
+ * @returns {boolean 改后的状态}
+ */
+export function setGroupAlert (groupId, key, on, by = '') {
+  const id = toText(groupId)
+  if (!id || !GROUP_ALERT_KEYS.includes(key)) return false
+
+  const ctl = loadGroupPush(id)
+  return saveGroupPush(id, {
+    auto: ctl.auto,
+    muted: ctl.muted,
+    alerts: { ...ctl.alerts, [key]: !!on },
+    updatedAt: `${Date.now()}:${toText(by)}`
+  })
+}
+
+/**
  * 清空本群免打扰名单（群主一键恢复所有人）
  *
  * @param {string} groupId 群号
@@ -144,6 +191,7 @@ export function clearGroupPushMuted (groupId, by = '') {
 export function groupPushText (groupId) {
   const ctl = loadGroupPush(groupId)
   const lines = [`${GROUP_PUSH_TEXT}：${ctl.auto ? '已开启（默认）' : '已关闭'}`]
+  lines.push(`公告推送：${ctl.alerts.news ? '开' : '关'}　皮肤上新：${ctl.alerts.skin ? '开' : '关'}`)
   if (ctl.muted.length) lines.push(`本群有 ${ctl.muted.length} 位群友自己关了推送`)
   return { ctl, text: lines.join('\n') }
 }

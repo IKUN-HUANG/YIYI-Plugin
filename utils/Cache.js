@@ -54,7 +54,8 @@ export function createMemoryCache ({ max = 500, ttl = 0 } = {}) {
       const task = Promise.resolve()
         .then(loader)
         .then(value => {
-          cache.set(key, value)
+          /** undefined 表示「没拿到可缓存的结果」：不占容量，也不把成功项挤出去（下次还能重试） */
+          if (value !== undefined) cache.set(key, value)
           return value
         })
         .finally(() => inflight.delete(key))

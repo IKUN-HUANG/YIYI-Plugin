@@ -7,7 +7,7 @@
  * 给「#王者营地」卡的赛季汇总表用。视图逻辑（雷达图、分路、走势）不在这层，别再往这里加。
  */
 import { toText } from './Common.js'
-import { heroBriefOf } from './Field.js'
+import { HeroBriefOf } from './Field.js'
 import { numOf, countText } from '#yiyi.utils'
 
 /** 营地 masterScore 的起始分：超过它才算真打过巅峰赛 */
@@ -91,13 +91,13 @@ function jobColorOf (name = '') {
   return JOB_COLOR_DEFAULT
 }
 
-function seasonHeroRows (heros = [], limit = SEASON_HERO_LIMIT) {
-  const rows = listOf(heros)
+function seasonHeroRows (Heros = [], limit = SEASON_HERO_LIMIT) {
+  const rows = listOf(Heros)
     .map(raw => ({
-      ...heroBriefOf(raw),
+      ...HeroBriefOf(raw),
       winCount: countText(raw?.winCnt),
       winRate: rateText(raw?.winRate),
-      power: countText(raw?.heroFightPower ?? raw?.fightPower)
+      power: countText(raw?.heroFightPower ?? raw?.HeroFightPower ?? raw?.fightPower)
     }))
     .filter(item => item.name !== '未知英雄')
 
@@ -108,30 +108,30 @@ function seasonHeroRows (heros = [], limit = SEASON_HERO_LIMIT) {
 /**
  * 营地 historyList 的一条 → 汇总表一行。
  *
- * mode: '排位' 读 rankInfo，'巅峰' 读 masterInfo —— 两边字段名长得像但含义不同（mastr 那边是分数、rank 那边是星数），
+ * mode: '排位' 读 RankInfo，'巅峰' 读 masterInfo —— 两边字段名长得像但含义不同（mastr 那边是分数、rank 那边是星数），
  * 所以按 mode 分两路取，不要写「有就用」的混取。
  *
- * @param {object} [entry] 营地 historyList 的一条（seasonName / rankInfo / masterInfo / startTime / endTime）
+ * @param {object} [entry] 营地 historyList 的一条（seasonName / RankInfo / masterInfo / startTime / endTime）
  * @param {object} [options]
  * @param {string} [options.mode='排位'] '排位' 或 '巅峰'，决定读哪一组字段
- * @returns {{seasonName: string, seasonTag: string, isCurrent: boolean, dateRange: string, games: number, wins: number, loses: number, winRate: string, streak: string, gold: string, silver: string, avgScore: string, scoreLabel: string, jobName: string, shortJob: string, rankingStar: string, jobColor: string, star: number, masterScore: number, peakText: string, heros: Array<object>, trendValue: number, trendTip: string}} 汇总表一行；没数据的格子是 '—' 而不是空串
+ * @returns {{seasonName: string, seasonTag: string, isCurrent: boolean, dateRange: string, games: number, wins: number, loses: number, winRate: string, streak: string, gold: string, silver: string, avgScore: string, scoreLabel: string, jobName: string, shortJob: string, RankingStar: string, jobColor: string, star: number, masterScore: number, PeakText: string, Heros: Array<object>, trendValue: number, trendTip: string}} 汇总表一行；没数据的格子是 '—' 而不是空串
  */
 export function mapSeasonEntry (entry = {}, { mode = '排位' } = {}) {
   const body = obj(entry)
-  const rank = obj(body.rankInfo)
+  const rank = obj(body.rankInfo ?? body.RankInfo)
   const master = obj(body.masterInfo)
   const isPeak = mode === '巅峰'
 
-  const rankGames = numOf(rank.totalCnt) || numOf(rank.gameCnt)
-  const rankWins = numOf(rank.totalWinCnt)
+  const RankGames = numOf(rank.totalCnt) || numOf(rank.gameCnt)
+  const RankWins = numOf(rank.totalWinCnt)
   const masterGames = numOf(master.totalCnt)
   const masterWins = numOf(master.totalWinCnt)
   const masterScore = numOf(master.masterScore)
 
-  const games = isPeak ? masterGames : rankGames
-  const wins = isPeak ? masterWins : rankWins
+  const games = isPeak ? masterGames : RankGames
+  const wins = isPeak ? masterWins : RankWins
   const jobName = toText(rank.jobName)
-  const star = toText(rank.rankingStar)
+  const star = toText(rank.RankingStar ?? rank.rankingStar)
   const avg = isPeak ? numOf(master.averageScore) : numOf(rank.averageScore)
 
   return {
@@ -150,12 +150,12 @@ export function mapSeasonEntry (entry = {}, { mode = '排位' } = {}) {
     scoreLabel: numOf(avg) > 0 && numOf(avg) <= 20 ? '平均分 · 旧 10 分制' : '平均分',
     jobName,
     shortJob: shortJobName(jobName),
-    rankingStar: star,
+    RankingStar: star,
     jobColor: jobColorOf(jobName),
     star: numOf(rank.totalRankStar) + numOf(star),
     masterScore,
-    peakText: masterScore > PEAK_BASE_SCORE || masterGames > 0 ? String(masterScore) : '—',
-    heros: seasonHeroRows(rank.heros || master.heros, SEASON_ALL_HERO_LIMIT),
+    PeakText: masterScore > PEAK_BASE_SCORE || masterGames > 0 ? String(masterScore) : '—',
+    Heros: seasonHeroRows(rank.Heros || master.Heros, SEASON_ALL_HERO_LIMIT),
     trendValue: isPeak ? masterScore : numOf(rank.totalRankStar) + numOf(star),
     trendTip: isPeak
       ? `${masterScore} 分`

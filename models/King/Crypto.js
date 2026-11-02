@@ -1,6 +1,6 @@
 /**
  * @file 加密与签名：XXTEA 加解密，以及营地两套请求头与签名的拼装。
- * 不管发请求（那在 api/request.js），也不管登录态从哪来（auth 对象由 Auth 层给）。
+ * 不管发请求（那在 Api/request.js），也不管登录态从哪来（auth 对象由 Auth 层给）。
  *
  * 营地这套东西全是**逐位对齐**的协议实现，别「优化」这里的位运算。
  *
@@ -9,12 +9,12 @@
  * 2. 请求头与签名（`authHeaders` / `gameFormHeaders` / `signOf`）：有 `userKey` 走 XXTEA 签名，
  *    没有就用公钥 RSA 签 —— 两条路营地校验方式不同，绝不能混用。
  *
- * 签名和请求头放在这里而不是 `api/request.js`，是因为它们都是「纯函数式拼装」，
+ * 签名和请求头放在这里而不是 `Api/Request.js`，是因为它们都是「纯函数式拼装」，
  * 和请求节流、重试、缓存那些带状态的逻辑不是一类东西；`request.js` 只负责发。
  */
 import crypto from 'node:crypto'
 import { toText, pickValue, buildUuid } from '#yiyi.utils'
-import { BASE_MAIN, HOST_MAIN, HOST_GAME, HOST_GAME_FORM, DEFAULT_PUBLIC_KEY } from './api/endpoints.js'
+import { BASE_MAIN, HOST_MAIN, HOST_GAME, HOST_GAME_FORM, DEFAULT_PUBLIC_KEY } from './Api/Endpoints.js'
 import { buildPublicKeyPem, AuthAccountError } from './Common.js'
 
 const DELTA = 0x9E3779B9

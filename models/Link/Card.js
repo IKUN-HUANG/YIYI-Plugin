@@ -92,7 +92,7 @@ export async function processImages (urls, referer) {
   return {
     coverSrc: coverImg?.base64 || cover,
     avatarSrc: avatarImg?.base64 || avatar,
-    mCoverSrc: mCoverImg?.base64 || (mcover || iconBase64('music.png')),
+    mCoverSrc: mCoverImg?.base64 || (mcover || iconBase64('Music.png')),
     tAvatarSrc: tAvatarImg?.base64 || tavatar,
     accent,
     isLandscape: dim ? dim.width > dim.height : false
@@ -175,8 +175,8 @@ export async function ensureSize (pick = {}) {
  */
 export function loadIcons (platform, names) {
   const icons = {}
-  for (const n of names) icons[n] = iconBase64(`${n}.png`)
-  icons[platform] = iconBase64(`${platform}.png`)
+  for (const n of names) icons[n] = iconBase64(`${n[0].toUpperCase()}${n.slice(1)}.png`)
+  icons[platform] = iconBase64(`${platform[0].toUpperCase()}${platform.slice(1)}.png`)
   return icons
 }
 

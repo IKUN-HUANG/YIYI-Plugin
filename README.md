@@ -12,7 +12,7 @@
 
 </div>
 
-> **自用说明**：本插件是作者**自用**插件，代码、卡片样式和默认配置都照自己的需求写，只在 **TRSS-Yunzai v3.1.3** / **SnowLuma v2.2.0** 上验证过，其它分支或版本没有逐个测.能用就用，遇到问题请提 [Issues](https://github.com/IKUN-HUANG/YIYI-Plugin/issues).
+**适配范围**：在 **TRSS-Yunzai v3.1.3** / **SnowLuma v2.3.2** 上完整验证过.其它分支或版本没有逐个测，遇到问题请提 [Issues](https://github.com/IKUN-HUANG/YIYI-Plugin/issues).
 
 ---
 
@@ -244,7 +244,7 @@ pnpm install --filter=yiyi-plugin
 | `#伊伊王者帮助` | 王者那一套（`#王者帮助` 同义） |
 | `#伊伊版本` | 看插件版本与更新日志 |
 | `#伊伊更新` | 检查更新并拉取，仅主人与作者（`package.json` 里 `qq` 那个号，下同），更完自动重启（框架给了 `Bot.restart` 才会自动重启，没给就提示你手动重启一次）；只对 `git clone` 装的插件有效，其它装法会告诉你原因和手动升级办法。开着「插件自动更新」时后台每 10 分钟自己看一眼上游，有新提交就拉取并重启（间隔用 `#伊伊设置插件更新间隔 5` 改，上游没变就一声不响；要是本地改动正好撞上上游改的同一个文件，会私聊你一次然后静默 12 小时，这期间不再查、不再重复提醒） |
-| `#伊伊强制更新` | 仅主人与作者。本地改过东西、普通更新被挡住时用：直接 `git reset --hard` 到上游，本地改动与本地提交一起丢掉。覆盖前会把改过的文件存成补丁放在 `data/update/`，盖错了 `git apply` 能找回；`data/`、`cache/`、`config/config/` 不进 git，设置和绑定不受影响 |
+| `#伊伊强制更新` | 仅主人与作者。本地改过东西、普通更新被挡住时用：直接 `git reset --hard` 到上游，本地改动与本地提交一起丢掉。覆盖前会把你改过的文件存成补丁放在 `data/update/`，盖错了 `git apply` 能找回；你的设置、绑定与登录态都在 `data/` 与 `config/config/` 里，不受影响 |
 | `#原图` | 引用一张帮助卡再发，拿那张卡的背景原图 |
 
 </details>
@@ -296,41 +296,47 @@ pnpm install --filter=yiyi-plugin
 <details>
 <summary><code>models/</code>　业务层</summary>
 
-真正干活的地方，一个模块一个目录：
+真正干活的地方，一个模块一个目录.大的模块再按「门面 + 同名子目录」拆开：`King/Api.js` 只有转出，
+实现按域分在 `King/Api/*.js` 里；要改哪一段直接进子目录，不用在两千行里翻.
+
+子目录与文件名一律**大写首字母**（`Api/`、`Core/`、`Report/`），只有 `resources/` 里的模板名、
+`config/default_config/*.yaml`、`data/` 的目录与文件名是契约，不许改.
 
 <details>
 <summary><code>King/</code>　王者</summary>
 
-| 子目录 | 管什么 |
+| 子目录 / 门面 | 管什么 |
 | --- | --- |
-| `api/` | 营地接口请求、按账号限频、失败重试与降级 |
-| `auth/` `login/` `account/` | 扫码登录、账号池、角色归属、绑定 |
-| `core/` | 公共常量、业务码、数值与时间格式化 |
-| `push/` | 战绩推送：轮询、计划、同账号去重、发送 |
-| `report/` | 群日 / 周 / 月报 |
-| `watch/` | 观战链接与播放页短链 |
-| `view/` | 卡片数据（营地卡、战绩、图鉴、排行、公告…） |
+| `Api.js` + `Api/` | 营地接口：端点表、请求入口、按账号限频、重试、记忆化 |
+| `Auth.js` + `Auth/` `Login.js` + `Login/` `Account.js` + `Account/` | 登录态、账号池、扫码、角色归属与绑定 |
+| `Core/` | 目录与 part 名（`Schema`）、读写与坏档隔离（`Store` / `Doc` / `Parts`）、缓存文件名 |
+| `Push.js` + `Push/` | 战绩推送：轮询、计划、同账号去重、发送 |
+| `Report.js` + `Report/` | 群日 / 周 / 月报 |
+| `Watch.js` + `Watch/` | 观战链接与播放页短链 |
+| `View`（`Card/` `Chart/` `Field/` 等） | 卡片数据与出图：营地卡、战绩、图鉴、排行、公告… |
+| `Profile/` `Battle/` `Rank/` `Gallery/` `Codex/` `Trend/` | 各功能域取数 + 视图 + 流程三段，门面只转出 |
 
 </details>
 
 <details>
 <summary><code>Link/</code>　链接解析</summary>
 
-四个平台各自的取数、去水印、出卡；评论截图、合集转发也在这里.
+四个平台各自的取数、去水印、出卡；评论截图、合集转发也在这里.`Link/Bilibili/`、`Link/Xhs/`
+是门面的实现件，对外只认 `Link/index.js` 的导出面.
 
 </details>
 
 <details>
-<summary><code>Memes/</code> <code>Music/</code>　表情包、点歌</summary>
+<summary><code>Memes/</code> <code>Music/</code> <code>Message/</code></summary>
 
-表情表的拉取与匹配、详情卡、菜单分页；点歌的搜索、翻页、歌词、取流.
+表情表的拉取与匹配、详情卡、菜单分页；点歌的搜索、翻页、歌词、取流；合并转发与媒体发送.
 
 </details>
 
 <details>
 <summary><code>Admin/</code>　设置与运维</summary>
 
-设置面板的项表与写入、插件自动更新、日志、备份还原、帮助菜单的数据面.
+设置面板的项表与写入（`Home/`）、插件自动更新（`Update/`）、重启四条路（`Restart/`）、日志与备份、帮助菜单的数据面.
 
 </details>
 
@@ -339,14 +345,18 @@ pnpm install --filter=yiyi-plugin
 <details>
 <summary><code>components/</code>　配置与出图</summary>
 
-`Config.js` 读 yaml、合并默认值（缺值 / 坏值自动回落），`ConfigGets.js` 是各处读配置的唯一出口；`Render.js` 把模板渲染成图片.
+`Config.js` 读 yaml、合并默认值（缺值 / 坏值自动回落），`ConfigGets.js` 是各处读配置的唯一出口；
+`Config/Merge.js` 管「默认文档新增的键怎么并进用户配置」，`Config/Doc.js` 管单个 yaml 的读写.
+
+`Render.js` 把模板渲染成图片，`Render/Encode.js` 决定 `imgType` / `quality`（写入非法的值回落 png），
+`Render/Data.js` 拼公共数据（`_res_path`、`copyright`、样式戳）.
 
 </details>
 
 <details>
 <summary><code>utils/</code>　公共件</summary>
 
-日志、时间、文件、图片（取图 / 缩图 / 背景）、缓存、格式化、版本比对，以及定时任务的壳子.
+日志、时间、文件、图片（取图 / 缩图 / 背景）、缓存、格式化、版本比对，以及定时任务的壳子（`AutoTask.js`）与按 key 排队的节流队列（`Queue.js`）.
 
 </details>
 
@@ -358,7 +368,7 @@ pnpm install --filter=yiyi-plugin
 | `Help/` `King/` `Link/` `Memes/` `Music/` | 各模块的卡片模板与样式 |
 | `Icon/` | 图标（`King/` 下是英雄、装备、技能、段位） |
 | `Img/` | 背景图，随机挑一张 |
-| `Img/King/skin/` | 皮肤海报 |
+| `Img/King/Skin/` | 皮肤海报 |
 | `Img/Docs/` | README 的插件图标与效果图，不参与出图 |
 | `Font/` | 字体（思源黑体、Noto、Symbola） |
 
@@ -367,14 +377,14 @@ pnpm install --filter=yiyi-plugin
 <details>
 <summary><code>config/</code>　配置</summary>
 
-`default_config/` 是出厂默认值，随仓库发；`config/` 是你自己那份，首次启动由默认值生成，之后升级不覆盖，也不进 git.
+`default_config/` 是出厂默认值；`config/` 是你自己那份，首次启动由默认值生成，之后升级不会覆盖.
 
 </details>
 
 <details>
 <summary><code>data/</code>　数据</summary>
 
-首次启动自动建，存账号、登录态、战绩归档、表情表，细节见下面「数据与隐私」.不入库.
+首次启动自动建，存账号、登录态、战绩归档、表情表，细节见下面「数据与隐私」.
 
 </details>
 
@@ -440,7 +450,7 @@ pnpm install --filter=yiyi-plugin
 
 另外：
 
-- `data/` 与 `config/config/` 里有你的 QQ 号、营地 ID、登录态与 Cookie，都在 `.gitignore` 里，不随代码提交，也不会传到任何地方.
+- `data/` 与 `config/config/` 里有你的 QQ 号、营地 ID、登录态与 Cookie，只存在你自己的服务器上，不会上传到任何地方.
 - `cache/` 是随时能删的运行期缓存（公开表、翻页记录、对局回顾），每天 5:30 自动清一遍.
 - 插件不收集任何统计信息；营地、B 站等数据都是本机直连接口取的.
 - 卡片与截图都在本机渲染，图片不经过第三方.
@@ -491,7 +501,7 @@ pnpm install --filter=yiyi-plugin
 
 在 `king.yaml` 里填 `watchPageUrl` 与 `watchPageSecret`，指向你自己部署的播放页；不填就发营地原链.
 
-地址**必须写 `http://`**：营地只给 http 的 HTTP-FLV，https 页面拉 http 流会被浏览器按混合内容拦掉，所以那个站点的 80 端口不能跳 https、也不能发 HSTS.页面源码在仓库的 `TEST/Docs/King/watch-page/index.php`（单文件，丢到网站目录即可，不用数据库）.
+地址**必须写 `http://`**：营地只给 http 的 HTTP-FLV，https 页面拉 http 流会被浏览器按混合内容拦掉，所以那个站点的 80 端口不能跳 https、也不能发 HSTS.播放页源码是单文件 PHP，不需要数据库，丢到网站目录即可；需要的话在群里找作者要.
 
 </details>
 
@@ -513,7 +523,7 @@ pnpm install --filter=yiyi-plugin
 
 ## 友情链接 😊
 
-- [Yunzai-Bot 插件索引](https://gitee.com/Hikari666/Yunzai-Bot-plugins-index)
+- [Yunzai-Bot 插件索引](https://gitee.com/yhArcadia/Yunzai-Bot-plugins-index)
 
 ## 许可与使用声明
 

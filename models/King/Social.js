@@ -101,16 +101,16 @@ async function sideOf (who, { owner, accountId, kind = 'camp' }) {
         roleName: view.role.roleName,
         serverName: view.role.areaName || view.role.roleText,
         avatar: view.role.roleIcon ? await imageUri(view.role.roleIcon, { referer: CAMP_REFERER, width: 120, height: 120 }) : '',
-        rank: view.rank5v5.text || '—',
-        rankEmpty: !view.rank5v5.has,
+        rank: view.Rank5v5.text || '—',
+        RankEmpty: !view.Rank5v5.has,
         peak: view.peak.scored ? view.peak.score : '—',
-        peakDesc: view.peak.desc,
+        PeakDesc: view.peak.desc,
         days: view.gameDays || '—',
-        powerName: view.heroPowerHero?.name || '',
-        power: view.heroPowerHero?.value || '—',
-        powerIcon: view.heroPowerHero?.icon || '',
+        powerName: view.HeroPowerHero?.name || '',
+        power: view.HeroPowerHero?.value || '—',
+        powerIcon: view.HeroPowerHero?.icon || '',
         combat: view.combat?.main || '—',
-        skins: view.skins?.main || '—'
+        Skins: view.Skins?.main || '—'
       }
     } catch (error) {
       log.info(`对比查主页失败（${campUserId}）：${toText(error?.message) || '未知原因'}`)
@@ -151,7 +151,7 @@ export function compareRows (left, right) {
     compareRow('5v5 段位', left.rank, right.rank, { rank: true }),
     compareRow('巅峰赛', left.peak, right.peak),
     compareRow('游戏天数', left.days, right.days),
-    compareRow('皮肤数', left.skins, right.skins)
+    compareRow('皮肤数', left.Skins, right.Skins)
   ]
 }
 
@@ -230,7 +230,7 @@ export async function kingCompare (e) {
 
     const rows = compareRows(left, right)
 
-    return renderKing(e, 'compare', {
+    return renderKing(e, 'Compare', {
       title: '两人对比',
       logoSrc: logoUri(),
       left,

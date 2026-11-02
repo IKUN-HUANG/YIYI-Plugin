@@ -3,8 +3,10 @@
  * 只管「一个组 + 一个 id（或一个中文名）→ 一段能直接塞进模板的图片地址」；
  * 不下载图、不生成对照表（那是 TEST/Tools/fetch-king-icons.mjs 的事），也不管卡片排版。
  *
- * 本地图在 `resources/Icon/King/<组>/`（皮肤在 `resources/Img/King/skin/`），
- * 名字对照表 `hero-names.json` / `skill-names.json` 由那个工具生成。
+ * 本地图在 `resources/Icon/King/<组>/`（皮肤在 `resources/Img/King/Skin/`）：
+ *   equip / summoner（召唤师技能）/ hero / HeroSkill（英雄技能）/ branch / rank /
+ *   peak / medal / honor / streak / proficiency / brand / meta
+ * 名字对照表放 `Icon/King/Meta/` 下（`HeroNames.json` / `SkillNames.json`），由那个工具生成。
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -15,14 +17,14 @@ export const KING_GEAR_GROUPS = ['equip', 'skill']
 /** 本地图标的全部分组：装备、召唤师技能、英雄头像、英雄技能、皮肤 */
 export const KING_ICON_GROUPS = ['equip', 'skill', 'hero', 'heroskill', 'skin']
 
-const ICON_DIRS = { equip: 'Icon/King/equip', skill: 'Icon/King/skill', hero: 'Icon/King/hero', heroskill: 'Icon/King/heroskill', skin: 'Img/King/skin' }
+const ICON_DIRS = { equip: 'Icon/King/Equip', skill: 'Icon/King/Summoner', hero: 'Icon/King/Hero', heroskill: 'Icon/King/HeroSkill', skin: 'Img/King/Skin' }
 const EXTS = ['.png', '.jpg', '.webp']
 const HERO_IMG_BASE = 'https://game.gtimg.cn/images/yxzj/img201606/heroimg'
 const CDN = {
   equip: id => `https://game.gtimg.cn/images/yxzj/img201606/itemimgo/${id}.png`,
   skill: id => `https://game.gtimg.cn/images/yxzj/img201606/summonero/${id}.png`
 }
-const NAMES_DIR = path.join(resourcesDir, 'Icon', 'King')
+const NAMES_DIR = path.join(resourcesDir, 'Icon', 'King', 'Meta')
 
 /**
  * 组名归一：只认 KING_GEAR_GROUPS 里那两组，别的一律当没给。
@@ -205,13 +207,13 @@ export function gearCount (group) {
 }
 
 /**
- * 英雄头像地址，三级回退：本地图 → 营地原图 → 官方 CDN（`heroimg/<ename>/<ename>.jpg`）。
+ * 英雄头像地址，三级回退：本地图 → 营地原图 → 官方 CDN（`Heroimg/<ename>/<ename>.jpg`）。
  *
  * @param {string} ename 英雄 ename（英文名，如 'luban'）
  * @param {string} [url] 营地给的原图地址
  * @returns {string} 能直接塞进 img 的地址；连 ename 都没有时给空串
  */
-export function heroIconUri (ename, url = '') {
+export function HeroIconUri (ename, url = '') {
   const key = toIconKey(ename)
   const local = key ? kingIconBase64('hero', key) : ''
   return local || String(url || '').trim() || (key ? `${HERO_IMG_BASE}/${key}/${key}.jpg` : '')
@@ -225,7 +227,7 @@ export function heroIconUri (ename, url = '') {
  * @param {string|number} [step] 技能序号（0 起，官方 CDN 兜底时用；空串表示不给）
  * @returns {string} 能直接塞进 img 的地址；三级都拿不到给空串
  */
-export function heroSkillUri (url = '', ename = '', step = '') {
+export function HeroSkillUri (url = '', ename = '', step = '') {
   const key = iconNameFromUrl(url)
   const local = key ? kingIconBase64('heroskill', key) : ''
   if (local) return local
@@ -237,13 +239,13 @@ export function heroSkillUri (url = '', ename = '', step = '') {
 }
 
 /**
- * 皮肤图标地址：本地图（resources/Img/King/skin）→ 营地原图。
+ * 皮肤图标地址：本地图（resources/Img/King/Skin）→ 营地原图。
  *
  * @param {*} id 皮肤 id（当文件名用）
  * @param {string} [url] 营地给的原图地址
  * @returns {string} 能直接塞进 img 的地址；两边都没有给空串
  */
-export function skinIconUri (id, url = '') {
+export function SkinIconUri (id, url = '') {
   const key = toIconKey(id)
   return (key ? kingIconBase64('skin', key) : '') || String(url || '').trim()
 }
@@ -259,7 +261,7 @@ function nameTables () {
       return {}
     }
   }
-  namesCache = { hero: read('hero-names.json'), skill: read('skill-names.json') }
+  namesCache = { hero: read('HeroNames.json'), skill: read('SkillNames.json') }
   return namesCache
 }
 
@@ -279,28 +281,28 @@ function nameKey (map, name) {
 }
 
 /**
- * 中文英雄名 → 官方 ename（查 hero-names.json，比对方式见 nameKey）。
+ * 中文英雄名 → 官方 ename（查 HeroNames.json，比对方式见 nameKey）。
  *
  * @param {string} name 英雄中文名（可带「(坦克)」这种后缀）
  * @returns {string} ename；表里查不到给空串
  */
-export function heroEnameByName (name) {
+export function HeroEnameByName (name) {
   return nameKey(nameTables().hero, name)
 }
 
 /**
- * 按中文英雄名取头像地址（先换成 ename，再走 heroIconUri 的三级回退）。
+ * 按中文英雄名取头像地址（先换成 ename，再走 HeroIconUri 的三级回退）。
  *
  * @param {string} name 英雄中文名
  * @param {string} [url] 营地给的原图地址
  * @returns {string} 能直接塞进 img 的地址；名字查不到又没给 url 时给空串
  */
-export function heroIconByName (name, url = '') {
-  return heroIconUri(heroEnameByName(name), url)
+export function HeroIconByName (name, url = '') {
+  return HeroIconUri(HeroEnameByName(name), url)
 }
 
 /**
- * 召唤师技能名 → 官方技能 id（查 skill-names.json）。
+ * 召唤师技能名 → 官方技能 id（查 SkillNames.json）。
  * 营地那套 id 与官方不是一套，换算要靠这张表。
  *
  * @param {string} name 技能中文名（如「闪现」）

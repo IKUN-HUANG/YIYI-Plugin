@@ -4,7 +4,7 @@
  */
 import { Config } from '#yiyi.components'
 import { COMMENT_FETCH, COMMENT_PAGES, collectCommentPages, commentFailReason } from './Comments.js'
-import { HTTP_TIMEOUT_SLOW, timeoutSignal } from './http.js'
+import { HTTP_TIMEOUT_SLOW, timeoutSignal } from './Http.js'
 
 /** 解析服务只认这几个头，POST 一个 { url } 就回作品数据 */
 async function apiJson (url, { method = 'GET', body, timeout = HTTP_TIMEOUT_SLOW } = {}) {

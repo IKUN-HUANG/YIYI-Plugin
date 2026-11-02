@@ -25,10 +25,12 @@ function filterHelped (list) {
     ...g,
     list: (g.list || []).filter(item => {
       const icon = item.icon || ''
-      if (icon.includes('douyin')) return Config.isEnabled('douyin')
-      if (icon.includes('kuaishou')) return Config.isEnabled('kuaishou')
-      if (icon.includes('bili')) return Config.isEnabled('bilibili')
-      if (icon.includes('xiaohongshu')) return Config.isEnabled('xiaohongshu')
+      /** 解析总开关关掉时，四个平台条目一起消失；单平台开关再各自管一条 */
+      if (icon.includes('douyin')) return Config.parseEnable && Config.isEnabled('douyin')
+      if (icon.includes('kuaishou')) return Config.parseEnable && Config.isEnabled('kuaishou')
+      if (icon.includes('bili')) return Config.parseEnable && Config.isEnabled('bilibili')
+      if (icon.includes('xiaohongshu')) return Config.parseEnable && Config.isEnabled('xiaohongshu')
+      if (icon.includes('King/')) return Config.kingEnable
       if (icon.includes('memes')) return Config.memesEnable
       if (icon.includes('music')) return Config.musicEnable
       return true
@@ -71,7 +73,7 @@ export class Admin extends plugin {
       const { cfg, list } = await loadHelpConfig()
       const bgSrc = await loadHelpBg()
 
-      const ret = await render('Help/index', {
+      const ret = await render('Help/Index', {
         title: cfg.title,
         subTitle: cfg.subTitle,
         itemCols: cfg.itemCols || 2,
@@ -102,7 +104,7 @@ export class Admin extends plugin {
       const { kingCfg, kingList } = await loadHelpConfig()
       const bgSrc = await loadHelpBg()
 
-      const ret = await render('Help/index', {
+      const ret = await render('Help/Index', {
         title: kingCfg.title,
         subTitle: kingCfg.subTitle,
         itemCols: kingCfg.itemCols || 2,
@@ -134,7 +136,7 @@ export class Admin extends plugin {
       const bgSrc = await loadHelpBg()
       const changelogHtml = loadChangelog(CHANGELOG_FILE, 4)
 
-      const ret = await render('Help/version', {
+      const ret = await render('Help/Version', {
         bgSrc,
         bgBlur: cfg.bgBlur !== false,
         pluginTitle,
@@ -343,7 +345,7 @@ export class Admin extends plugin {
       const bgSrc = await loadHelpBg()
       const g = group ? GROUP_CMDS.find(item => item.group === group) : null
 
-      const ret = await render('Help/settings', {
+      const ret = await render('Help/Settings', {
         bgSrc,
         bgBlur: cfg.bgBlur !== false,
         pluginTitle,

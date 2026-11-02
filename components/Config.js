@@ -1,23 +1,21 @@
 /**
- * @file 配置层：默认 YAML 打底 + 用户 YAML 覆盖，按文件指纹记忆，改完自动失效。
+ * @file 配置门面：读（默认值 + 用户值的深合并）、写（单个键回写用户 YAML）、监听（手改文件立即生效）
+ * 都从这里走，业务代码不许自己 `YAML.parse` 插件目录下的文件。
+ *
+ * 三个约定：
+ * - 用户配置在 `config/config/`（`YIYI_CONFIG_DIR` 可改指），默认值在 `config/default_config/`；
+ * - 写盘一律 `lineWidth: 0`，否则长文案会被 YAML 折行，用户改的时候看不出原文；
+ * - 合并结果按「默认文件指纹 | 用户文件指纹」记忆，文件没动就不重复解析。
+ *
  * @module components/Config
  */
-
 import fs from 'node:fs'
 import path from 'node:path'
 import YAML from 'yaml'
 import ConfigGets from './ConfigGets.js'
+import { mergeInto, mergeUserConfig } from './Config/Merge.js'
 import { rootDir } from '../utils/Path.js'
 import { createLogger } from '../utils/Logger.js'
-import { isPlainObject } from '../utils/Value.js'
-
-/**
- * 三处关键行为（别改）：①**数组整段替换**——用户写 `disabled: [a]` 就是 `[a]`，不会跟默认值拼起来；
- * ②**按指纹失效**——合并结果以「默认 YAML + 用户 YAML 的 mtime/size」为凭据，用户手改、别的进程写、
- * 面板改完没走 `notifyChange`，下一次 `get` 都会自己发现（别再靠各处手写
- * `delete Config.config[...]` 失效，漏一处就读到旧值）；
- * ③**写回一律 `lineWidth: 0`**——默认 80 列会把长值折行，读回来带换行，等于改了数据。
- */
 
 const log = createLogger('配置')
 
@@ -26,29 +24,7 @@ const defDir = path.join(Plugin_Path, 'config', 'default_config')
 const configDir = process.env.YIYI_CONFIG_DIR
   ? path.resolve(process.env.YIYI_CONFIG_DIR)
   : path.join(Plugin_Path, 'config', 'config')
-
-/** 合并水位：记住每个默认 YAML 上次合并时的 mtime，默认文件没改过就不重复合并 */
-const META_FILE = path.join(configDir, '.merge_meta.json')
-
-/**
- * 深合并：patch 覆盖 base；对象递归、数组整段替换、其它值直接顶掉。
- *
- * @param {any} base 底稿（默认配置）
- * @param {any} patch 覆盖层（用户配置）
- * @returns {any} 合并结果（不修改入参）
- */
-function mergeInto (base, patch) {
-  if (Array.isArray(patch)) return patch.slice()
-  if (!isPlainObject(patch)) return patch
-
-  const out = isPlainObject(base) ? base : {}
-  for (const [key, value] of Object.entries(patch)) {
-    if (Array.isArray(value)) out[key] = value.slice()
-    else if (isPlainObject(value)) out[key] = mergeInto(isPlainObject(out[key]) ? out[key] : {}, value)
-    else out[key] = value
-  }
-  return out
-}
+const META_FILE = path.join(configDir, '.merge_Meta.json')
 
 /** 配置访问器：`Config.get('config')` 读深合并结果，`Config.setYaml(...)` 写回用户 YAML */
 class Config {
@@ -72,14 +48,15 @@ class Config {
   }
 
   /**
-   * 通知「某个配置变了」：先清合并缓存，再挨个叫订阅者。
+   * 通知「某个配置变了」：清合并缓存，再挨个叫订阅者。
+   *
+   * 单个回调抛错只记日志：一个模块写坏了不该让整张配置表跟着停摆。
    *
    * @param {string} name 配置名（`config` / `king` / `memes`）
    * @param {string} [type='config'] 配置文件种类
    * @returns {void}
    */
   notifyChange (name, type = 'config') {
-    /** 配置一动，合并结果就过期了：统一清掉，别让 getter 读到旧值 */
     this.merged = {}
     for (const fn of this.changeFns) {
       try {
@@ -111,7 +88,6 @@ class Config {
       this.watch(userFile, name, 'config')
     }
 
-    /** help.js 只是默认文案的副本，不合并（用户改了就以用户的为准） */
     const helpDef = path.join(defDir, 'help.js')
     const helpUser = path.join(configDir, 'help.js')
     if (fs.existsSync(helpDef) && !fs.existsSync(helpUser)) fs.copyFileSync(helpDef, helpUser)
@@ -120,19 +96,19 @@ class Config {
   /**
    * 读合并水位文件。
    *
-   * @returns {object} `{ 'merge:config': mtimeMs, … }`
+   * @returns {object} `{ 'merge:config': mtimeMs, … }`；没有或坏了给 `{}`
    */
   readMeta () {
     try {
       return JSON.parse(fs.readFileSync(META_FILE, 'utf8'))
     } catch {
-      /** 没有 meta（首次跑）或内容坏了：当作「没合并过」，重新合并一遍 */
       return {}
     }
   }
 
   /**
    * 把默认 YAML 里新增的键并进用户 YAML，给已废弃的键打上注释。
+   *
    * 默认文件没改过（mtime 不大于上次合并）就直接跳过，省一次解析 + 一次写盘。
    *
    * @param {string} cfgPath 用户 YAML 路径
@@ -146,73 +122,13 @@ class Config {
     const key = `merge:${name}`
 
     if (meta[key] && defMtime <= meta[key]) return
+    if (!mergeUserConfig({ userFile: cfgPath, defFile: defPath, name, log })) return
 
-    const defDoc = YAML.parseDocument(fs.readFileSync(defPath, 'utf8'))
-    if (!defDoc.contents) return
-
-    let isUpdate = false
-    const userDoc = YAML.parseDocument(fs.readFileSync(cfgPath, 'utf8'))
-
-    if (!userDoc.contents) {
-      fs.copyFileSync(defPath, cfgPath)
-      this.writeMeta({ ...meta, [key]: defMtime })
-      return
-    }
-
-    const merge = (userItems, defItems) => {
-      const existing = new Map()
-      for (const item of userItems) existing.set(item.key.value, item.value)
-
-      for (const item of defItems) {
-        if (item?.key?.commentBefore?.includes?.('noMerge')) continue
-        if (!existing.has(item.key.value)) {
-          log.info(`合并配置 [${name}] [${item.key.value}]`)
-          userItems.push(item)
-          isUpdate = true
-        } else if (YAML.isMap(item.value)) {
-          const userValue = existing.get(item.key.value)
-          if (YAML.isMap(userValue)) merge(userValue.items, item.value.items)
-        }
-      }
-    }
-
-    const markDeprecated = (userItems, defItems) => {
-      const defKeys = new Map()
-      for (const item of defItems) defKeys.set(item.key.value, item)
-
-      for (const item of userItems) {
-        const keyNode = item.key
-        const keyName = keyNode.value
-
-        if (!defKeys.has(keyName)) {
-          const note = ' !!! 该配置已废弃 (Deprecated) !!!'
-          const existing = keyNode.commentBefore || ''
-          if (!existing.includes('已废弃')) {
-            keyNode.commentBefore = existing ? `${note}\n${existing}` : note
-            isUpdate = true
-            log.error(`废弃配置 [${name}] ${keyName} 已废弃`)
-          }
-          continue
-        }
-
-        const defItem = defKeys.get(keyName)
-        if (YAML.isMap(item.value) && defItem && YAML.isMap(defItem.value)) {
-          markDeprecated(item.value.items, defItem.value.items)
-        }
-      }
-    }
-
-    merge(userDoc.contents.items, defDoc.contents.items)
-    markDeprecated(userDoc.contents.items, defDoc.contents.items)
-
-    if (!isUpdate) return
-
-    fs.writeFileSync(cfgPath, userDoc.toString({ lineWidth: 0 }), 'utf8')
     this.writeMeta({ ...meta, [key]: defMtime })
   }
 
   /**
-   * 写合并水位。
+   * 写合并水位（JSON，不是 YAML：这文件只给程序看）。
    *
    * @param {object} meta 全量水位对象
    * @returns {void}
@@ -224,7 +140,6 @@ class Config {
 
   /**
    * 读配置的唯一入口：`Config.get('config')` / `get('king')` / `get('memes')`。
-   * 结果按指纹记忆：getter 每读一个字段都用它，重算一次深合并不划算。
    *
    * @param {string} [name='config'] 配置名
    * @returns {object} 默认值 + 用户值的深合并结果
@@ -234,7 +149,6 @@ class Config {
     const cached = this.merged[name]
     if (cached && cached.stamp === stamp) return cached.value
 
-    /** 文件动过了：连解析缓存一起作废，否则拼出来的还是旧内容 */
     delete this.config[`default_config.${name}`]
     delete this.config[`config.${name}`]
 
@@ -250,7 +164,7 @@ class Config {
    * 默认 YAML + 用户 YAML 的指纹（mtime + 大小），任一份变过就算过期。
    *
    * @param {string} name 配置名
-   * @returns {string} `默认指纹|用户指纹`
+   * @returns {string} `默认指纹|用户指纹`，文件不在的那一侧记作 `-`
    */
   stampOf (name) {
     const files = [
@@ -262,7 +176,6 @@ class Config {
         const stat = fs.statSync(file)
         return `${stat.mtimeMs}:${stat.size}`
       } catch {
-        /** 文件不在也算一种状态：默认有、用户没有 */
         return '-'
       }
     }).join('|')
@@ -307,9 +220,11 @@ class Config {
   /**
    * 读一份 YAML 的原文对象（带解析缓存），并顺手挂监听。
    *
+   * 文件不在或写坏了只 warn 并给 `{}`：getter 各自有默认值兜底，不让整条链路炸在启动阶段。
+   *
    * @param {string} type `config`（用户目录）或 `default_config`
    * @param {string} name 配置名
-   * @returns {object} YAML 对象；读不到给 `{}`
+   * @returns {object} YAML 对象
    */
   getYaml (type, name) {
     const file = type === 'config'
@@ -322,7 +237,6 @@ class Config {
     try {
       this.config[key] = YAML.parse(fs.readFileSync(file, 'utf8')) || {}
     } catch (err) {
-      /** 文件不在 / YAML 写坏了：给空对象，getter 各自有默认值兜底，不让整条链路炸 */
       log.warn(`读配置失败 [${type}] [${name}]：${err.message}`)
       this.config[key] = {}
     }
@@ -387,13 +301,31 @@ class Config {
       watcher.unref?.()
       this.watcher[key] = watcher
     } catch (err) {
-      /** 文件被删 / 平台不支持 inotify：不监听也能跑，只是要等指纹变化才发现改动 */
       log.warn(`配置文件监听失败 [${type}] [${name}]：${err.message}`)
     }
   }
 }
 
-/** ConfigGets 里那批 getter 挂在原型上，调用点写 `Config.kingMinGapMs` 而不是 `Config.get(...).king.minGapMs` */
+/**
+ * 「开关一关，指令整块消失」的唯一写法：给插件实例的 `rule` 装一个 getter。
+ *
+ * 只在处理函数里 `return false` 不够 —— 宿主是「规则命中 → 记一条日志 → 调 fnc」，
+ * 返回 false 才轮到下一条；兜底 / 宽正则（表情那条 `/^#?(\S{1,60})…/`、解析的链接正则）
+ * 先把消息吃掉，用户看到的就是「功能关了还在抢指令」。换成 getter 后开关一关，
+ * 宿主连这条规则都拿不到，消息自然放行给别的插件。
+ *
+ * @param {object} app 插件实例（`plugin` 子类）
+ * @param {() => boolean} isOn 开关读取器：每次取规则时现读，面板改完立刻生效
+ * @returns {void}
+ */
+export function gateRules (app, isOn) {
+  const rules = app.rule
+  Object.defineProperty(app, 'rule', {
+    configurable: true,
+    get: () => (isOn() ? rules : [])
+  })
+}
+
 Object.defineProperties(Config.prototype, Object.getOwnPropertyDescriptors(ConfigGets))
 
 /**
