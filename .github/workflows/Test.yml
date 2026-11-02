@@ -32,6 +32,12 @@ jobs:
             exit 1
           fi
 
+      # 单元测试会真的载入插件模块，而 chalk / yaml / sharp 都是直接 import 的：
+      # 宿主（云崽）机器上由框架提供，干净的 CI 机器上没有，必须自己装。
+      - name: 安装依赖
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: npm install --no-audit --no-fund
+
       - name: 语法检查
         working-directory: ${{ env.PLUGIN_DIR }}
         run: node --check index.js
