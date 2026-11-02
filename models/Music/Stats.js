@@ -10,15 +10,16 @@ import { createLogger } from '#yiyi.utils'
 import { likeText } from './Format.js'
 import { albumDate, songRedCount } from './Api.js'
 import { timeoutOf } from './Http.js'
+import { MUSIC_PAGE_SIZE } from './Consts.js'
 
 const log = createLogger('点歌')
 
-/** 同时补几首 */
-const MUSIC_STATS_CONCURRENCY = 8
+/** 同时补几首：跟一页的数量绑死（一页 15 首，请求就一起发 15 条） */
+const MUSIC_STATS_CONCURRENCY = MUSIC_PAGE_SIZE
 /** 补数据时单条请求的超时上限 */
-const MUSIC_STATS_TIMEOUT = 6000
+const MUSIC_STATS_TIMEOUT = 3000
 /** 整批补数据的总预算，到点就不再等 */
-const MUSIC_STATS_BUDGET = 6000
+const MUSIC_STATS_BUDGET = 2500
 
 /** 限并发跑任务，单条失败只记一笔 */
 async function mapLimit (items, limit, fn) {

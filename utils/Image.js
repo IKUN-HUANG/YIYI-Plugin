@@ -9,6 +9,7 @@ import sharp from 'sharp'
 import { createLogger } from './Logger.js'
 import { fileFingerprint } from './FS.js'
 import { withTimeout } from './Async.js'
+import { createMemoryCache } from './Cache.js'
 import { resourcesDir } from './Path.js'
 
 /**
@@ -23,6 +24,12 @@ const ICON_TTL = 8 * 1000
 
 /** 图标 data URI 缓存：绝对路径 → { stamp, uri } */
 const iconCache = new Map()
+
+/**
+ * 背景图缓存：接口地址 → data URI。随机图接口每次都要现抓（一秒起步、几百 KB），
+ * 连发几条指令时没必要每条都等它；同一地址 5 分钟内复用一张，过期自然重抓。
+ */
+const bgCache = createMemoryCache({ max: 8, ttl: 5 * 60 * 1000 })
 
 /**
  * 抓一张网络图，转成 buffer + MIME + 现成的 data URI。
@@ -224,8 +231,8 @@ export function pickLocalBg (dir) {
  */
 export async function loadBg ({ api, useApi = true, localDir } = {}) {
   if (useApi && api) {
-    const remote = await fetchImage(api)
-    if (remote) return remote.base64
+    const remote = await bgCache.load(`api:${api}`, async () => (await fetchImage(api))?.base64)
+    if (remote) return remote
   }
 
   return pickLocalBg(localDir)

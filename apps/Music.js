@@ -7,7 +7,7 @@
  */
 import { createLogger, pluginTitle, version, yunzai, mbText } from '#yiyi.utils'
 import { render, Config, gateRules } from '#yiyi.components'
-import { searchSongs, songAudio, albumDate, musicStats, musicCardData, musicShareUrl, musicCardSegment, fetchAudio, setMusicSession, getMusicSession, musicPageOf, saveMusicPage, highlightCmds, loadHelpBg, persistBg, extractMsgId } from '#yiyi.models'
+import { searchSongs, songAudio, albumDate, musicStats, musicCardData, withCovers, musicShareUrl, musicCardSegment, fetchAudio, setMusicSession, getMusicSession, musicPageOf, saveMusicPage, highlightCmds, loadHelpBg, persistBg, extractMsgId } from '#yiyi.models'
 
 const log = createLogger('点歌')
 
@@ -65,7 +65,8 @@ export class Music extends plugin {
     const data = await searchSongs({ keyword, page: 1, perPage: Config.musicPerPage })
     if (!data.ok) return e.reply(data.reason)
 
-    return await this.show(e, data)
+    /** 补数据（红心数 / 发行日）跟出图材料一起等，不串行：网络慢时省一整段 */
+    return await this.show(e, { ...data, statsPending: musicStats({ songs: data.songs }) })
   }
 
   async pick (e) {
@@ -135,13 +136,18 @@ export class Music extends plugin {
     const data = await searchSongs({ keyword: session.keyword, page, perPage: session.perPage })
     if (!data.ok) return e.reply(data.reason)
 
-    return await this.show(e, data)
+    return await this.show(e, { ...data, statsPending: musicStats({ songs: data.songs }) })
   }
 
   /** 预览卡片：补数据 → 记会话 → 出图（背景图跟着消息 id 存一份，撤回时不串图） */
   async show (e, data) {
-    const stats = data.stats || await musicStats({ songs: data.songs })
-    const card = musicCardData({ ...data, stats })
+    /** 三件事互不依赖，一起等：补数据、背景图、封面预取（取不到就用远端地址让 Chromium 兜底） */
+    const [stats, bgSrc, songs] = await Promise.all([
+      data.statsPending || data.stats || musicStats({ songs: data.songs }),
+      loadHelpBg(),
+      withCovers(data.songs)
+    ])
+    const card = musicCardData({ ...data, songs, stats })
     setMusicSession(e, {
       keyword: card.items.length ? data.keyword : '',
       songs: card.items,
@@ -153,8 +159,6 @@ export class Music extends plugin {
     saveMusicPage(e, { ...data, stats })
 
     log.mark(`点歌预览：「${card.subtitle}」第 ${card.page}/${card.pages} 页`)
-
-    const bgSrc = await loadHelpBg()
 
     const ret = await render('Music/List', {
       pluginTitle,

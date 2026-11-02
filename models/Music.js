@@ -25,6 +25,7 @@ export * from './Music/Search.js'
 
 /** 卡片：预览卡的视图数据 */
 export * from './Music/Card.js'
+export * from './Music/Cover.js'
 
 /** 会话：按群 + 人隔离的点歌会话与翻页缓存 */
 export * from './Music/Session.js'
