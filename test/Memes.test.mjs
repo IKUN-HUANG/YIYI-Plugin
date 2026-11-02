@@ -2,7 +2,8 @@
  * @file 表情包的「别抢别人指令」自检。
  *
  * 关掉功能时规则表必须直接空掉（宿主拿不到规则就不会拦截），
- * 开着时也要把点歌/王者/设置这类别家指令排除在表情识别之外。
+ * 开着时也要把点歌/王者/设置这类别家指令排除在表情识别之外；
+ * 反过来，数据里的关键词**裸词**就得能触发，不许在出口让给别人的规则。
  */
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -10,7 +11,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { read, load, PLUGIN, ROOT } from './Harness.mjs'
+import { read, exists, load, PLUGIN, ROOT } from './Harness.mjs'
 
 test('别家指令不当表情', async () => {
   const { lookupMeme } = await load('models/Memes/Lookup.js')
@@ -43,21 +44,16 @@ test('别家点歌插件的写法也认成指令，不当表情', async () => {
   }
 })
 
-test('宿主里别的插件认领这条消息时，表情直接放行', async () => {
-  const { claimedByOthers } = await load('models/Memes/Claim.js')
-  const music = { name: 'xiaofei', rule: [{ reg: '^#?(小飞)?(QQ|网易)?(点歌|来一首).*$', fnc: 'search' }] }
-  const chat = { name: 'chat', rule: [{ reg: /^#?(\S{1,60})$/ }] }
-  const saved = globalThis.Bot
-  globalThis.Bot = { plugin: new Map([['xiaofei', music], ['chat', chat]]) }
-  try {
-    assert.equal(await claimedByOthers('点歌 普泊', {}), true, '别人的点歌规则匹配了，却没让出去')
-    assert.equal(await claimedByOthers('摸鱼', {}), false, '兜底规则不该算认领')
-    assert.equal(await claimedByOthers('点歌 普泊', music), false, '对自己的规则不该让')
-    globalThis.Bot = { plugin: new Map() }
-    assert.equal(await claimedByOthers('点歌 普泊', {}), false, '没有别的插件时不该拦')
-  } finally {
-    globalThis.Bot = saved
-  }
+test('别家插件也认这条消息，也不许把表情关键词让出去', () => {
+  /**
+   * 「认领让出」曾经在出口把消息交还给别的插件：用户发裸的「摸头」被交出去、
+   * 加个 `#` 反而能出图。关键词驱动已经解决了抢指令（`OTHER_CMD_RE` 过滤 + 规则只认关键词），
+   * 出口再让一次只会让裸词永远打不过别人的通用规则 —— 所以这条路必须没有。
+   */
+  const src = read('apps', 'Memes.js')
+  assert.ok(!src.includes('claimedByOthers'), 'apps/Memes.js 里不许再向宿主询问「别人认不认这条」')
+  assert.ok(!exists('models', 'Memes', 'Claim.js'), 'models/Memes/Claim.js 该删就删，不留死代码')
+  assert.ok(!read('models', 'Memes.js').includes('Claim.js'), 'models/Memes.js 不该再导出认领判定')
 })
 
 test('最后一条是数据关键词规则，不是「什么短句都收」的兜底', () => {
@@ -76,18 +72,37 @@ test('数据里的关键词决定规则，换一份数据规则跟着换', () =>
    */
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'yiyi-memes-'))
   fs.mkdirSync(path.join(sandbox, 'Memes'), { recursive: true })
-  fs.writeFileSync(path.join(sandbox, 'Memes', 'keyMap.json'), JSON.stringify({ 摸头: 'a', 摸鱼: 'b', 点歌: 'c' }))
-  fs.writeFileSync(path.join(sandbox, 'Memes', 'infos.json'), JSON.stringify({ a: {}, b: {}, c: {} }))
+  fs.writeFileSync(path.join(sandbox, 'Memes', 'keyMap.json'), JSON.stringify({ 摸头: 'petpet', 摸鱼: 'slacking_off', '5000兆': '5000choyen', 点歌: 'music' }))
+  fs.writeFileSync(path.join(sandbox, 'Memes', 'infos.json'), JSON.stringify({
+    petpet: { keywords: ['摸头'], params_type: { min_images: 1, max_images: 1 } },
+    slacking_off: { keywords: ['摸鱼'], params_type: {} },
+    '5000choyen': { keywords: ['5000兆'], params_type: { min_texts: 2, max_texts: 2 } },
+    music: { keywords: ['点歌'], params_type: {} }
+  }))
   const script = `
-    const { memeMatchReg } = await import(${JSON.stringify('file://' + PLUGIN + '/models/Memes/Lookup.js')})
+    const { memeMatchReg, lookupMeme } = await import(${JSON.stringify('file://' + PLUGIN + '/models/Memes/Lookup.js')})
     const re = memeMatchReg()
+    /** 三类参数形状各取一个：要头像图 / 不要图 / 要文字 */
+    const kinds = { petpet: '摸头', slacking_off: '摸鱼', '5000choyen': '5000兆' }
+    const bare = {}
+    for (const [code, kw] of Object.entries(kinds)) {
+      bare[code] = {
+        rule: re.test(kw),
+        hash: re.test('#' + kw),
+        look: lookupMeme(kw)?.code ?? null,
+        lookHash: lookupMeme('#' + kw)?.code ?? null
+      }
+    }
     process.stdout.write(JSON.stringify({
       isRegExp: re instanceof RegExp,
       source: re.source,
       hit: re.test('#摸头'),
       hitBare: re.test('摸鱼'),
+      bare,
       missCmd: re.test('#点歌 晴天'),
-      missWord: re.test('#随便一句并不存在的话')
+      missWord: re.test('#随便一句并不存在的话'),
+      noSteal: ['摸头发', '摸头党', '打工人你好', '#听歌 晴天'].map(msg => re.test(msg)),
+      glue: { rule: re.test('摸头114514'), look: lookupMeme('摸头114514')?.qqs ?? null }
     }))
   `
   try {
@@ -95,12 +110,21 @@ test('数据里的关键词决定规则，换一份数据规则跟着换', () =>
       env: { ...process.env, YIYI_DATA_DIR: sandbox },
       encoding: 'utf8'
     })
-    const { isRegExp, source, hit, hitBare, missCmd, missWord } = JSON.parse(out)
+    const { isRegExp, source, hit, hitBare, bare, missCmd, missWord, noSteal, glue } = JSON.parse(out)
     assert.ok(isRegExp)
     assert.ok(hit, '数据里的关键词必须能命中')
     assert.ok(hitBare, '不带 # 的关键词也要命中')
+    for (const [code, got] of Object.entries(bare)) {
+      assert.ok(got.rule, `裸词「${got.look ?? code}」没被规则接住`)
+      assert.ok(got.hash, `带 # 的写法也要接住：${code}`)
+      assert.equal(got.look, code, `裸词没查到这个表情：${code}`)
+      assert.equal(got.lookHash, code, `带 # 的写法没查到这个表情：${code}`)
+    }
     assert.ok(!missCmd, '别家指令不该被表情的规则接走')
     assert.ok(!missWord, '不在关键词表里的短句不该命中')
+    assert.ok(noSteal.every(v => !v), `只是拿关键词开头的人话不该被规则接走：${JSON.stringify(noSteal)}`)
+    assert.ok(glue.rule, '关键词后面连写 QQ 号仍然要接住')
+    assert.deepEqual(glue.look, ['114514'], '连写的 QQ 号要摘出来')
     assert.ok(!source.includes('点歌'), '与别家指令重名的关键词要被剔掉')
   } finally {
     fs.rmSync(sandbox, { recursive: true, force: true })

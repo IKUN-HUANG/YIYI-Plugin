@@ -7,7 +7,7 @@
  */
 import { createLogger, pluginTitle, version, yunzai, qqAllRe, afterLoaded } from '#yiyi.utils'
 import { render, Config, gateRules } from '#yiyi.components'
-import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, OTHER_CMD_RE, memeMatchReg, claimedByOthers, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, onMemeDataChange, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
+import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, OTHER_CMD_RE, memeMatchReg, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, onMemeDataChange, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
 
 const log = createLogger('表情包')
 
@@ -236,11 +236,15 @@ export class Memes extends plugin {
   }
 
   /**
-   * 兜底规则：任何「1~60 字的词 + 可选内容」都进来，认得出是表情才动手，
-   * 认不出就返回 false 让别的插件接手（这条规则在最后，最宽松）。
+   * 表情入口：规则表只认数据里的关键词（`memeMatchReg()`），能进来就说明消息开头是个表情名，
+   * 认不出（关键词只是前缀、后面还跟着别的字）就 return false，把消息还给后面的插件。
    *
-   * 两步都要「先认后说」：没数据时静默拉取（`quiet`），认不出立刻 false —— 这条规则经过的消息
-   * 比别的插件多得多，任何一句多余的回话都是替别人回答。
+   * 「先认后说」：没数据时静默拉取（`quiet`），认不出立刻 false —— 这条规则经过的消息比别的插件多，
+   * 任何一句多余的回话都是替别人回答。
+   *
+   * 这里**不再问「别的插件是不是也认这条消息」**：那样等于让数据里的关键词永远打不过别人的规则，
+   * 用户发裸的「摸头」被交出去、加个 `#` 反而能出图。抢指令那件事在规则层就解决了
+   * （关键词驱动 + `OTHER_CMD_RE` 过滤 + 没数据时静默拉取），出口不用再让。
    */
   async meme (e) {
     if (!this.memeOn) return false
@@ -254,15 +258,6 @@ export class Memes extends plugin {
 
     const hit = lookupMeme(e.msg)
     if (!hit) return false
-
-    /**
-     * 我们认出来了，但别人的规则也认这条消息 —— 让出去。
-     *
-     * 表情关键词是服务端下发的，今天多一个「点歌」、明天多一个「搜」，随时可能撞上
-     * 用户装的其他点歌/查询插件；`OTHER_CMD_RE` 只能钉住我们已知的名字空间，
-     * 剩下的交给宿主：谁家的具体规则匹配上了，就让谁处理。
-     */
-    if (await claimedByOthers(e.msg, this)) return false
 
     if (isAtSelf(e)) return await this.detail(e, hit.code)
 

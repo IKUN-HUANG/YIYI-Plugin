@@ -47,23 +47,38 @@ const REG_CACHE = { sig: '', re: null }
  * 原来那条兜底 `/^#?(\S{1,60})…$/` 会把任何短消息都算成「可能是表情」，
  * 一旦别的插件也用短词当指令（点歌、点播、放一首…）就会在宿主里先被表情截走。
  * 现在规则本身只认数据里的关键词：数据里没有的词，连规则都不匹配，宿主直接交给后面的插件。
+ * 关键词后面还要求「断句」——空白、`#`/`|`（参数区）、详情后缀、或者连写的 QQ 号；
+ * 像「摸头发」「摸头杀」这种只是拿关键词开头的人话，规则就不接。
  *
- * @returns {RegExp} 以关键词为前缀的正则；数据还没拉到时给一条永不匹配的
+ * @returns {RegExp} 按「关键词 + 断句」拼的正则；数据还没拉到时给一条永不匹配的
  */
 export function memeMatchReg () {
-  const { keys } = loadMemeData()
+  const { keys, keyMap, lower } = loadMemeData()
   const sig = `${memeDataVersion()}:${keys.length}`
   if (REG_CACHE.re && REG_CACHE.sig === sig) return REG_CACHE.re
 
-  const usable = keys.filter(key => {
-    if (!key) return false
-    if (OWN_CMDS.some(cmd => cmd.startsWith(key))) return false
-    return !OTHER_CMD_RE.test(`#${key}`)
-  })
-  const escaped = usable.map(key => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const esc = key => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  /** 关键词后面允许直接粘的东西；`\d` 是「摸头114514」这种顺手带的 QQ 号 */
+  const tails = ['[\\s/#|]', '\\d', ...(Config.memesDetailArgs || []).map(esc)]
+  const plainKeys = []
+  const textKeys = []
+
+  for (const key of keys) {
+    if (!key) continue
+    if (OWN_CMDS.some(cmd => cmd.startsWith(key))) continue
+    if (OTHER_CMD_RE.test(`#${key}`)) continue
+    const code = keyMap[key] || keyMap[lower.get(key.toLowerCase())]
+    const params = (code && memeParams(code)) || {}
+    /** 要文案的表情：关键词后面粘什么都算文案；不要文案的：必须断句，别把「摸头发」当调用 */
+    ;((params.min_texts || 0) >= 1 ? textKeys : plainKeys).push(esc(key))
+  }
+
+  const parts = []
+  if (plainKeys.length) parts.push(`(?:${plainKeys.join('|')})(?=$|${tails.join('|')})`)
+  if (textKeys.length) parts.push(`(?:${textKeys.join('|')})`)
 
   REG_CACHE.sig = sig
-  REG_CACHE.re = escaped.length ? new RegExp(`^#?(?:${escaped.join('|')})`) : /^(?!)$/
+  REG_CACHE.re = parts.length ? new RegExp(`^#?(?:${parts.join('|')})`) : /^(?!)$/
 
   return REG_CACHE.re
 }
