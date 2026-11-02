@@ -71,6 +71,45 @@ function readJson (file) {
 
 let index = null
 
+/** 数据换了一份（重拉 / 删掉 / 首次拉完）时要通知的监听者，比如「按关键词拼出来的规则正则」 */
+const changeListeners = new Set()
+
+/** 每换一份数据 +1：按关键词拼出来的东西靠它判断要不要重建 */
+let dataVersion = 0
+
+/**
+ * 登记「表情数据变了」的回调。
+ *
+ * 指令规则是按关键词表动态拼出来的，重拉数据后必须重拼，否则新关键词要等重启才认。
+ *
+ * @param {Function} fn 数据变化后调用
+ * @returns {void}
+ */
+export function onMemeDataChange (fn) {
+  if (typeof fn === 'function') changeListeners.add(fn)
+}
+
+/**
+ * 数据版本号：0 表示还没读过盘，之后每换一份 +1。
+ *
+ * @returns {number} 版本号
+ */
+export function memeDataVersion () {
+  return dataVersion
+}
+
+/** 通知所有监听者（数据刚换过，索引已作废） */
+function notifyMemeDataChange () {
+  dataVersion += 1
+  for (const fn of changeListeners) {
+    try {
+      fn()
+    } catch (err) {
+      log.warn(`表情数据变化的回调出错：${err.message}`)
+    }
+  }
+}
+
 /**
  * 关键词索引：一份原样的 keyMap，外加两种「按前缀找关键词」的排好序的数组。
  * 查表是每次发消息都要走的热路径，排序只在数据变化时做一次。
@@ -208,6 +247,7 @@ export function writeMemeData (infos) {
   fs.writeFileSync(MEME_INFO_FILE, JSON.stringify(finalInfos, null, 1), 'utf8')
   fs.writeFileSync(MEME_KEY_FILE, JSON.stringify(keyMap, null, 1), 'utf8')
   index = null
+  notifyMemeDataChange()
 
   return { total: sorted.length, keyCount: Object.keys(keyMap).length }
 }
@@ -219,4 +259,5 @@ export function writeMemeData (infos) {
  */
 export function resetMemeStore () {
   index = null
+  notifyMemeDataChange()
 }

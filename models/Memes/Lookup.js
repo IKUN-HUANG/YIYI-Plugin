@@ -7,7 +7,7 @@
  */
 import { createLogger, qqAllRe } from '#yiyi.utils'
 import { Config } from '#yiyi.components'
-import { loadMemeData, memeParams, isMemeDisabled } from './Store.js'
+import { loadMemeData, memeDataVersion, memeParams, isMemeDisabled } from './Store.js'
 import { memeArgHints } from './Args.js'
 
 const log = createLogger('表情包')
@@ -22,7 +22,51 @@ const MEME_LOOKUP_MAX = 60
  * 就会把别人的指令整条吃掉（用户删掉 apps/Music.js 之后「#点歌 晴天」被表情接走，就是这样）。
  * 这里钉死本插件自己已经占掉的名字空间 —— 点歌 / 听N / 选N / 翻页、伊伊设置、王者 —— 与表情无关。
  */
-export const OTHER_CMD_RE = /^#?(?:点歌(?:\s|$)|(?:听|选)\d{1,2}$|(?:听|选)(?:上|下|前|后)?(?:一)?页$|伊伊|YIYI|yiyi|王者)/
+export const OTHER_CMD_RE = new RegExp('^#?(?:'
+  + '(?:小飞)?(?:QQ|网易|酷我|酷狗|多选)?(?:点歌|点播|播放)'
+  + '|(?:来|放)一?首'
+  + '|(?:听歌|唱歌|搜歌|切歌)'
+  + '|(?:暂停|继续|歌词)(?:\\s|$)'
+  + '|(?:听|选)\\d{1,2}$'
+  + '|(?:听|选)(?:上|下|前|后)?(?:一)?页$'
+  + '|(?:日推|每日推荐|每日30首|个性电台|我的收藏|我喜欢的歌)'
+  + '|(?:上|下)一?(?:页|首)'
+  + '|伊伊|YIYI|yiyi|王者)')
+
+/**
+ * 本插件自己的指令头：关键词拼规则时要排掉，不能抢「表情菜单」这类自家命令。
+ */
+const OWN_CMDS = ['表情菜单', '表情列表', '表情搜索', '表情帮助', '表情更新', '随机表情']
+
+/** 关键词正则的缓存：数据换一份才重拼一次（1201 个关键词拼一回约 1ms，别每次消息都拼） */
+const REG_CACHE = { sig: '', re: null }
+
+/**
+ * 按**数据里的关键词**拼出表情包的匹配正则。
+ *
+ * 原来那条兜底 `/^#?(\S{1,60})…$/` 会把任何短消息都算成「可能是表情」，
+ * 一旦别的插件也用短词当指令（点歌、点播、放一首…）就会在宿主里先被表情截走。
+ * 现在规则本身只认数据里的关键词：数据里没有的词，连规则都不匹配，宿主直接交给后面的插件。
+ *
+ * @returns {RegExp} 以关键词为前缀的正则；数据还没拉到时给一条永不匹配的
+ */
+export function memeMatchReg () {
+  const { keys } = loadMemeData()
+  const sig = `${memeDataVersion()}:${keys.length}`
+  if (REG_CACHE.re && REG_CACHE.sig === sig) return REG_CACHE.re
+
+  const usable = keys.filter(key => {
+    if (!key) return false
+    if (OWN_CMDS.some(cmd => cmd.startsWith(key))) return false
+    return !OTHER_CMD_RE.test(`#${key}`)
+  })
+  const escaped = usable.map(key => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+
+  REG_CACHE.sig = sig
+  REG_CACHE.re = escaped.length ? new RegExp(`^#?(?:${escaped.join('|')})`) : /^(?!)$/
+
+  return REG_CACHE.re
+}
 
 /** 同一个人最近处理过的消息 id（防重复回复；接口重投同一张图时会撞） */
 const HANDLED_KEEP = 3

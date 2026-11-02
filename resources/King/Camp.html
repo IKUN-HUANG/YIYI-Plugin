@@ -34,17 +34,18 @@
       {{if roleIcon}}<img class="k-camp-face" src="{{roleIcon}}">{{/if}}
       <div class="k-camp-idcard">
         <div class="k-camp-name">{{roleName}}<span class="k-hero-badge is-{{onlineState}}">{{onlineText}}</span></div>
-        <!-- 战斗力徽章（营地 304 的返回）跟区服排同一行，中间数据格因此是五格而不是六格 -->
+        <!-- 下线时间（营地 304 的 lastOnline）跟区服排同一行，用和战斗力同款的金色徽章 -->
         <div class="k-camp-server">
           <span class="k-camp-server-text">{{roleText}}{{if areaName}} · {{areaName}}{{/if}}</span>
-          {{if combatExtra && combatExtra.main}}<span class="k-camp-power-badge">战斗力 {{combatExtra.main}}{{if combatExtra.unit}}{{combatExtra.unit}}{{/if}}</span>{{/if}}
+          {{if lastOnlineText}}<span class="k-badge">最近上线 {{lastOnlineText}}</span>{{/if}}
+          {{if lastOfflineText}}<span class="k-badge is-offline">最近下线 {{lastOfflineText}}</span>{{/if}}
         </div>
-        <!-- 最近上线做成跟等级 / 游戏天数 / 皮肤 同款胶囊并进标签行，独占一行会把卡头撑高 -->
+        <!-- 战斗力挤进等级 / 游戏天数 / 皮肤这一行：金色小徽章，字号跟着标签行走 -->
         <div class="k-camp-tags">
           <span class="k-badge">等级 {{gameLevel}}</span>
           {{if gameDays}}<span class="k-badge">游戏 {{gameDays}} 天</span>{{/if}}
           {{if Skins}}<span class="k-badge">皮肤 {{Skins.main}}{{if Skins.unit}}{{Skins.unit}}{{/if}}</span>{{/if}}
-          {{if lastOnlineText}}<span class="k-badge">最近上线 {{lastOnlineText}}</span>{{/if}}
+          {{if combatExtra && combatExtra.main}}<span class="k-badge is-power">战斗力 {{combatExtra.main}}{{if combatExtra.unit}}{{combatExtra.unit}}{{/if}}</span>{{/if}}
         </div>
       </div>
     </div>

@@ -45,10 +45,10 @@ function campIconTasks (mapped, candidates) {
   const PeakWings = localIcon(`Peak/Wings${mapped.peak.tier || 1}.png`)
   const PeakIconTask = PeakWings ||
     (mapped.peak.icon ? imageUri(mapped.peak.icon, { referer: CAMP_REFERER, width: 240, height: 240 }) : '')
-  /** 排位绶带顶上那条星级（3 实心 + 2 空心那种）：接口给的就是 196x72 的小图，内联进卡 */
-  /** 星级条纹有两条来源：接口给（`starImg`，196×72）优先；荣耀王者及以上接口不再给，
-   *  回落到本地那套同尺寸素材 —— 王者 0~49 星是红半星进度 `Honor0N`（半颗 5 星、一颗 10 星），
-   *  荣耀/传奇则是 5 颗金星的满槽 `5-5`。 */
+  /** 排位绶带顶上那条星级：一律按段位名与星数用本地素材画。
+   *  王者 0~49 星是红半星进度 `Honor0N`（半颗 5 星、一颗 10 星），50 星起（荣耀/传奇）不画星条；
+   *  王者以下三套金星档位（铂金 3 颗 / 钻石 4 颗 / 星耀 5 颗）。
+   *  接口的 `starImg` 不用了：它给的是「5 格里亮几格」的旧图，跟营地新版对不上（非凡王者会显示成 5 格金星）。 */
   const StarStrip = (() => {
     const star = Number(mapped.Rank5v5.star) || 0
     const text = toText(mapped.Rank5v5.text)
@@ -65,9 +65,7 @@ function campIconTasks (mapped, candidates) {
     if (/铂金/.test(text)) return localIcon(`Rank/Stars/3-${Math.min(3, star)}.png`)
     return ''
   })()
-  const RankPipsTask = mapped.Rank5v5.pips
-    ? imageUri(mapped.Rank5v5.pips, { referer: CAMP_REFERER, width: 392, height: 144 })
-    : StarStrip
+  const RankPipsTask = StarStrip
   /** 接口 104 那枚「金环徽章」（金色桂冠 + 藏青圆盘 + 分数）：头像外围用的就是这张，
    *  跟巅峰格是同一张图，所以直接把接口那张内联进来，
    *  不需要另做图。接口没给 104 才退回本地 peak/ModePeakRaceAvatar.png（扁平金环）。 */

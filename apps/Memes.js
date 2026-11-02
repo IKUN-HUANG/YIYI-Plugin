@@ -7,7 +7,7 @@
  */
 import { createLogger, pluginTitle, version, yunzai, qqAllRe, afterLoaded } from '#yiyi.utils'
 import { render, Config, gateRules } from '#yiyi.components'
-import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, OTHER_CMD_RE, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
+import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, OTHER_CMD_RE, memeMatchReg, claimedByOthers, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, onMemeDataChange, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
 
 const log = createLogger('表情包')
 
@@ -46,6 +46,12 @@ async function hasMemePicture (e) {
 /** 表情包指令入口：只做「解析参数 → 调 models → 回包」，业务判断全在 models 里。 */
 export class Memes extends plugin {
   constructor () {
+    /**
+     * 兜底那条不写死正则了：规则由**数据里的关键词**拼出来（写死就成了「任意 1~60 字都算表情」，
+     * 别的插件的点歌/点播/放一首会先被表情截走）。数据换一份就重拼一次。
+     */
+    const memeRule = { reg: memeMatchReg(), fnc: 'meme' }
+
     super({
       name: 'YIYI:表情包',
       dsc: '伊伊插件表情包制作',
@@ -57,7 +63,7 @@ export class Memes extends plugin {
         { reg: /^#?随机(表情|表情包)$/, fnc: 'random' },
         { reg: /^#?(表情|表情包)(帮助|说明|指令|教程|制作菜单)$/, fnc: 'helpMenu' },
         { reg: /^#?(表情|表情包)(更新|刷新)$/, fnc: 'update' },
-        { reg: /^#?(\S{1,60})(?:\s+([\s\S]+))?$/, fnc: 'meme' }
+        memeRule
       ]
     })
 
@@ -69,6 +75,7 @@ export class Memes extends plugin {
      * 改成 getter 后开关一关，这张规则表整块消失，别的插件正常接单。
      */
     gateRules(this, () => this.memeOn)
+    onMemeDataChange(() => { memeRule.reg = memeMatchReg() })
   }
 
   get memeOn () {
@@ -247,6 +254,15 @@ export class Memes extends plugin {
 
     const hit = lookupMeme(e.msg)
     if (!hit) return false
+
+    /**
+     * 我们认出来了，但别人的规则也认这条消息 —— 让出去。
+     *
+     * 表情关键词是服务端下发的，今天多一个「点歌」、明天多一个「搜」，随时可能撞上
+     * 用户装的其他点歌/查询插件；`OTHER_CMD_RE` 只能钉住我们已知的名字空间，
+     * 剩下的交给宿主：谁家的具体规则匹配上了，就让谁处理。
+     */
+    if (await claimedByOthers(e.msg, this)) return false
 
     if (isAtSelf(e)) return await this.detail(e, hit.code)
 

@@ -371,7 +371,8 @@ export function clearMemeData () {
 }
 
 /** 导出面：与旧版逐名对齐（闸门会逐个查），顺序与分组保持旧版的样子 */
-export { memeDir, memePreviewDir, ensureMemeDirs, loadMemeData, hasMemeData, memeCodes, memeParams, isMemeDisabled, enabledMemeCodes, isMemeCountered, memePreview, writeMemeData } from './Memes/Store.js'
+export { memeDir, memePreviewDir, ensureMemeDirs, loadMemeData, hasMemeData, memeCodes, memeParams, isMemeDisabled, enabledMemeCodes, isMemeCountered, memePreview, writeMemeData, onMemeDataChange, memeDataVersion } from './Memes/Store.js'
 export { memeArgSchema, parseMemeArgs, memeArgHints } from './Memes/Args.js'
-export { lookupMeme, OTHER_CMD_RE, memeDetail, memePreviewUrl, isMemeRepeated, markMemeHandled } from './Memes/Lookup.js'
+export { claimedByOthers } from './Memes/Claim.js'
+export { lookupMeme, OTHER_CMD_RE, memeMatchReg, memeDetail, memePreviewUrl, isMemeRepeated, markMemeHandled } from './Memes/Lookup.js'
 export { MEME_PAGE_SIZE, isTextMeme, randomMemePool, memeListCodes, memeThumb, memeListPage, clearMemeThumbs, memeHelpData, memeDetailData } from './Memes/Catalog.js'

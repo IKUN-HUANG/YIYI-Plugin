@@ -72,7 +72,8 @@ function roleView (role) {
     gameOnline: Number(role.gameOnline) || 0,
     onlineTime: Number(role.onlineTime) || 0,
     offlineTime: Number(role.offlineTime) || 0,
-    lastOnline: stampMinuteText(role.onlineTime)
+    lastOnline: stampMinuteText(role.onlineTime),
+    lastOffline: stampMinuteText(role.offlineTime)
   }
 }
 

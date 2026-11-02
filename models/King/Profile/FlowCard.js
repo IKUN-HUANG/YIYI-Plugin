@@ -214,6 +214,7 @@ async function campRender (e, target, plan, lookup, gathered, season, cells) {
     onlineState,
     onlineText: mapped.role.onlineText,
     lastOnlineText: mapped.role.lastOnline,
+    lastOfflineText: mapped.role.lastOffline,
     history: { ...(history || {}), icon: historyIcon },
     gameDays: mapped.gameDays,
     Rank5v5: { ...mapped.Rank5v5, icon: RankIcon },
