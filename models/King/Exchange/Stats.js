@@ -28,7 +28,7 @@ function fmtStamp (sec) {
  * @returns {{binds: number, owners: number, pool: object, push: object, groups: object,
  *   rows: object[], genTime: string}}
  */
-export function collectUserStats () {
+function collectUserStats () {
   const entries = listBindEntries()
   const accounts = loadPool()
   const pushData = loadPushData()

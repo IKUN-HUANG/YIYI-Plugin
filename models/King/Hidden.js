@@ -11,7 +11,7 @@ import { toText, isProfileHiddenCode } from './Common.js'
  * @param {*} raw 业务码或整个返回体
  * @returns {boolean} 命中 -10107 / -10103 为 true
  */
-export const isHiddenRaw = isProfileHiddenCode
+const isHiddenRaw = isProfileHiddenCode
 
 /**
  * 被藏时给用户的话：只讲人话、指到「#王者诊断」，不甩返回码。
@@ -19,7 +19,7 @@ export const isHiddenRaw = isProfileHiddenCode
  * @param {string} [what] 被挡的是哪一样东西，如「战绩」「营地卡」
  * @returns {string} 一句可以直接发出去的中文
  */
-export function hiddenCampText (campId = '', what = '主页') {
+function hiddenCampText (campId = '', what = '主页') {
   const id = toText(campId)
   const head = id ? `营地ID ${id} 的${what}看不到` : `这个号的${what}看不到`
   return `${head}：对方关着主页（把自己的主页设成了不可见）。想查是哪个号被挡，发「#王者诊断」`
@@ -69,7 +69,7 @@ export async function isHiddenCamp (campId) {
  * @param {string} [nickname] 顺手记下的角色名，名单卡要展示
  * @returns {Promise<boolean>} 写盘成功为 true
  */
-export async function markHiddenCamp (campId, nickname = '') {
+async function markHiddenCamp (campId, nickname = '') {
   const id = toText(campId)
   if (!id) return false
   try {
@@ -90,7 +90,7 @@ export async function markHiddenCamp (campId, nickname = '') {
  * @param {*} raw 单次查询的返回体或错误码
  * @returns {Promise<boolean>} 命中 -10107 / -30032 且写盘成功为 true；不是隐藏码给 false（不当故障）
  */
-export async function noteHiddenRaw (campId, nickname, raw) {
+async function noteHiddenRaw (campId, nickname, raw) {
   if (!isHiddenRaw(raw)) return false
   return markHiddenCamp(campId, nickname)
 }

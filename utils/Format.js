@@ -11,7 +11,7 @@ import { toText } from './Value.js'
  */
 
 /** 通用时间格式串（第三方库要格式串时用这个，别各处写死） */
-export const TIME_FMT = 'YYYY-MM-DD HH:mm:ss'
+const TIME_FMT = 'YYYY-MM-DD HH:mm:ss'
 
 const pad2 = n => String(n).padStart(2, '0')
 
@@ -125,7 +125,7 @@ export const qqAllRe = () => /\b\d{5,11}\b/g
  * @param {string} c 单个字符
  * @returns {boolean} 全角给 true
  */
-export const isWideChar = c => /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(c)
+const isWideChar = c => /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(c)
 
 /**
  * 单个字符的显示宽度（全角 1、半角 0.6），来自字体度量的近似值。

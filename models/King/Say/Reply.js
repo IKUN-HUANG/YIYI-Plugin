@@ -122,7 +122,7 @@ export async function kingRecall (e, ret) {
  * @param {string} [fallback=""] 兜底文案
  * @returns {string 用户可读文案}
  */
-export function kingErrorText (error, fallback = '') {
+function kingErrorText (error, fallback = '') {
   if (!error) return fallback
   if (error instanceof AuthConfigError) return error.message
   return toText(error.message) || fallback

@@ -99,7 +99,7 @@ export async function getWatchBattle ({ userID = 0, battleID = '', roleID = 0, t
  * @param {object} [params] roleId / option / lastTime / apiVersion 默认 4
  * @returns {Promise<object|null>} 营地原始 data
  */
-export async function getFriendMatchList ({ roleId = '', option = 0, lastTime = 0, apiVersion = 4 } = {}, opts = {}) {
+async function getFriendMatchList ({ roleId = '', option = 0, lastTime = 0, apiVersion = 4 } = {}, opts = {}) {
   return call('friendMatchList', {
     roleId: toText(roleId),
     option: Number(option) || 0,
@@ -129,7 +129,7 @@ export async function getBattleProfile ({ roleId = '', friendUserId = '', noMatc
  * @param {object} [params] 原样透传的查询条件
  * @returns {Promise<object|null>} 营地原始 data
  */
-export async function getOngoingBattleList (params = {}, opts = {}) {
+async function getOngoingBattleList (params = {}, opts = {}) {
   return call('ongoingBattleList', params && typeof params === 'object' ? params : {}, opts)
 }
 

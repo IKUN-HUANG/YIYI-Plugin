@@ -15,7 +15,7 @@ const log = createLogger('推送')
  * @param {string} part part 名
  * @returns {Map<string, object> 用户 ID 到内容的映射}
  */
-export function readUserParts (part) {
+function readUserParts (part) {
   const out = {}
   for (const id of listUserIds()) {
     const value = readUserPart(id, part)
@@ -176,7 +176,7 @@ export const REPORT_LABEL_OF = { daily: '日报', weekly: '周报', monthly: '�
  * 绝不能从主角色那条 `...sub` 继承下来：campUserId 一旦抄了主角色的营地号，
  * 几个角色就都去查同一个主页，自然拿到同一份战绩、同一份上下线时刻（三个角色各 30 局、16 胜 14 负一模一样）。
  */
-export const ROLE_STATE_KEYS = [
+const ROLE_STATE_KEYS = [
   'campId', 'roleId', 'roleName', 'campUserId', 'campAccount',
   'lastGameSeq', 'lastGameTime', 'lastOnlineState', 'lastGaming', 'lastGamingStart', 'lastGamingHero',
   'lastStreak', 'pendingDetail', 'skipTicks', 'idleSince', 'roles', 'unavailable', 'invalidReason'

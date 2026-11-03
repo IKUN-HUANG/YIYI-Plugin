@@ -54,7 +54,7 @@ export function hotMap (name) {
  * @param {string} name 状态名
  * @returns {Set} 该名字对应的那个 Set 实例
  */
-export function hotSet (name) {
+function hotSet (name) {
   return hotState(name, () => new Set())
 }
 
@@ -65,7 +65,7 @@ export function hotSet (name) {
  * @param {Function} [factory] 首次创建时的初值工厂，默认给 null
  * @returns {*} 该名字对应的值
  */
-export function hotValue (name, factory = () => null) {
+function hotValue (name, factory = () => null) {
   return hotState(name, factory)
 }
 
@@ -75,7 +75,7 @@ export function hotValue (name, factory = () => null) {
  * @param {string} name 状态名
  * @returns {boolean} 真删了给 true；名字为空给 false
  */
-export function hotReset (name) {
+function hotReset (name) {
   const store = bag()
   const key = String(name || '').trim()
   if (!key) return false
@@ -88,7 +88,7 @@ export function hotReset (name) {
  *
  * @returns {string[]} 状态名数组
  */
-export function hotNames () {
+function hotNames () {
   return Object.keys(bag())
 }
 
@@ -98,7 +98,7 @@ export function hotNames () {
  * @param {string} name 锁名（同一进程内唯一）
  * @returns {{busy: boolean, tryAcquire: Function, release: Function}} busy 是只读的当前占用态；tryAcquire 抢到了给 true、被别人占着给 false；release 放锁（重复放不报错）
  */
-export function hotLock (name) {
+function hotLock (name) {
   const map = hotMap('king.lock')
   const key = String(name || '').trim()
 

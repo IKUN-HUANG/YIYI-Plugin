@@ -54,7 +54,7 @@ export async function getSeasonUsuallyHeroList ({ seasonId = 0, roleId } = {}, o
  * @param {object} [opts] 请求选项，透传给 `kingCall`
  * @returns {Promise<object|null>} 营地原始 data
  */
-export async function getTvChoiceItem (opts = {}) {
+async function getTvChoiceItem (opts = {}) {
   return call('tvChoiceItem', {}, opts)
 }
 

@@ -63,7 +63,7 @@ export function pickNewBattles (list = [], sub = {}) {
  * @param {string} [text=""] 原始分数变化文本
  * @returns {string 压过的文本}
  */
-export function compactDeltaText (text = '') {
+function compactDeltaText (text = '') {
   return toText(text).replace(/\s+/g, '').replace(/（/g, '(').replace(/）/g, ')')
 }
 

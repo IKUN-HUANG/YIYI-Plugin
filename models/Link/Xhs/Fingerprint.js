@@ -3,7 +3,6 @@
  * @module models/Link/xhs/Fingerprint.js
  */
 
-
 import { createHash, randomBytes } from 'node:crypto'
 
 import { Base64Encoder, crc32Fingerprint } from './Codec.js'
@@ -168,6 +167,5 @@ class XsCommonSigner {
   }
 }
 
-
 /** 指纹对外出口：屏幕 / GPU / 字体等取值表、FingerprintGenerator 与 common 签名器。 */
-export { GPU_VENDORS, SCREEN_RESOLUTIONS, COLOR_DEPTH_OPTIONS, DEVICE_MEMORY_OPTIONS, CORE_OPTIONS, BROWSER_PLUGINS, CANVAS_HASH, VOICE_HASH_OPTIONS, FONTS, weightedRandomChoice, getRendererInfo, getScreenConfig, generateWebglHash, FingerprintGenerator, XsCommonSigner }
+export { FingerprintGenerator, XsCommonSigner }

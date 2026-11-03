@@ -33,7 +33,7 @@ export function watchLinkOn (qq) {
  * @param {boolean} on 开还是关
  * @returns {boolean 改后的状态}
  */
-export function setWatchLinkOn (qq, on) {
+function setWatchLinkOn (qq, on) {
   const id = toText(qq)
   if (!id) return false
   return writeUserPart(id, WATCH_PART, { on: Boolean(on) })

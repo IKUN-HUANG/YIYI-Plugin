@@ -171,6 +171,5 @@ class Base64Encoder {
 const XYW_ENV_FLAGS_BROWSER = '0|0|0|1|0|0|1|0|0|0|1|0|0|0|0|1|0|0|0'
 const XHS_SESSION_START_MS = Date.now()
 
-
 /** 编解码原语对外出口：CRC32 / xxh32 / 自定义字母表 Base64 与相关常量（签名层内部用）。 */
-export { MASK32, SIGN_BIT, rotateLeft, readUint32LE, intToLeBytes, toSigned32, CRC32_POLY, CRC32_XOR_OUT, CRC32_TABLE, crc32Raw, crc32Checksum, crc32Fingerprint, XXH_PRIME1, XXH_PRIME2, XXH_PRIME3, XXH_PRIME4, XXH_PRIME5, xxh32, ALPHABET_STANDARD, ALPHABET_CUSTOM, ALPHABET_X3, BASE36_DIGITS, A1_CHARSET, makeAlphabetSwapper, encodeCustomBase64, decodeCustomBase64, encodeX3Base64, decodeX3Base64, Base64Encoder, XYW_ENV_FLAGS_BROWSER, XHS_SESSION_START_MS }
+export { MASK32, rotateLeft, intToLeBytes, crc32Checksum, crc32Fingerprint, xxh32, ALPHABET_STANDARD, ALPHABET_CUSTOM, ALPHABET_X3, BASE36_DIGITS, A1_CHARSET, Base64Encoder, XYW_ENV_FLAGS_BROWSER, XHS_SESSION_START_MS }

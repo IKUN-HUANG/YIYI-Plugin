@@ -21,7 +21,7 @@ export const RANK_MOD_RANK = 701
 export const RANK_MOD_PEAK = 702
 
 /** 一张榜单最多列几行：本群榜 10 行，私聊「全部」那份 30 行。@type {{group: number, all: number}} */
-export const RANK_MAX_ROWS = { group: 10, all: 30 }
+const RANK_MAX_ROWS = { group: 10, all: 30 }
 
 /** 每个分组（排位 / 巅峰）各取几行上卡，现在两边都是 10 行。@type {{group: number, all: number}} */
 export const RANK_SECTION_ROWS = { group: 10, all: 10 }

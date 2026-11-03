@@ -28,7 +28,7 @@ export async function getDetailRankList (params = {}, opts = {}) {
  * @param {object} [opts] 请求选项，透传给 `kingCall`
  * @returns {Promise<object|null>} 营地原始 data：按热度排好的英雄行
  */
-export async function getMainRankList ({ segment = 1, position = 0 } = {}, opts = {}) {
+async function getMainRankList ({ segment = 1, position = 0 } = {}, opts = {}) {
   return call('mainRankList', {
     segment: Number(segment) || 1,
     position: Number(position) || 0

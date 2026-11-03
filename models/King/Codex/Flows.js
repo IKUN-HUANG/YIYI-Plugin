@@ -49,8 +49,6 @@ function collectRoles (data) {
   return out
 }
 
-
-
 /** ============================================================ 参数解析 */
 
 function tokenise (text) {
@@ -285,7 +283,7 @@ export async function kingMyHeroes (e) {
  * @param {string[]} words 命令词（长的必须写前面，否则短词先把长词切碎）
  * @returns {string} 剩下要交给参数解析的尾巴（已去掉 CQ 码、#前缀与命令词，多余空白压成一个空格）
  */
-export function argsOf (e, words = []) {
+function argsOf (e, words = []) {
   let text = toText(e?.msg || e?.raw_message || '').replace(/\[CQ:[^\]]*\]/g, '')
   text = text.replace(/^#/, '').replace(/^王者(?:荣耀|农药)?/, '')
   for (const word of words) {

@@ -17,7 +17,7 @@ const IMG_TYPES = ['png', 'jpeg', 'webp']
  *
  * @returns {string} `png` / `jpeg` / `webp`；配置写错或读不出来一律回落 `png`
  */
-export function imgTypeOf () {
+function imgTypeOf () {
   try {
     const raw = String(Config.get('config')?.imgType ?? '').trim().toLowerCase()
     if (raw === 'jpg') return 'jpeg'

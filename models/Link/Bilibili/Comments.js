@@ -83,4 +83,4 @@ function normalizeBiliComments (items = []) {
 }
 
 /** 对外出口：biliReply、biliReplyPage、biliReplyFirstPage、fetchBiliComments、normalizeBiliComments */
-export { biliReply, biliReplyPage, biliReplyFirstPage, fetchBiliComments, normalizeBiliComments }
+export { biliReplyFirstPage, fetchBiliComments, normalizeBiliComments }

@@ -28,7 +28,7 @@ const AUTH_PART = 'auth'
  * @param {string} [ownerId] 档主 QQ，盘上没有归属人时用它兜底
  * @returns {object} 规整后的内存账号（补了 ownerId / invalidAt / invalidReason）
  */
-export function accountOf (raw = {}, ownerId = '') {
+function accountOf (raw = {}, ownerId = '') {
   const src = raw && typeof raw === 'object' ? raw : {}
   const account = normalizeAccount(src)
   account.ownerId = toText(src.ownerId) || toText(ownerId)

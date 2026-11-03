@@ -12,7 +12,7 @@ import { pickWatchers, probeFriend, watchStream } from './Engine.js'
 import { publicLink } from './Link.js'
 
 /** 手动自测一次最多试几个号：号池十几条，全试一遍要一分钟，前 6 个够看出问题了 */
-export const WATCH_TEST_MAX = 6
+const WATCH_TEST_MAX = 6
 
 /**
  * `#观战@某人` / `#王者观战@某人`：手动跑一次取流，把每一步都摊开给用户看，

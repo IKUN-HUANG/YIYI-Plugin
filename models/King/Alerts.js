@@ -12,18 +12,18 @@ import { hotLockRun } from './Hot.js'
 const log = createLogger('王者提醒')
 
 /** 用户档里放提醒开关的段落名（`users/<QQ>.yaml` 里的 `alert` 段），跟推送开关分开放 */
-export const ALERT_PART = 'alert'
+const ALERT_PART = 'alert'
 /** 公告推送的开关键，同时也是 `ALERT_LABEL` 的键 */
-export const ALERT_NEWS = 'news'
+const ALERT_NEWS = 'news'
 /** 皮肤上新推送的开关键，同时也是 `ALERT_LABEL` 的键 */
-export const ALERT_SKIN = 'skin'
+const ALERT_SKIN = 'skin'
 /** 巡检基线的缓存文件名（记「上次见到的最新公告 / 皮肤 ID」，服务重启后仍要接着算） */
-export const ALERT_CACHE = 'king-alert.yaml'
+const ALERT_CACHE = 'king-alert.yaml'
 /**
  * 一轮最多私信多少人，单位 人。
  * 50 是给风控留的余量：批量私信一次几百人会被平台判成骚扰。
  */
-export const ALERT_MAX_SEND = 50
+const ALERT_MAX_SEND = 50
 
 const ALERT_LABEL = { news: '公告推送', skin: '皮肤上新' }
 
@@ -35,7 +35,7 @@ const ALERT_LABEL = { news: '公告推送', skin: '皮肤上新' }
  * @param {string} text 私信正文
  * @returns {Promise<boolean>} 发出去为 true；没 Bot、没这个好友、发送报错都是 false
  */
-export async function sendToUser (userId, text) {
+async function sendToUser (userId, text) {
   const qq = toText(userId)
   const body = toText(text)
   if (!qq || !body) return false
@@ -105,7 +105,7 @@ export function alertOn (userId, key) {
  * @param {boolean} on true 开、false 关
  * @returns {boolean} 写盘成功为 true；不认识的键、空 QQ、写盘失败都是 false
  */
-export function setAlert (userId, key, on) {
+function setAlert (userId, key, on) {
   const id = toText(userId)
   if (!id || !ALERT_LABEL[key]) return false
 
@@ -133,7 +133,7 @@ export function alertUsers (key) {
  *
  * @returns {object} 缓存对象；文件坏了、内容不是对象都给空对象，别让巡检崩在第一行
  */
-export function loadAlertCache () {
+function loadAlertCache () {
   const data = readCache(ALERT_CACHE, {})
   return data && typeof data === 'object' ? data : {}
 }
@@ -144,7 +144,7 @@ export function loadAlertCache () {
  * @param {object} data 缓存对象（`pushNews` / `pushSkins` 会就地改它）
  * @returns {boolean} 写盘是否成功
  */
-export function saveAlertCache (data) {
+function saveAlertCache (data) {
   return writeCache(ALERT_CACHE, data && typeof data === 'object' ? data : {})
 }
 

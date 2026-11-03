@@ -32,6 +32,6 @@ export async function fetchItemTable () {
  * @returns {Promise<*>} 官网 JSON 解析后的原样数据
  * @throws {Error} 拉不到时抛（不走缓存，每次现拉）
  */
-export async function fetchXpflby () {
+async function fetchXpflby () {
   return fetchJson(EXTERNAL_URLS.HeroXpflby)
 }

@@ -384,4 +384,4 @@ const createXiaohongshuGuestCookie = async (options = {}) => { const { cookie: p
 const EDITH = 'https://edith.xiaohongshu.com'
 
 /** 签名层对外出口：Xhshow（x-s / x-t 生成）、游客会话握手与 cookie 工具。 */
-export { Xhshow, createXiaohongshuCryptoConfig, COOKIE_RANDOM_CHARS, GUEST_HEADERS, crc32, generateA1AndWebId, generateWebsectiga, encryptProfileData, unwrapScriptingResponse, toCookieString, updateCookiesFromResponse, createXiaohongshuGuestCookie, EDITH }
+export { Xhshow, createXiaohongshuCryptoConfig, crc32, toCookieString, updateCookiesFromResponse, createXiaohongshuGuestCookie, EDITH }

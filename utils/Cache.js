@@ -92,7 +92,7 @@ const hasRedis = () => typeof redis !== 'undefined' && redis !== null
  * @param {number} [ttl] 存活秒数，不传或 ≤0 表示不过期
  * @returns {Promise<void>} 无 redis 时什么都不做
  */
-export async function cacheSet (key, value, ttl) {
+async function cacheSet (key, value, ttl) {
   if (!key || value === undefined || value === null || !hasRedis()) return
 
   if (!(Number(ttl) > 0)) return await redis.set(key, value)
@@ -116,7 +116,7 @@ export async function cacheSet (key, value, ttl) {
  * @param {string} key 键
  * @returns {Promise<any>} 值；没有 redis 或没命中给 null
  */
-export async function cacheGet (key) {
+async function cacheGet (key) {
   if (!key || !hasRedis()) return null
   return await redis.get(key)
 }
@@ -127,7 +127,7 @@ export async function cacheGet (key) {
  * @param {string} key 键
  * @returns {Promise<void>} 无 redis 时什么都不做
  */
-export async function cacheDel (key) {
+async function cacheDel (key) {
   if (!key || !hasRedis()) return
   await redis.del(key)
 }

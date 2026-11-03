@@ -45,7 +45,7 @@ function rememberDoc (file, fp, doc) {
  * @param {string} file 数据文件绝对路径
  * @returns {boolean} 真 = 已隔离，之后一律不写
  */
-export function isCorruptFile (file) {
+function isCorruptFile (file) {
   return corruptFiles.has(file)
 }
 
@@ -168,7 +168,7 @@ export function writeYamlDoc (file, doc) {
  * @param {string} file 数据文件（相对 `data/King` 或绝对路径都认）
  * @returns {boolean} 真 = 清空成功
  */
-export function removeFile (file) {
+function removeFile (file) {
   const target = kingFile(file)
   const ok = writeDoc(target, null)
   docCache.delete(target)
@@ -180,7 +180,7 @@ export function removeFile (file) {
  *
  * @returns {void}
  */
-export function clearDocCache () {
+function clearDocCache () {
   docCache.clear()
   corruptFiles.clear()
 }

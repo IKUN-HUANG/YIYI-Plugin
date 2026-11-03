@@ -14,7 +14,7 @@ import { toText } from './Common.js'
  * 排行快照文件（`data/King/Ranks.yaml`）。
  * 头像就存在这份文件的每行里，不另开一个头像表。
  */
-export const RANK_FACE_FILE = kingRanksFile
+const RANK_FACE_FILE = kingRanksFile
 
 const TTL = 60 * 1000
 let cached = { at: 0, rows: null }

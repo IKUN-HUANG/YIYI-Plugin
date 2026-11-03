@@ -9,8 +9,8 @@ import { hotMap } from './Hot.js'
 const log = createLogger('王者通知')
 
 /** 同一件事（同一个 key）6 小时内只吵主人一次，剩下的只写日志 */
-export const NOTIFY_GAP_MS = 6 * 3600 * 1000
-export const NOTIFY_MAX_PER_ROUND = 3
+const NOTIFY_GAP_MS = 6 * 3600 * 1000
+const NOTIFY_MAX_PER_ROUND = 3
 
 const notified = hotMap('king.notify')
 
@@ -31,7 +31,7 @@ function botMasters () {
  *
  * @returns {string[]} 去重后的主人 QQ（纯数字串，短于 5 位的会被剔掉）；两边都空给空数组
  */
-export function masterList () {
+function masterList () {
   const own = String(Config.kingMasterQQ || '').split(/[\s,，、]+/).map(digitsOf).filter(id => id.length >= 5)
   return [...new Set([...own, ...botMasters()])]
 }
@@ -135,7 +135,7 @@ export async function notifyRateLimit (account = {}, endpoint = '') {
  * @param {string} [userId] 触发这次查询的用户 QQ（脱敏后写进正文；空着就不带这一行）
  * @returns {Promise<number>} 发出去的条数（同 key 6 小时内只发一次）
  */
-export async function notifyNoAccount (userId = '') {
+async function notifyNoAccount (userId = '') {
   const who = maskUserId(userId)
   const lines = [
     '【王者营地】没有能用的号了',
@@ -152,7 +152,7 @@ export async function notifyNoAccount (userId = '') {
  * @param {string} key 去重键（notifyMaster 的 opts.key）
  * @returns {number} 毫秒时间戳；没发过给 0
  */
-export function notifyStamp (key) {
+function notifyStamp (key) {
   return Number(notified.get(String(key || ''))) || 0
 }
 
@@ -162,7 +162,7 @@ export function notifyStamp (key) {
  * @param {string} [key] 要清的去重键；留空就整张表清空
  * @returns {boolean} 删掉了一条 / 全部清空给 true；键不存在给 false
  */
-export function clearNotifyStamp (key = '') {
+function clearNotifyStamp (key = '') {
   if (!key) {
     notified.clear()
     return true

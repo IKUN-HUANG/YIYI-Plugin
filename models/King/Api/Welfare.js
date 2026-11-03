@@ -74,7 +74,7 @@ export async function exchangeGift ({ exchangePos } = {}, opts = {}) {
  * @param {object} [params] type 任务类型
  * @returns {Promise<object|null>} 营地原始 data
  */
-export async function getGameTaskCondition ({ type } = {}, opts = {}) {
+async function getGameTaskCondition ({ type } = {}, opts = {}) {
   return call('taskCondition', { type: Number(type) }, { retry: 0, ...opts })
 }
 
@@ -84,7 +84,7 @@ export async function getGameTaskCondition ({ type } = {}, opts = {}) {
  * @param {object} [opts] 请求选项，透传给 `kingCall`
  * @returns {Promise<object|null>} 营地原始 data
  */
-export async function getGameLotteryQuery (opts = {}) {
+async function getGameLotteryQuery (opts = {}) {
   return call('h5LotteryQuery', {}, opts)
 }
 

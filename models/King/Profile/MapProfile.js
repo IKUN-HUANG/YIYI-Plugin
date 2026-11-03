@@ -190,7 +190,7 @@ function rolesView (roles) {
  * @param {*} sources 候选来源，按顺序取第一个有值的
  * @returns {string} 文案；都没有给空串
  */
-export function gameDaysText (...sources) {
+function gameDaysText (...sources) {
   for (const source of sources) {
     if (!source || typeof source !== 'object') continue
     for (const key of DAY_KEYS) {

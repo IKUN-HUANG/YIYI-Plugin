@@ -24,7 +24,7 @@ export function kdaText (kill, death, assist) {
  * @param {number|string} assist 助攻
  * @returns {string} 保留一位小数的文本（恒定带 .0）
  */
-export function kdaRatio (kill, death, assist) {
+function kdaRatio (kill, death, assist) {
   const k = Number(kill) || 0
   const d = Number(death) || 0
   const sum = k + (Number(assist) || 0)
@@ -49,7 +49,7 @@ export function winRateText (win, total) {
  * @param {number|string} result 营地 gameresult
  * @returns {string} 胜利 / 失败 / 平局；认不出来给「对局」
  */
-export function gameResultText (result) {
+function gameResultText (result) {
   const n = Number(result)
   return n === 1 ? '胜利' : n === 2 ? '失败' : n === 3 ? '平局' : '对局'
 }

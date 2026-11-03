@@ -57,4 +57,4 @@ async function wbiSign (params = {}) {
 }
 
 /** 对外出口：WBI_MIXIN、wbiCache、wbiMixinKey、wbiSign */
-export { WBI_MIXIN, wbiCache, wbiMixinKey, wbiSign }
+export { WBI_MIXIN, wbiSign }

@@ -101,7 +101,7 @@ export function groupPushSummary () {
  * 公告 / 皮肤订阅按人去重，一个人两样都订只算一个。
  * @returns {number} 订阅人数（公告与皮肤两边合并去重后的个数）
  */
-export function alertCount () {
+function alertCount () {
   const ids = new Set([...alertUsers('news'), ...alertUsers('skin')])
   return ids.size
 }

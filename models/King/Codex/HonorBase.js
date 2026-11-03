@@ -85,7 +85,7 @@ export function HonorIconOf (text, type) {
  * @param {string} area 称号里的地名（parseMedal 解出来的 area）
  * @returns {string} 压短后的地名；入参为空时给空串
  */
-export function shortArea (area) {
+function shortArea (area) {
   const text = toText(area)
   if (!text || text.length <= 5) return text
   return text

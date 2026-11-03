@@ -167,7 +167,7 @@ export function normalizeStream (result) {
  * @param {object} info battleInfo
  * @returns {Array<object> 十个人}
  */
-export function lineupOf (info) {
+function lineupOf (info) {
   const team = list => (Array.isArray(list) ? list : [])
     .map(one => toText(one?.roleInfo?.roleName) || toText(one?.roleName))
     .filter(Boolean)

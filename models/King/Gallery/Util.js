@@ -18,7 +18,7 @@ import { CAMP_LANE_LABEL, POSITION_LABEL, POSITION_MAP, SEGMENT_MAP } from './Co
  * @param {Array<{names: string[]}>} map 别名表（SEGMENT_MAP / POSITION_MAP 那种）
  * @returns {object|null} 命中的那一项（原对象），文本为空或一个别名都没命中时给 null
  */
-export function pickAlias (text, map) {
+function pickAlias (text, map) {
   const source = toText(text)
   if (!source) return null
 
@@ -55,7 +55,7 @@ export function parseTierFilter (text) {
  * @param {string} text 原始名字
  * @returns {string} 归一后的名字（可能为空串）
  */
-export function normName (text) {
+function normName (text) {
   return toText(text).replace(/（/g, '(').replace(/）/g, ')').replace(/\s+/g, '').trim()
 }
 

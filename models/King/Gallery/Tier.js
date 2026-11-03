@@ -22,7 +22,7 @@ import { matchHeroKeyword, parseTierFilter, pct, pickList, tailOf } from './Util
  * @param {object|object[]} data getDetailRankList 的 data（也认直接给数组）
  * @returns {{total: number, groups: Array<{tier: string, rows: object[]}>, updateTime: string}} total：英雄总数；groups：只保留有英雄的档位，每组最多 TIER_MAX 个，行是 {name, sub（职业/副名）, icon, winRate, showRate, banRate}；updateTime：榜单更新时间
  */
-export function parseTierList (data) {
+function parseTierList (data) {
   const list = Array.isArray(data?.list) ? data.list : Array.isArray(data) ? data : []
 
   const groups = new Map()
@@ -141,7 +141,7 @@ export function parseEquipData (equip, fringe) {
  * @param {object} [opts] fallbackName：英雄名兜底（接口没给 SzTitle 时用）
  * @returns {object} {HeroName, alias（称号）, HeroType, branch（分路）, skilled, total（总场次）, win, lose, winRate, best（最高连胜/最佳）, maxWin（最长连胜）, power（最新战力文本，没有给空串）, radar（五维，值为 0 的维度已剔掉）, radarSvg（雷达图 SVG，维度不足 3 个为空串）, recent（最近 HERO_RECORD_ROWS 场：{mapName,time,win,kill,dead,assist,mvp,svp,grade}）, isEmpty（一场没打）}
  */
-export function parseHeroRecord (data, { fallbackName = '' } = {}) {
+function parseHeroRecord (data, { fallbackName = '' } = {}) {
   const info = data?.heroInfo && typeof data.heroInfo === 'object' ? data.heroInfo : {}
   const win = Number(info.winNum) || 0
   const lose = Number(info.failNum) || 0

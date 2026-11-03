@@ -20,7 +20,7 @@ const PROBE_UA = 'Mozilla/5.0'
  * @param {object} e
  * @returns {unknown}
  */
-export function getTrigger (e) {
+function getTrigger (e) {
   return {
     name: `${e.sender.nickname}(${e.user_id})`,
     avatar: e.sender.avatar || `https://q1.qlogo.cn/g?b=qq&nk=${e.user_id}&s=640`
@@ -77,7 +77,7 @@ export function truncateDesc (desc, isVideo) {
  * @param {string} referer
  * @returns {Promise<object>}
  */
-export async function processImages (urls, referer) {
+async function processImages (urls, referer) {
   const { cover, avatar, mcover, tavatar } = urls
   const coverImg = await fetchImage(cover, referer)
   const [accent, dim] = await Promise.all([
@@ -186,7 +186,7 @@ export function loadIcons (platform, names) {
  * @param {object} fields 待排版字段 `{author, uid, triggerName, triggerUrl, mTitle, mAuthor}`
  * @returns {{authorSize: number, dyidSize: number, triggerNameSize: number, triggerUrlSize: number, mTitleSize: number, mAuthorSize: number}} 各字段字号（px）
  */
-export function buildFontSizes (fields) {
+function buildFontSizes (fields) {
   return {
     authorSize: autoSize(fields.author, 28, 19, 270),
     dyidSize: autoSize(fields.uid, 22, 15, 350),

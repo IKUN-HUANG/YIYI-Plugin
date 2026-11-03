@@ -106,4 +106,4 @@ Config.onConfigChange(() => {
 })
 
 /** 对外出口：_proxy、_proxyPort、proxyPort、proxyStatus、stopProxy、ensureProxy、refreshProxy */
-export { _proxy, _proxyPort, proxyPort, proxyStatus, stopProxy, ensureProxy, refreshProxy }
+export { proxyStatus, stopProxy, ensureProxy, refreshProxy }

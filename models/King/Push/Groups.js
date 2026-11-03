@@ -16,7 +16,7 @@ import { describeError } from '../Common.js'
 /**
  * 自动补订阅的检查间隔，毫秒
  */
-export const AUTO_ENSURE_INTERVAL_MS = 10 * 60 * 1000
+const AUTO_ENSURE_INTERVAL_MS = 10 * 60 * 1000
 
 let autoEnsureAt = 0
 let autoEnsureBusy = false
@@ -27,7 +27,7 @@ let autoEnsureBusy = false
  * @param {object} [data] 推送存档
  * @returns {string[] 群号数组}
  */
-export function groupIdsForAuto (data = loadPushData()) {
+function groupIdsForAuto (data = loadPushData()) {
   const ids = new Set(listGroupIds().map(item => toText(item)).filter(Boolean))
   for (const [, sub] of listSubs(data)) {
     const groupId = toText(sub.group)

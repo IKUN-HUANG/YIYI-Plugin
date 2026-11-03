@@ -57,4 +57,4 @@ async function buvid3 (force = false) {
 }
 
 /** 对外出口：UA、H、BUVID_TTL、buvidCache、biliHeaders、localBuvid、buvid3 */
-export { UA, H, BUVID_TTL, buvidCache, biliHeaders, localBuvid, buvid3 }
+export { UA, H, biliHeaders, buvid3 }

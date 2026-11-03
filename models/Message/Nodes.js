@@ -30,7 +30,7 @@ export function scalarFile (file) {
  * @param {object|string} m 一个段或一段文本
  * @returns {{type: string, data: object}} 规整后的段
  */
-export function nodeSegment (m) {
+function nodeSegment (m) {
   if (typeof m === 'string') return { type: 'text', data: { text: m } }
   const data = { ...(m.data || {}) }
   if (data.file === undefined && m.file !== undefined) data.file = m.file
@@ -47,7 +47,7 @@ export function nodeSegment (m) {
  * @param {number} [n=SNIPPET_MAX] 截断长度
  * @returns {string} 预览文字；空内容回空串
  */
-export function snippet (t, n = SNIPPET_MAX) {
+function snippet (t, n = SNIPPET_MAX) {
   const s = String(t ?? '').replace(/\s+/g, ' ').trim()
   if (!s) return ''
   return s.length > n ? `${s.slice(0, n)}…` : s

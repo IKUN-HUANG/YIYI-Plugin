@@ -23,7 +23,7 @@ import { ROLE_BLOCK_OF_PART } from './SchemaDirs.js'
  *   owners `{ 角色ID: { camp, at } }` ｜ names 同内存 ｜ hidden `[角色ID]`
  * @returns {object} 四块全空的对象（`camps` / `owners` / `names` / `hidden`）
  */
-export function emptyRoleBlocks () {
+function emptyRoleBlocks () {
   return { camps: {}, owners: {}, names: {}, hidden: {} }
 }
 
@@ -170,7 +170,7 @@ function blocksOfPart (raw, legacyPart = '') {
  * @param {{legacyPart?: string}} [options] 只读哪块老表（空 = 整份）
  * @returns {object} 内存形态的四块表
  */
-export function rolesToMemory (raw, { legacyPart = '' } = {}) {
+function rolesToMemory (raw, { legacyPart = '' } = {}) {
   return memoryOfBlocks(blocksOfPart(raw, legacyPart))
 }
 
@@ -180,7 +180,7 @@ export function rolesToMemory (raw, { legacyPart = '' } = {}) {
  * @param {*} raw 内存形态或落盘形态都收
  * @returns {object} 落盘形态（空块不写）
  */
-export function rolesToDisk (raw) {
+function rolesToDisk (raw) {
   const blocks = blocksOfPart(raw)
   const out = {}
   if (Object.keys(blocks.camps).length) out.camps = blocks.camps
@@ -197,7 +197,7 @@ export function rolesToDisk (raw) {
  * @param {object} memory 老四张表的内存形态
  * @returns {object} 落盘形态
  */
-export function rolesMemoryToDisk (memory = {}) {
+function rolesMemoryToDisk (memory = {}) {
   const blocks = {
     camps: normalizeCamps(memory.camps),
     owners: normalizeOwners(memory.owners),

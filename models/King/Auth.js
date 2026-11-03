@@ -25,7 +25,6 @@ export * from './Auth/Roles.js'
 
 const log = createLogger('营地账号')
 
-
 /**
  * 登录态失效：停用 `authInvalidHours` 小时（默认 24）。
  *
@@ -112,7 +111,7 @@ export function saveBinds (binds = {}) {
  * @param {string|number} value QQ 号
  * @returns {string} 键；空值是空串
  */
-export function bindKey (value) {
+function bindKey (value) {
   return toText(value)
 }
 
@@ -123,7 +122,7 @@ export function bindKey (value) {
  * @param {string} [params.userId=''] QQ 号
  * @returns {{user: object|null}} 绑定记录；没绑是 null
  */
-export function getBind ({ userId = '' } = {}) {
+function getBind ({ userId = '' } = {}) {
   const binds = loadBinds()
   const user = binds.users[bindKey(userId)]
   return { user: user && typeof user === 'object' ? user : null }
@@ -198,7 +197,7 @@ export function listBindEntries () {
  * @param {object} account 号码记录
  * @returns {{gameAreaId: string, gameUserSex: string, kohDimGender: string}} 三个头部字段
  */
-export function resolveAccountExtra (account) {
+function resolveAccountExtra (account) {
   return {
     gameAreaId: toText(pickValue(account?.gameAreaId, '1')),
     gameUserSex: toText(pickValue(account?.gameUserSex, '1')),

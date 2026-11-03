@@ -9,7 +9,7 @@ import { createLogger } from '#yiyi.utils'
  * 赛季表现那张卡一页摆几个赛季（营地历史赛季列表常见的量级，够看一屏）。
  * @type {number}
  */
-export const SEASON_PAGE_SIZE = 24
+const SEASON_PAGE_SIZE = 24
 
 /**
  * 梯度榜每个档位最多列几个英雄（T0 常常很多，太多会把卡撑长）。

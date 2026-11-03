@@ -9,8 +9,6 @@ import { toText } from '#yiyi.utils'
 import { plain, toId, toNum, toMs, compact, setTrue } from './SchemaBase.js'
 /** 三、取值小工具 —— 取值一律走这几个小函数，免得每处各自 toText、各自兜底 */
 
-
-
 /** 四、auth（登录态） —— 账号记录要跟 Token 组件同源，字段少一个登录就废 */
 
 /** 账号记录保留的字段，与 `components/Token.js` 保持同一份 */
@@ -31,7 +29,7 @@ const ACCOUNT_FIELDS = [
  * @param {*} raw 盘上读到的原始值，可能是老格式
  * @returns {object|object[]} 落盘形态：单号给对象，多号给 `{accounts:[…]}` 套壳
  */
-export function accountToDisk (raw = {}) {
+function accountToDisk (raw = {}) {
   const src = plain(raw) || {}
   const out = {}
   for (const field of ACCOUNT_FIELDS) {
@@ -78,7 +76,7 @@ export function normalizeAccount (raw = {}) {
  * @param {*} raw 盘上读到的原始值，可能是老格式
  * @returns {object[]|null} 账号列表；没有 auth part 给 null（与「有 part 但空着」要分清）
  */
-export function authFromDoc (raw) {
+function authFromDoc (raw) {
   if (!raw) return null
   if (Array.isArray(raw)) return raw.map(normalizeAccount).filter(item => item.id)
   const doc = plain(raw)
@@ -94,7 +92,7 @@ export function authFromDoc (raw) {
  * @param {object[]|object} accounts 内存账号列表（也认套壳）
  * @returns {object|object[]|null} 写回 auth part 的形态；没有可写的号给 null
  */
-export function authToDisk (accounts) {
+function authToDisk (accounts) {
   const boxed = Array.isArray(accounts) ? null : plain(accounts)
   const src = Array.isArray(accounts)
     ? accounts
@@ -130,7 +128,7 @@ export function normalizeBind (raw) {
  * @param {object} bind 内存侧绑定
  * @returns {object|null} 落盘形态；没有角色 ID 给 null（不落盘）
  */
-export function bindToDisk (bind) {
+function bindToDisk (bind) {
   const src = plain(bind) || {}
   const roleId = toId(src.roleId)
   if (!roleId) return null

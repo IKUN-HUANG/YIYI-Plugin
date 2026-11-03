@@ -20,7 +20,7 @@ import { mapProfile } from './MapProfile.js'
  * @param {object} result 营地赛季页响应（只看里面的 `data.headCard`）
  * @returns {object} `{RankName, RankText, RankIcon, jobIcon, PeakScore}`；没有 headCard 时全是空串
  */
-export function mapHistory (result) {
+function mapHistory (result) {
   const card = result?.data?.headCard && typeof result.data.headCard === 'object' ? result.data.headCard : {}
   const jobName = cleanName(card.jobName)
   const star = toText(card.rankingStar ?? card.RankingStar)
@@ -38,7 +38,7 @@ export function mapHistory (result) {
 /**
  * 历史战绩为空时的占位对象（模板按这个形状读，别换成 null）
  */
-export const EMPTY_HISTORY = { RankName: '', RankText: '', RankIcon: '', jobIcon: '', PeakScore: '' }
+const EMPTY_HISTORY = { RankName: '', RankText: '', RankIcon: '', jobIcon: '', PeakScore: '' }
 
 /**
  * 本赛季巅峰走势：营地赛季页只给排位那条 gameTrend，

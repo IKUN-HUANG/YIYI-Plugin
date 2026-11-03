@@ -12,7 +12,7 @@ import { fmtNum } from '#yiyi.utils'
  * @param {number|string} b 除数
  * @returns {number} 商；除数当作 0 时给 0
  */
-export function safeDiv (a, b) {
+function safeDiv (a, b) {
   const bottom = Number(b) || 0
   return bottom ? (Number(a) || 0) / bottom : 0
 }
@@ -35,7 +35,7 @@ export function percentText (part, total, digits = 1) {
  * @param {number|string} value 原始数值
  * @returns {string} 格式化后的文本；空值给 utils 认定的空串
  */
-export function numberText (value) {
+function numberText (value) {
   return fmtNum(value)
 }
 

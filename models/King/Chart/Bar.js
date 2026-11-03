@@ -14,7 +14,7 @@ import { round } from './Util/Num.js'
  * @param {object} [opts] 选项：max（归一用的分母，> 0 时不按实际最大值算）、unit（数值后缀）
  * @returns {Array<object>} 与入参同序的行：{ label, value, note, percent（0-100 整数）, valueText（带单位） }；一行都没有时给空数组
  */
-export function barRows (rows = [], { max = 0, unit = '' } = {}) {
+function barRows (rows = [], { max = 0, unit = '' } = {}) {
   const list = (Array.isArray(rows) ? rows : [])
     .map(item => ({
       label: toText(item?.label),

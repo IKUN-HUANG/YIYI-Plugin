@@ -37,7 +37,7 @@ function normalizeCampId (value) {
  * @param {number} [now] 当前时间戳（测试注入用）
  * @returns {Record<string, {hiddenAt: number, hiddenUntil: number, nickname: string}>} 营地号 → 标注
  */
-export function loadHiddenEntries (now = Date.now()) {
+function loadHiddenEntries (now = Date.now()) {
   const entries = {}
   for (const [campId, item] of Object.entries(readHiddenMap() || {})) {
     /** 盘上字段是 `at` / `until`，内存里叫 `hiddenAt` / `hiddenUntil`：两边都认，

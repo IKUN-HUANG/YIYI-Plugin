@@ -413,9 +413,8 @@ export function campAccountValueOf (value, owner = '') {
  * 账号池里一共几个可用号（给「暂无可用的登录信息」这类提示用）
  * @returns {number} 可用号个数
  */
-export function poolSize () {
+function poolSize () {
   return loadPool().filter(isUsableAuth).length
 }
 
 /** 本层的日志出口：别处要记营地账号的事就用它，别自己再造一个 logger */
-export { log as authLog }

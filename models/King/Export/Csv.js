@@ -69,7 +69,7 @@ function scoreDelta (battle) {
  * @param {object} [options.HeroMap] HeroId → 英雄名（缺省用场次自带的 HeroName）
  * @returns {{csv: string, count: number, fromSec: number, toSec: number}}
  */
-export function buildCsv (battles = [], { HeroMap = {} } = {}) {
+function buildCsv (battles = [], { HeroMap = {} } = {}) {
   const list = (Array.isArray(battles) ? battles : [])
     .filter(item => item && typeof item === 'object')
     .slice()
@@ -122,7 +122,7 @@ export function buildCsv (battles = [], { HeroMap = {} } = {}) {
  * @param {number} [nowSec] 「现在」的秒级时间戳，默认取当前时间，测试可钉死
  * @returns {object[]} 落在窗口内的场次（原顺序，不改入参）
  */
-export function recentBattles (battles = [], days = 0, nowSec = Math.floor(Date.now() / 1000)) {
+function recentBattles (battles = [], days = 0, nowSec = Math.floor(Date.now() / 1000)) {
   const list = Array.isArray(battles) ? battles : []
   if (!(days > 0)) return list.slice()
   const cutoff = nowSec - days * 86400
@@ -138,7 +138,7 @@ export function recentBattles (battles = [], days = 0, nowSec = Math.floor(Date.
  * @param {Date} [date] 时间戳取自哪一刻，默认现在
  * @returns {string} 文件名（不含目录）
  */
-export function exportFileName (campId, days = 0, date = new Date()) {
+function exportFileName (campId, days = 0, date = new Date()) {
   const d = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date()
   const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
   const id = toText(campId).replace(/[^\w.-]/g, '') || '未知'

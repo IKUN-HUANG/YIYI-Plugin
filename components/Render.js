@@ -27,7 +27,7 @@ export { renderData }
  * @param {string} tpl 模板名（`King/Camp` 这种带子目录的形式）
  * @returns {string} 形如 `../../../../plugins/YIYI-Plugin/resources/`
  */
-export function resPathForTpl (tpl) {
+function resPathForTpl (tpl) {
   const depth = 2 + String(tpl || '').split('/').filter(Boolean).length
   return `${'../'.repeat(depth)}plugins/${pluginName}/resources/`
 }

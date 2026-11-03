@@ -3,7 +3,6 @@
  * @module models/Link/xhs/Util.js
  */
 
-
 import { createHash } from 'node:crypto'
 
 import { A1_CHARSET, BASE36_DIGITS, crc32Checksum, rotateLeft } from './Codec.js'
@@ -153,6 +152,5 @@ function buildUrl(baseUrl, params) {
   return `${baseUrl}${separator}${queryString}`
 }
 
-
 /** 小红书侧工具出口：默认 UA、随机串、URL 与查询串拼接。 */
-export { DEFAULT_UA, randomAscii, randomIntInRange, intToBase36, generateA1, generateWebId, randomB3TraceId, randomXrayTraceId, randomSearchId, randomSearchRequestId, SHARD_C1, SHARD_C2, getShardingKey, extractUri, formatQueryValue, buildUrl }
+export { DEFAULT_UA, randomAscii, randomIntInRange, generateA1, generateWebId, randomB3TraceId, randomXrayTraceId, randomSearchId, randomSearchRequestId, getShardingKey, extractUri, formatQueryValue, buildUrl }

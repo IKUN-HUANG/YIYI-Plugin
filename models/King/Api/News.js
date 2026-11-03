@@ -12,7 +12,7 @@ import { call } from './Call.js'
  * @param {string|number} infoId 资讯 ID
  * @returns {Promise<object|null>} 营地原始 data
  */
-export async function getInfoDetail (infoId, opts = {}) {
+async function getInfoDetail (infoId, opts = {}) {
   return call('infoDetail', { iInfoId: toText(infoId) }, opts)
 }
 
@@ -22,7 +22,7 @@ export async function getInfoDetail (infoId, opts = {}) {
  * @param {string|number} infoId 资讯 ID
  * @returns {Promise<object|null>} 营地原始 data
  */
-export async function likeInfo (infoId, opts = {}) {
+async function likeInfo (infoId, opts = {}) {
   return call('infoLike', { iInfoId: toText(infoId) }, { retry: 0, ...opts })
 }
 

@@ -29,7 +29,7 @@ export const KING_FILES = {
 /**
  * 个人档允许出现的 part 名，读到别的 part 一律当脏数据丢掉
  */
-export const USER_PARTS = {
+const USER_PARTS = {
   auth: 'auth',
   bind: 'bind',
   roles: 'roles',
@@ -41,7 +41,7 @@ export const USER_PARTS = {
 /**
  * 群档允许出现的 part 名
  */
-export const GROUP_PARTS = {
+const GROUP_PARTS = {
   report: 'report',
   groupPush: 'groupPush'
 }

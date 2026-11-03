@@ -44,7 +44,7 @@ export const MEME_KEY_FILE = path.join(memeDir, 'keyMap.json')
  *
  * @type string[]
  */
-export const MEME_IMG_EXT = ['.png', '.jpg', '.jpeg', '.webp', '.gif']
+const MEME_IMG_EXT = ['.png', '.jpg', '.jpeg', '.webp', '.gif']
 
 /**
  * 目录按需自建：第一次用、被清空后重拉，都要从这里过一遍。

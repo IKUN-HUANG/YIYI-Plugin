@@ -187,4 +187,4 @@ async function parseBili (u) {
 }
 
 /** 对外出口：extractParas、parseVideo、parseOpusApi、parseOpusHtml、parseOpusState、parseArticleState、followShort、parseBili */
-export { extractParas, parseVideo, parseOpusApi, parseOpusHtml, parseOpusState, parseArticleState, followShort, parseBili }
+export { parseBili }

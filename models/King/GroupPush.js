@@ -6,7 +6,7 @@ import { readGroupPart, writeGroupPart } from './Store.js'
 import { toText } from './Common.js'
 
 /** 群推送存档的 part 名 */
-export const GROUP_PUSH_PART = 'groupPush'
+const GROUP_PUSH_PART = 'groupPush'
 /** 群级提醒的两类：公告、皮肤上新 */
 const GROUP_ALERT_KEYS = ['news', 'skin']
 /** 群级提醒的中文名 */
@@ -14,7 +14,7 @@ export const GROUP_ALERT_LABEL = { news: '公告推送', skin: '皮肤上新' }
 /**
  * 群推送总开关在回执里的名字
  */
-export const GROUP_PUSH_TEXT = '群推送总开关'
+const GROUP_PUSH_TEXT = '群推送总开关'
 /**
  * 一次批量操作最多几个群，个（防手滑刷屏）
  */

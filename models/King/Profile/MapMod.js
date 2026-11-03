@@ -13,7 +13,7 @@ import { cleanName, parseModParam } from './Names.js'
  * @param {string} content mod 的文本，可能是复合数值
  * @returns {{main: string, unit: string}} `main` 是主体，`unit` 是后半段；不是复合数值时 `unit` 给空串
  */
-export function splitStat (content) {
+function splitStat (content) {
   const text = cleanName(content)
   const matched = text.match(/^(\d+(?:\.\d+)?)\s*([/.]\s*\d+(?:\.\d+)?.*)$/)
   if (!matched) return { main: text, unit: '' }

@@ -92,7 +92,7 @@ export const MISSING_WORDS = [
 export const HERO_WORDS = ['常用英雄', '我的英雄', '英雄', '常用', '我的']
 
 /** 「称号」这条指令的别名 */
-export const HONOR_WORDS = ['荣耀称号墙', '称号列表', '我的称号', '荣耀称号', '称号墙', '称号', '边框']
+const HONOR_WORDS = ['荣耀称号墙', '称号列表', '我的称号', '荣耀称号', '称号墙', '称号', '边框']
 
 /** 熟练度等级 → 营地里的叫法。实测 8=神话 7=传说 6=巅峰 5=超凡，4 及以下不猜，直接 Lv.N */
 export const SKILLED_NAME = {

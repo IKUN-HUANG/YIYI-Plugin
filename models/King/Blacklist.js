@@ -13,12 +13,12 @@ import { toText, maskUserId } from './Common.js'
  * 名单文件的绝对路径（数据根下的 `data/King/blacklist.yaml`）。
  * 从 `core/store.js` 透出来，调用方就不必自己算数据根在哪。
  */
-export const BLACKLIST_FILE = kingBlacklistFile
+const BLACKLIST_FILE = kingBlacklistFile
 /**
  * 名单最多留多少条，单位 条。
  * 超了按拉黑时间砍最老的：黑名单是挡刷屏用的，不需要历史全集。
  */
-export const BLACKLIST_MAX = 200
+const BLACKLIST_MAX = 200
 
 function pickMap (raw) {
   /** 老格式把名单包在 `users:` 里，新格式直接挂在根上，两种都认 */
@@ -41,7 +41,7 @@ function pickMap (raw) {
  *
  * @returns {Record<string, {at: number, by: string, reason: string}>} QQ → 记录；文件不存在就是空对象
  */
-export function loadBlacklist () {
+function loadBlacklist () {
   return pickMap(readYaml(BLACKLIST_FILE, {}) || {})
 }
 
@@ -81,7 +81,7 @@ export function isBlacklisted (userId) {
  * @param {string|number} userId QQ 号
  * @returns {{at: number, by: string, reason: string}|null} 记录；不在名单里是 null
  */
-export function blacklistRecord (userId) {
+function blacklistRecord (userId) {
   const id = toText(userId).replace(/\D/g, '')
   return id ? loadBlacklist()[id] || null : null
 }

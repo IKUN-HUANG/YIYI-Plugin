@@ -12,7 +12,7 @@ import { round } from './Util/Num.js'
  * @param {Array<number|string>} [values] 按时间先后排好的数值序列
  * @returns {object|null} 有数时给 {first,last,max,min,delta,deltaText,maxText,minText,firstText,lastText}（数值保留一位小数，文本已带正负号或「持平」）；一个有效数都没有时给 null
  */
-export function seriesStats (values = []) {
+function seriesStats (values = []) {
   const nums = (Array.isArray(values) ? values : []).map(Number).filter(num => Number.isFinite(num))
   if (!nums.length) return null
 

@@ -19,7 +19,7 @@ import { rolePool } from './Pool.js'
  * @param {*} roles 原始角色数组，默认 []
  * @returns {Array<object>} 裁剪后的数组
  */
-export function slimRoles (roles = []) {
+function slimRoles (roles = []) {
   return (Array.isArray(roles) ? roles : [])
     .map(role => ({
       roleId: toText(role?.roleId),

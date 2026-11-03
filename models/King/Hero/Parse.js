@@ -4,7 +4,6 @@
  * @module models/hero/Parse
  */
 
-
 const SKILL_STEPS = [0, 1, 2, 3, 4]
 
 /**
@@ -31,7 +30,7 @@ export function stripTags (value) {
  * @param {string} url 原始地址
  * @returns {string} 补上 https: 的绝对地址；空入参给空串
  */
-export function absoluteIconUrl (url) {
+function absoluteIconUrl (url) {
   const text = String(url || '').trim()
   if (!text) return ''
   if (text.startsWith('//')) return `https:${text}`

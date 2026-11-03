@@ -30,7 +30,7 @@ export function hoursOf (key, fallback) {
  * @param {string} id 账号 ID
  * @returns {{ok: boolean, account?: object, reason?: string}} 撕条结果（查不到这个号时 `ok:false`）
  */
-export function clearMarks (id) {
+function clearMarks (id) {
   return patchAccount(id, {
     invalidAt: '',
     invalidReason: '',

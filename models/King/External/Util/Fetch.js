@@ -11,7 +11,7 @@ const log = createLogger('王者资料')
 
 /** 接口数据表缓存多少小时；配成 0 或者没配就是不缓存。
  * @returns {number} 缓存小时数，0 表示不缓存 */
-export const cacheHours = () => Number(Config.kingTableCacheHours) || 0
+const cacheHours = () => Number(Config.kingTableCacheHours) || 0
 
 /** 读一张接口数据表的缓存，没配缓存时长 / 过期 / 结构不对都当没有。
  * @param {string} name 缓存名

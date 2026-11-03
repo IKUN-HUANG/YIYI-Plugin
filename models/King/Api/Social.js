@@ -12,7 +12,7 @@ import { call } from './Call.js'
  * @param {object} [opts] 请求选项，透传给 `kingCall`
  * @returns {Promise<object|null>} 营地原始 data
  */
-export async function getFollowInfo (opts = {}) {
+async function getFollowInfo (opts = {}) {
   return call('followInfo', {}, opts)
 }
 
@@ -32,7 +32,7 @@ export async function getCampFriends (opts = {}) {
  * @param {object} [params] friendUserId（营地号）
  * @returns {Promise<object|null>} 营地原始 data：roleList 一条一个角色
  */
-export async function getAllRoleList ({ friendUserId } = {}, opts = {}) {
+async function getAllRoleList ({ friendUserId } = {}, opts = {}) {
   return call('allRoleList', { friendUserId: toText(friendUserId) }, opts)
 }
 

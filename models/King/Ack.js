@@ -33,7 +33,7 @@ export const ACK_HOLD_MS = 30000
  *
  * @returns {string} 可直接发给用户的一句提示
  */
-export function ackText () {
+function ackText () {
   const name = toText(Config.name).trim() || '人家'
   return `${name}生成图片中，请稍候~`
 }

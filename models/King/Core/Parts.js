@@ -141,7 +141,7 @@ export function writeGroupPart (groupId, part, value) {
  * @param {string} campId 营地号
  * @returns {object|null} 整份归档文档；没有给 null
  */
-export function readArchive (campId) {
+function readArchive (campId) {
   const { doc } = readDoc(kingArchiveFile(campId))
   return doc || null
 }
@@ -153,7 +153,7 @@ export function readArchive (campId) {
  * @param {object} doc 整份归档文档
  * @returns {boolean} 真 = 落盘成功
  */
-export function writeArchive (campId, doc) {
+function writeArchive (campId, doc) {
   return writeDoc(kingArchiveFile(campId), doc)
 }
 
@@ -164,7 +164,7 @@ export function writeArchive (campId, doc) {
  * @param {string} part 块名
  * @returns {*} 该块内容；没有给 null
  */
-export function readArchivePart (campId, part) {
+function readArchivePart (campId, part) {
   return readPart(kingArchiveFile(campId), part)
 }
 
@@ -176,6 +176,6 @@ export function readArchivePart (campId, part) {
  * @param {*} value 这一块的新值
  * @returns {boolean} 真 = 落盘成功
  */
-export function writeArchivePart (campId, part, value) {
+function writeArchivePart (campId, part, value) {
   return writePart(kingArchiveFile(campId), part, value)
 }

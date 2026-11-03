@@ -8,10 +8,10 @@ import { sendImages, sendVideo } from '../Message.js'
 import { mbText } from '#yiyi.utils'
 
 /** 一条消息里最多发多少张图（张）：再多就截断，避免一次刷几十张 */
-export const MAX_ALBUM_IMAGES = 30
+const MAX_ALBUM_IMAGES = 30
 
 /** 取数的兜底超时（ms）：平台接口慢到这份上，先把话说清楚而不是干等 */
-export const PARSE_TIMEOUT = 30000
+const PARSE_TIMEOUT = 30000
 
 /**
  * 从消息里找链接：先按平台正则取，取不到再用 ID 正则兜（B站那种只发 BV 号也认）。
@@ -110,7 +110,7 @@ export function normalizeJob (job, { log, label = '' } = {}) {
  * @param {string} [options.label=''] 日志里的人名
  * @returns {string} 一句说明；没有媒体信息时为空串
  */
-export function mediaNote (job, { label = '' } = {}) {
+function mediaNote (job, { label = '' } = {}) {
   if (job.videoNote) return job.videoNote
   if (job.isVideo && job.video?.pick) return `视频 ${label}: ${mbText(job.video.pick.size)}MB.`
   if (job.images?.length) return `图集 ${label}: ${job.images.length}张.`

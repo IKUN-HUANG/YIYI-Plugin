@@ -67,7 +67,7 @@ function readHelpMeta () {
  * @param {number} [revision] 默认表里的版本号，默认 0
  * @returns {boolean} true = 需要刷新
  */
-export function kingHelpStale (revision = 0) {
+function kingHelpStale (revision = 0) {
   return Number(readHelpMeta().kingHelpRevision || 0) !== Number(revision || 0)
 }
 
@@ -77,7 +77,7 @@ export function kingHelpStale (revision = 0) {
  * @param {number} [revision] 刚迁到的版本号，默认 0
  * @returns {void}
  */
-export function markKingHelp (revision = 0) {
+function markKingHelp (revision = 0) {
   try {
     fs.mkdirSync(CONFIG_DIR, { recursive: true })
     fs.writeFileSync(HELP_META_FILE, JSON.stringify({ ...readHelpMeta(), kingHelpRevision: Number(revision) || 0 }, null, 2))

@@ -16,11 +16,11 @@ export const REPORT_MAX_ROWS = 15
 /**
  * 算胜率至少要打几场，场（样本太少会误导）
  */
-export const REPORT_MIN_RATE_BATTLES = 3
+const REPORT_MIN_RATE_BATTLES = 3
 /**
  * 提连胜至少要连续赢几场，场
  */
-export const REPORT_MIN_STREAK = 3
+const REPORT_MIN_STREAK = 3
 /**
  * 拉数超过多少秒先回一句「正在统计」，秒
  */

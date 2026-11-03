@@ -3,8 +3,6 @@
  * @module models/Link/xhs/Config.js
  */
 
-
-
 import { ALPHABET_CUSTOM, ALPHABET_STANDARD, ALPHABET_X3, XHS_SESSION_START_MS, XYW_ENV_FLAGS_BROWSER } from './Codec.js'
 
 const PLATFORM_CODES = { Windows: 0, iOS: 1, Android: 2, MacOs: 3, Linux: 4, other: 5 }
@@ -29,7 +27,6 @@ function platformCodeOf(platform) {
     default: return PLATFORM_CODES.other
   }
 }
-
 
 class CryptoConfig {
   constructor() {
@@ -131,6 +128,5 @@ class CryptoConfig {
   }
 }
 
-
 /** 指纹配置对外出口：平台枚举、UA 推断与 CryptoConfig。 */
-export { PLATFORM_CODES, platformFromUserAgent, platformCodeOf, CryptoConfig }
+export { CryptoConfig }

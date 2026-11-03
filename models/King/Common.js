@@ -115,7 +115,7 @@ export function buildPublicKeyPem (raw) {
  * @param {*} code 业务码
  * @returns {boolean} 是频控给 true
  */
-export function isRateLimitedCode (code) {
+function isRateLimitedCode (code) {
   return Number(code) === CODE_RATE_LIMITED
 }
 

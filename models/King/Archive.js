@@ -17,7 +17,7 @@ import { fillHeroNames } from './External.js'
  * 归档目录的绝对路径（`data/King/archive`）。
  * 运维面板删除整个目录时用它，所以是字符串不是函数。
  */
-export const ARCHIVE_DIR = kingArchiveDir()
+const ARCHIVE_DIR = kingArchiveDir()
 /**
  * `ARCHIVE_DIR` 的老名字（bak 时的字段名）：运维面板与探针都拿它当路径用
  * （`fs.rmSync(ARCHIVE_FILE)`）。必须保持**字符串**，别改成函数 —— 传函数进去 fs 会当场抛。
@@ -26,9 +26,9 @@ export const ARCHIVE_FILE = kingArchiveDir()
 /** 归档保留多少天，单位 天；超过的场次在写入时顺手丢掉（文件要长期躺着，不能无限长） */
 export const ARCHIVE_KEEP_DAYS = 35
 /** 一次补档最多翻几页营地战绩，单位 页；翻太多会撞频控，12 页足够盖住一个赛季 */
-export const ARCHIVE_MAX_PAGES = 12
+const ARCHIVE_MAX_PAGES = 12
 /** 一个营地最多留多少场，单位 场；按时间倒序砍尾巴 */
-export const ARCHIVE_BATTLE_CAP = 400
+const ARCHIVE_BATTLE_CAP = 400
 
 /** 12 双排 / 13 三排 / 15 五排 / 16 排位 / 32 巅峰赛 */
 export const RANKED_BATTLE_TYPES = new Set([12, 13, 15, 16, 32])
@@ -116,7 +116,7 @@ export function parseBattleTime (item = {}) {
  * @param {object} [item={}] 战绩一条
  * @returns {string} 英雄 ID；没有是空串
  */
-export function pickHeroId (item = {}) {
+function pickHeroId (item = {}) {
   return toText(item?.heroId ?? item?.HeroId ?? item?.Heroid ?? item?.HeroID).trim()
 }
 
@@ -154,7 +154,6 @@ export function mapArchiveBattle (item = {}) {
 function pickRaw (item, key, rawKey) {
   return item?.[rawKey[key] ?? key] ?? item?.[key]
 }
-
 
 /** 营地ID → { fp, bucket }：同一进程里连着查几次只解析一次，别人改了文件立刻能读到新的 */
 const buckets = new Map()

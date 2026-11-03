@@ -19,7 +19,7 @@ import { BranchRateOf, laneShortLabel, laneShortName, pct, seasonHeroOf } from '
  * @param {object} [opts] seasonName（赛季名，给图上标题）、fallbackName（英雄名兜底）、seasonWindow（{startTime, endTime} 赛季起止秒，用来裁走势点）
  * @returns {object} 卡片直吃的赛季视图：段位/星数/巅峰分/场次/胜率/评分、常用英雄（RankHeros / masterHeros）、分路（Branches）、五维（radar）、荣誉（honor）、上分走势（trend），另有 isEmpty 标记整页有没有内容
  */
-export function parseSeasonPage (data, { seasonName = '', fallbackName = '', seasonWindow = null } = {}) {
+function parseSeasonPage (data, { seasonName = '', fallbackName = '', seasonWindow = null } = {}) {
   const body = data && typeof data === 'object' ? data : {}
   const head = body.headCard && typeof body.headCard === 'object' ? body.headCard : {}
   const stats = body.battleStats && typeof body.battleStats === 'object' ? body.battleStats : {}

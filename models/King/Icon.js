@@ -13,9 +13,9 @@ import path from 'node:path'
 import { resourcesDir, bufferToDataUri } from '#yiyi.utils'
 
 /** 装备 / 召唤师技能这两组：营地给了 id 也给了图，所以两种都能查 */
-export const KING_GEAR_GROUPS = ['equip', 'skill']
+const KING_GEAR_GROUPS = ['equip', 'skill']
 /** 本地图标的全部分组：装备、召唤师技能、英雄头像、英雄技能、皮肤 */
-export const KING_ICON_GROUPS = ['equip', 'skill', 'hero', 'heroskill', 'skin']
+const KING_ICON_GROUPS = ['equip', 'skill', 'hero', 'heroskill', 'skin']
 
 const ICON_DIRS = { equip: 'Icon/King/Equip', skill: 'Icon/King/Summoner', hero: 'Icon/King/Hero', heroskill: 'Icon/King/HeroSkill', skin: 'Img/King/Skin' }
 const EXTS = ['.png', '.jpg', '.webp']
@@ -32,7 +32,7 @@ const NAMES_DIR = path.join(resourcesDir, 'Icon', 'King', 'Meta')
  * @param {*} value 原始组名（'equip' / 'skill'）
  * @returns {string} 归一后的组名；不认的给空串
  */
-export function gearGroup (value) {
+function gearGroup (value) {
   const text = String(value || '').trim()
   return KING_GEAR_GROUPS.includes(text) ? text : ''
 }
@@ -54,7 +54,7 @@ export function toGearId (value) {
  * @param {*} value 原始键（英雄 ename、技能名、皮肤 id）
  * @returns {string} 可直接拼进文件名的键；含非法字符时给空串
  */
-export function toIconKey (value) {
+function toIconKey (value) {
   const text = String(value ?? '').trim()
   return /^[A-Za-z0-9_-]+$/.test(text) ? text : ''
 }
@@ -65,7 +65,7 @@ export function toIconKey (value) {
  * @param {string} group KING_ICON_GROUPS 里的组名
  * @returns {string} 绝对目录路径；组名不认时给空串
  */
-export function iconDir (group) {
+function iconDir (group) {
   const key = String(group || '').trim()
   return ICON_DIRS[key] ? path.join(resourcesDir, ICON_DIRS[key]) : ''
 }
@@ -77,7 +77,7 @@ export function iconDir (group) {
  * @param {string} id 文件名（不含后缀）
  * @returns {string} 第一个存在的文件绝对路径；目录不在、键非法、三种后缀都没这个文件时给空串
  */
-export function iconFile (group, id) {
+function iconFile (group, id) {
   const dir = iconDir(group)
   const key = toIconKey(id)
   if (!dir || !key) return ''
@@ -133,7 +133,7 @@ export function iconCount (group) {
  * @param {string} url 图片地址（可带 ?query 或 #hash）
  * @returns {string} 归一后的键；推不出来给空串
  */
-export function iconNameFromUrl (url) {
+function iconNameFromUrl (url) {
   const clean = String(url || '').split('?')[0].split('#')[0]
   return toIconKey(clean.slice(clean.lastIndexOf('/') + 1).replace(/\.[A-Za-z0-9]+$/, ''))
 }
