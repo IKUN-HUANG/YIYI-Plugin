@@ -3,7 +3,7 @@
  * @module models/Memes
  *
  * 分工：`Memes/store.js` 管数据从哪来，`Memes/args.js` 管参数，`Memes/lookup.js` 管识别，
- * `Memes/catalog.js` 管出卡要的视图数据；这个文件只负责「跟接口打交道」和「把导出面凑齐」。
+ * `Memes/Images.js` 管取图顺序，`Memes/catalog.js` 管出卡要的视图数据；这个文件只负责「跟接口打交道」和「把导出面凑齐」。
  *
  * 表情数据不随插件发布：本地没有就向 meme-generator 拉一次（`#表情更新` 或首次使用）。
  */
@@ -374,4 +374,5 @@ export function clearMemeData () {
 export { memeDir, memePreviewDir, ensureMemeDirs, loadMemeData, hasMemeData, memeCodes, memeParams, isMemeDisabled, enabledMemeCodes, isMemeCountered, memePreview, writeMemeData, onMemeDataChange, memeDataVersion } from './Memes/Store.js'
 export { memeArgSchema, parseMemeArgs, memeArgHints } from './Memes/Args.js'
 export { lookupMeme, OTHER_CMD_RE, memeMatchReg, memeDetail, memePreviewUrl, isMemeRepeated, markMemeHandled } from './Memes/Lookup.js'
+export { memeImageOrder, imageUrlsOf } from './Memes/Images.js'
 export { MEME_PAGE_SIZE, isTextMeme, randomMemePool, memeListCodes, memeThumb, memeListPage, clearMemeThumbs, memeHelpData, memeDetailData } from './Memes/Catalog.js'

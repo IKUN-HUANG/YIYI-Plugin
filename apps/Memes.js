@@ -7,7 +7,7 @@
  */
 import { createLogger, pluginTitle, version, yunzai, qqAllRe, afterLoaded } from '#yiyi.utils'
 import { render, Config, gateRules } from '#yiyi.components'
-import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, OTHER_CMD_RE, memeMatchReg, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, onMemeDataChange, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
+import { hasMemeData, memeDetail, memeParams, memePreview, memePreviewUrl, lookupMeme, OTHER_CMD_RE, memeMatchReg, memeImageOrder, imageUrlsOf, markMemeHandled, isMemeRepeated, isMemeCountered, updateMasterList, highlightCmds, memeListPage, memeListCodes, memeHelpData, memeDetailData, randomMemePool, parseMemeArgs, ensureMemeData, isMemePulling, startMemeAutoUpdate, bootMemeSync, onMemeDataChange, isPluginMaster, masterOnlyText, makeMeme, updateMemeData, fetchMemeImage } from '#yiyi.models'
 
 const log = createLogger('表情包')
 
@@ -35,8 +35,8 @@ async function hasMemePicture (e) {
   if ((e.message || []).some(seg => seg?.type === 'image' || seg?.type === 'at')) return true
 
   try {
-    const reply = await e.getReply?.()
-    return (reply?.message || []).some(seg => seg?.type === 'image')
+    const reply = (await e.getReply?.()) || e.source
+    return imageUrlsOf(reply?.message).length > 0
   } catch (err) {
     log.warn(`读取引用消息失败：${err.message}`)
     return false
@@ -315,27 +315,27 @@ export class Memes extends plugin {
     if (!max) return []
 
     const me = avatarUrl(e.user_id)
-    const urls = []
-    for (const seg of e.message || []) {
-      if (seg?.type === 'image' && seg.url) urls.push(seg.url)
-    }
 
+    const own = imageUrlsOf(e.message)
+
+    /** 引用消息的图：TRSS 的 `dealEvent` 会把 `getReply()` 挂到事件上，没有就直接用 `e.source` */
+    let quoted = []
     try {
-      const reply = await e.getReply?.()
-      for (const seg of reply?.message || []) {
-        if (seg?.type === 'image' && seg.url) urls.push(seg.url)
-      }
+      quoted = imageUrlsOf(((await e.getReply?.()) || e.source)?.message)
     } catch (err) {
       log.warn(`读取引用图片失败：${err.message}`)
     }
 
+    const typed = [...new Set([...qqs].concat(String(argText ?? '').match(qqAllRe()) || []))].map(avatarUrl)
+
+    const at = []
     for (const seg of e.message || []) {
       if (seg?.type !== 'at' || !seg.qq || seg.qq === 'all') continue
-      urls.push(isAtSelf(e) ? me : avatarUrl(seg.qq))
+      at.push(isAtSelf(e) ? me : avatarUrl(seg.qq))
     }
 
-    const typed = [...new Set([...qqs].concat(String(argText ?? '').match(qqAllRe()) || []))]
-    if (typed.length) urls.unshift(...typed.map(avatarUrl))
+    /** 顺序定死在 `memeImageOrder` 里：有引用图就只用引用图，没有才看本条图 / 点名的 QQ / @ 的人 */
+    const urls = memeImageOrder({ own, quoted, typed, at })
 
     if (!urls.length) urls.push(me)
     if (urls.length < (p.min_images || 0) && !urls.includes(me)) urls.unshift(me)

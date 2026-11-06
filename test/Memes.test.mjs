@@ -130,3 +130,29 @@ test('数据里的关键词决定规则，换一份数据规则跟着换', () =>
     fs.rmSync(sandbox, { recursive: true, force: true })
   }
 })
+
+test('引用了消息就只用引用里的图（旧版单文件的行为），@ 头像不掺进来', async () => {
+  /**
+   * 旧版 /workspace/YIYI-Plugin/Memes.js 的 `imgs()`：`if (!imgUrls.length) imgUrls = imgs(...)`
+   * —— 引用里有图就只用引用图，没有才回头看本条消息的图和 @ 的人。
+   * 新模型改成了「@ 头像 → 引用图」，1 张图的表情一裁就只剩@ 的头像。
+   */
+  const { memeImageOrder, imageUrlsOf } = await load('models/Memes/Images.js')
+
+  const e = { message: [{ type: 'at', qq: '1994295207' }], getReply: async () => ({ message: [{ type: 'image', url: 'https://a/quote.png' }] }) }
+  const quoted = imageUrlsOf(((await e.getReply()) || e.source)?.message)
+  assert.deepEqual(memeImageOrder({ quoted, at: ['https://a/at.png'] }), ['https://a/quote.png'])
+
+  /** 引用里没图（引用的是纯文字）：才轮到本条消息的图、点名的 QQ、@ 的人 */
+  assert.deepEqual(
+    memeImageOrder({ own: ['https://a/own.png'], quoted: [], typed: ['https://a/typed.png'], at: ['https://a/at.png'] }),
+    ['https://a/own.png', 'https://a/typed.png', 'https://a/at.png']
+  )
+
+  /** 只有 file 名的图片段下载不了，跳过；file 本身就是 http 的照收 */
+  assert.deepEqual(imageUrlsOf([{ type: 'image', file: 'abc.image' }]), [])
+  assert.deepEqual(imageUrlsOf([{ type: 'image', file: 'https://a/x.png' }]), ['https://a/x.png'])
+
+  const src = read('apps', 'Memes.js')
+  assert.match(src, /quoted = imageUrlsOf\(\(\(await e\.getReply\?\.\(\)\) \|\| e\.source\)\?\.message\)/, '引用图要真的捡进 urls')
+})
