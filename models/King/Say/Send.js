@@ -5,6 +5,7 @@
  */
 import { toText } from '../Common.js'
 import { kingLog } from './Log.js'
+import { imageSourceOf } from '../Card.js'
 
 /**
  * 往群里发一张图（Buffer）——推送图、群报图、战报图共用这一个出口。
@@ -27,8 +28,14 @@ export async function sendGroupImage (groupId, image, sink = kingLog) {
       sink.warn(`群 ${id} 没有发送接口，这张图放弃`)
       return false
     }
+    /** 渲染器可能交回 Buffer，也可能交回已经包好的图片段：先拆成图源再包，避免 icqq `bad file param` */
     const segment = globalThis.segment
-    const payload = Buffer.isBuffer(image) && typeof segment?.image === 'function' ? segment.image(image) : image
+    const src = imageSourceOf(image)
+    if (!src) {
+      sink.warn(`群 ${id} 的图认不出来，这张图放弃`)
+      return false
+    }
+    const payload = typeof segment?.image === 'function' ? segment.image(src) : src
     await group.sendMsg(payload)
     return true
   } catch (error) {

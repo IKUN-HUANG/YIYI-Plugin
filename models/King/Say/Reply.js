@@ -7,6 +7,7 @@ import { AuthConfigError, toText } from '../Common.js'
 import { kingLog } from './Log.js'
 import { noticeView } from './View.js'
 import { noticeImage } from './Image.js'
+import { imageSourceOf } from '../Card.js'
 
 /**
  * 回一条文字（带发送失败兜底与日志）
@@ -22,7 +23,8 @@ export async function kingReply (e, text) {
   if (!body) return false
 
   const segment = globalThis.segment
-  const image = await noticeImage(e, body)
+  /** 提示卡走的是渲染器，可能直接交回图片段：先归一化，别再包一层 */
+  const image = imageSourceOf(await noticeImage(e, body))
   if (!image || typeof segment?.image !== 'function') return e.reply(text)
 
   const payload = ats

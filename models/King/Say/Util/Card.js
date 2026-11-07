@@ -4,7 +4,7 @@
  * @module models/Say/Util/Card
  */
 import { toText, sleep } from '../../Common.js'
-import { renderKing } from '../../Card.js'
+import { imageSourceOf, renderKing } from '../../Card.js'
 import { kingLog } from '../Log.js'
 
 const NOTICE_TIMEOUT_MS = 25000
@@ -21,9 +21,11 @@ export async function cardImage (e, tpl, view) {
       sleep(NOTICE_TIMEOUT_MS).then(() => '')
     ])
 
-    if (Buffer.isBuffer(image)) return image
-    const text = toText(image)
-    return text.startsWith('base64://') ? Buffer.from(text.slice('base64://'.length), 'base64') : ''
+    /** 渲染器可能交回 Buffer、base64/data URI，也可能已经包成图片段：统一拆成图源再看要不要转 Buffer */
+    const src = imageSourceOf(image)
+    if (Buffer.isBuffer(src)) return src
+    const text = toText(src)
+    return text.startsWith('base64://') ? Buffer.from(text.slice('base64://'.length), 'base64') : text
   } catch (error) {
     kingLog.warn(`${tpl} 提示卡出图失败，改用文字：${toText(error?.message)}`)
     return ''

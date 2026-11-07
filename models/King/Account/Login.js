@@ -8,6 +8,7 @@ import { toText, sleep, AuthAccountError, ACCOUNT_INVALID_MESSAGE_RE } from '../
 import { startQQLogin, startWechatLogin } from '../Login.js'
 import { listAccounts, accountLine, findAccount, defaultAccountId } from '../Auth.js'
 import { kingReply, kingGuard, kingFail, kingRecall, loginImage, loginNotice } from '../Say.js'
+import { imageSourceOf } from '../Card.js'
 import { LOGIN_AUTH_HINTS, LOGIN_HELP, LOGIN_TIMEOUT_MS, POLL_MS, loginSessions } from './Consts.js'
 
 /** 这一片的日志出口（前缀与账号统一） */
@@ -62,8 +63,10 @@ export async function kingLogin (e, platform) {
     ]
   })
 
-  const qr = card
-    ? await e.reply(segment.image(card))
+  /** 扫码卡是渲染器出的，可能已经是图片段：归一化后再包，避免 icqq `bad file param` */
+  const cardSrc = imageSourceOf(card)
+  const qr = cardSrc
+    ? await e.reply(segment.image(cardSrc))
     : await e.reply([
         segment.image(session.qrBuffer),
         `${name}扫码登录：请用${name}扫上面的码，三分钟内有效。\n想取消这次登录，发「#取消王者扫码」。`

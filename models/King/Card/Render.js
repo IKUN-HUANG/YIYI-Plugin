@@ -11,7 +11,7 @@ import { render, renderData, tplFileOf } from '#yiyi.components'
 import { renderImage, shotAvailable } from '../Browser.js'
 import { kingAck } from '../Ack.js'
 import { KING_TPL } from './Consts.js'
-import { sendKingImage } from './Send.js'
+import { imageSourceOf, sendKingImage } from './Send.js'
 
 /** 卡片角标那行同时吃 pluginTitle 与 pluginName：infra 的 utils 只导出 pluginName，
  *  art-template 宿主里老模板写的是 {{pluginTitle}}，两边都给才不会出现空白角标 */
@@ -67,6 +67,13 @@ function cssStamp (file) {
   return css
 }
 
+/**
+ * 框架 render 的**交图**模式才会回来的形状：Buffer / base64 / data URI。
+ *
+ * 图片段不认：框架那条路要么已经把图发出去（只回消息 id），要么回 Buffer；
+ * 回图片段的是 `lib/puppeteer/puppeteer.js::screenshot`（自带渲染用的那个），
+ * 把它当成交图会再发一遍 —— 一条指令两张图（2026-11-08 闸门就是这么红的）。
+ */
 const isImagePayload = value =>
   Buffer.isBuffer(value) || (typeof value === 'string' && /^(base64:\/\/|data:image\/)/.test(value))
 
@@ -237,7 +244,8 @@ export async function renderKingWithoutEvent (tpl, data = {}, opts = {}) {
     for (const kind of forms) {
       const file = tplFileFor(tplPath, kind)
       try {
-        const out = await renderImage(name, { ...merged, tplFile: file, saveId: token })
+        /** 渲染器有的交回 Buffer、有的交回 `{ type: 'image', file }` 段，这里统一拆成图源 */
+        const out = imageSourceOf(await renderImage(name, { ...merged, tplFile: file, saveId: token }))
         if (out) {
           workingName = name
           workingForm = kind

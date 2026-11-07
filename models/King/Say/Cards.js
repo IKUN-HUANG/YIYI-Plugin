@@ -4,7 +4,7 @@
  * @module models/Say/Cards
  */
 import { toText } from '../Common.js'
-import { renderKingWithoutEvent, logoUri } from '../Card.js'
+import { imageSourceOf, renderKingWithoutEvent, logoUri } from '../Card.js'
 import { cardTplOf } from './View.js'
 import { kingReply } from './Reply.js'
 import { cardImage } from './Util/Card.js'
@@ -21,7 +21,7 @@ import { cardImage } from './Util/Card.js'
  */
 export async function kingCardReply (e, view, fallback = '') {
   const segment = globalThis.segment
-  const image = await renderKingWithoutEvent(cardTplOf(view), view)
+  const image = imageSourceOf(await renderKingWithoutEvent(cardTplOf(view), view))
   const text = toText(fallback) || toText(view?.body)
 
   if (!image || typeof segment?.image !== 'function') return text ? kingReply(e, text) : false
@@ -47,6 +47,7 @@ export async function loginNotice (e, opts = {}) {
   })
 
   const segment = globalThis.segment
-  if (!card || typeof segment?.image !== 'function') return kingReply(e, toText(opts.fallback) || toText(opts.tip))
-  return e.reply(segment.image(card))
+  const src = imageSourceOf(card)
+  if (!src || typeof segment?.image !== 'function') return kingReply(e, toText(opts.fallback) || toText(opts.tip))
+  return e.reply(segment.image(src))
 }
