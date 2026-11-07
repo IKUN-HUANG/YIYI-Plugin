@@ -12,7 +12,7 @@
 
 </div>
 
-**适配范围**：在 **TRSS-Yunzai v3.1.3** / **SnowLuma v2.3.2** 上完整验证过.其它分支或版本没有逐个测，遇到问题请提 [Issues](https://github.com/IKUN-HUANG/YIYI-Plugin/issues).
+**适配范围**：在 **[TRSS-Yunzai v3.1.3](https://github.com/TimeRainStarSky/Yunzai)** / **[SnowLuma v2.4.2](https://github.com/SnowLuma/SnowLuma)** 上完整验证过.其它分支或版本没有逐个测，遇到问题请提 [Issues](https://github.com/IKUN-HUANG/YIYI-Plugin/issues).
 
 ---
 
