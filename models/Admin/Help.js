@@ -24,6 +24,7 @@ const DEF_FILE = path.join(rootDir, 'config', 'default_config', 'help.js')
 const USER_FILE = path.join(CONFIG_DIR, 'help.js')
 const HELP_META_FILE = path.join(CONFIG_DIR, '.help_Meta.json')
 const IMG_DIR = path.join(resourcesDir, 'Img')
+const ICON_DIR = path.join(resourcesDir, 'Icon')
 
 const log = createLogger('管理')
 
@@ -194,6 +195,78 @@ export function migrateKingHelpList (list, defList, refresh = false) {
   return out.filter(group => (group.list || []).length)
 }
 
+/** 图标全表（小写相对路径 → 磁盘上的真实写法）；整目录扫一次就够，1000 张也就几毫秒 */
+let iconIndex = null
+/** 兜底图标：认不出来的条目退成这张，总比 Chromium 的裂图好看 */
+const FALLBACK_ICON = 'Help/YiyiHelp.svg'
+
+/**
+ * 扫 `resources/Icon`，建大小写不敏感的索引。
+ *
+ * 为什么要有：2026-11-02 那轮「目录与资源统一 PascalCase」把 `Link/douyin.png` 改成了
+ * `Link/Douyin.png`，而老装机 `config/help.js` 里存的是改名前的小写路径 —— 迁移只刷说明
+ * 文字、不动 icon，于是 Linux 上整张卡的图标全成了裂图（样式却好好的，因为 CSS 路径写死
+ * 在模板里）。这里按小写索引把老写法救回来。
+ *
+ * @returns {Map<string, string>} 小写相对路径 → 真实相对路径
+ */
+function iconIndexOf () {
+  if (iconIndex) return iconIndex
+  iconIndex = new Map()
+  const walk = (dir, prefix) => {
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${ent.name}` : ent.name
+      if (ent.isDirectory()) walk(path.join(dir, ent.name), rel)
+      else iconIndex.set(rel.toLowerCase(), rel)
+    }
+  }
+  try {
+    walk(ICON_DIR, '')
+  } catch (err) {
+    log.warn(`图标目录读不出来，帮助卡可能掉图标：${err?.message || err}`)
+  }
+  return iconIndex
+}
+
+/**
+ * 把一条 icon 落成磁盘上真实存在的相对路径。
+ *
+ * @param {string} icon 配置里写的图标（可能是改名前的小写写法）
+ * @param {string} [fallback] 认不出来时退的图标（通常是默认表里同一条的 icon）
+ * @returns {string} 相对 `resources/Icon` 的路径；实在没有给兜底图
+ */
+export function resolveHelpIcon (icon, fallback) {
+  const rel = String(icon || '').replace(/^[/\\]+/, '')
+  if (rel && fs.existsSync(path.join(ICON_DIR, rel))) return rel
+  const hit = rel ? iconIndexOf().get(rel.toLowerCase()) : ''
+  if (hit) return hit
+  if (fallback && fs.existsSync(path.join(ICON_DIR, fallback))) return fallback
+  return FALLBACK_ICON
+}
+
+/**
+ * 给整张帮助表的每条 icon 做一次落盘校正（默认表 + 用户表都过一遍）。
+ *
+ * 认不出来时优先借默认表里同名条目的图标（同名条目永远是同一张图），再退兜底图。
+ *
+ * @param {Array<{group: string, list: Array<object>}>} list 帮助分组表
+ * @param {Array<{group: string, list: Array<object>}>} [defList] 默认表，用来按 title 查图标
+ * @returns {Array<object>} 校正后的新表（不改原数组）
+ */
+export function normalizeHelpIcons (list, defList = []) {
+  const defIcon = new Map()
+  for (const group of defList) {
+    for (const item of (group.list || [])) if (item.title) defIcon.set(item.title, item.icon)
+  }
+  return (list || []).map(group => ({
+    ...group,
+    list: (group.list || []).map(item => ({
+      ...item,
+      icon: resolveHelpIcon(item.icon, defIcon.get(item.title))
+    }))
+  }))
+}
+
 /**
  * 读默认表与用户表，跑完两套迁移。用户表不存在就只用默认表。
  *
@@ -213,9 +286,9 @@ export async function loadHelpConfig () {
   return {
     cfg: base,
     kingRevision,
-    list: migrateHelpList(mod.helpList || def.helpList, refresh),
+    list: normalizeHelpIcons(migrateHelpList(mod.helpList || def.helpList, refresh), def.helpList),
     kingCfg: mod.kingHelpCfg || def.kingHelpCfg || { ...base, title: '王者荣耀帮助', subTitle: 'YIYI-Plugin · 王者荣耀（营地）' },
-    kingList: migrateKingHelpList(mod.kingHelpList, def.kingHelpList, refresh)
+    kingList: normalizeHelpIcons(migrateKingHelpList(mod.kingHelpList, def.kingHelpList, refresh), def.kingHelpList)
   }
 }
 

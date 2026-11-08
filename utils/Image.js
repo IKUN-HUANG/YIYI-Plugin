@@ -9,7 +9,6 @@ import sharp from 'sharp'
 import { createLogger } from './Logger.js'
 import { fileFingerprint } from './FS.js'
 import { withTimeout } from './Async.js'
-import { createMemoryCache } from './Cache.js'
 import { resourcesDir } from './Path.js'
 
 /**
@@ -26,10 +25,13 @@ const ICON_TTL = 8 * 1000
 const iconCache = new Map()
 
 /**
- * 背景图缓存：接口地址 → data URI。随机图接口每次都要现抓（一秒起步、几百 KB），
- * 连发几条指令时没必要每条都等它；同一地址 5 分钟内复用一张，过期自然重抓。
+ * 背景图接口「正在抓」的那一次请求。
+ *
+ * 只做并发合并，**不跨指令缓存**：以前按接口地址缓存 5 分钟，随机图接口就变成
+ * 「五分钟内每张卡长得一样」，用户直接反馈成「背景图不会变」。现在每次出卡都现抓，
+ * 同一秒里连开几张才复用同一个请求；抓不到（超时 / 非图片）回落到本地图。
  */
-const bgCache = createMemoryCache({ max: 8, ttl: 5 * 60 * 1000 })
+let bgInflight = null
 
 /**
  * 抓一张网络图，转成 buffer + MIME + 现成的 data URI。
@@ -231,7 +233,13 @@ export function pickLocalBg (dir) {
  */
 export async function loadBg ({ api, useApi = true, localDir } = {}) {
   if (useApi && api) {
-    const remote = await bgCache.load(`api:${api}`, async () => (await fetchImage(api))?.base64)
+    if (!bgInflight) {
+      bgInflight = fetchImage(api)
+        .then(img => img?.base64 || '')
+        .catch(() => '')
+        .finally(() => { bgInflight = null })
+    }
+    const remote = await bgInflight
     if (remote) return remote
   }
 
