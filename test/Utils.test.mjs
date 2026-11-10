@@ -46,3 +46,11 @@ test('图片下载的超时把正文也罩住，非图片响应直接放弃', ()
   assert.match(body, /body\?\.cancel\(\)/, '非图片响应要把流关掉')
   assert.doesNotMatch(body, /const MIME =/, '没用的 MIME 表不该留')
 })
+
+test('链接解析失败的原因在 cause 里时也要认出来（fetch 只说 "fetch failed"）', async () => {
+  const { linkFailText } = await load('models/Link/Http.js')
+  const refused = new TypeError('fetch failed')
+  refused.cause = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:443'), { code: 'ECONNREFUSED' })
+  assert.match(linkFailText(refused), /连不上/, '接口服务停了要直说，别退回「请联系管理员」')
+  assert.equal(linkFailText(new Error('某个没见过的内部错')), '', '认不出来就交回调用方，不瞎编')
+})

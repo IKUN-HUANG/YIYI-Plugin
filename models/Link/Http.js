@@ -31,6 +31,8 @@ const FAIL_RULES = [
     '这条没解析出内容，链接可能已失效或设了私密'],
   [/风控|访问频繁|IP存在风险|账号异常|未登录|登录态|会话被拒|过期|HTTP\s*(403|412|429)/i, '平台风控拦住了，过几分钟再发一次'],
   [/游客会话|scripting|websectiga|握手|签名/i, '平台要求先取游客身份，这一步没过（多半被风控），过几分钟再试'],
+  [/fetch failed|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ECONNRESET|EHOSTUNREACH|socket hang up|getaddrinfo|certificate|CERT_/i,
+    '解析接口连不上（地址可能填错，或者服务已经停了），要主人换个接口地址'],
   [/超时|timeout|aborted|ETIMEDOUT/i, '平台响应太慢，过一会再试'],
   [/非\s*JSON|不是数据|网页|DOCTYPE|HTML/i, '平台回的是网页不是数据，多半被风控了，过几分钟再试'],
   [/未配置/, '这个平台还没配接口地址，要主人补一下'],
@@ -44,7 +46,11 @@ const FAIL_RULES = [
  * @returns {string} 给用户看的一句话；认不出来时为空串
  */
 export function linkFailText (err) {
-  const msg = String(err?.message || err || '')
+  /** fetch 的 TypeError 只说 "fetch failed"，真正的原因（ECONNREFUSED 之类）在 cause 里 */
+  const cause = err?.cause
+  const msg = [err?.message, cause?.code, cause?.message]
+    .filter(Boolean)
+    .join(' ') || String(err ?? '')
   if (!msg) return ''
   for (const [re, text] of FAIL_RULES) {
     if (re.test(msg)) return text
