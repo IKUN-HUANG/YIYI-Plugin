@@ -88,3 +88,22 @@ test('模板里不许用 art-template 的 include（宿主渲染器不认）', (
     assert.ok(!read('resources', 'King', file).includes('{{include'), `${file} 里不该用 include`)
   }
 })
+
+test('表单主机的 -32002 操作太频繁算频控：只短退避，不按小时停号', async () => {
+  const { classifyBusinessCode, BUSINESS_CODE } = await load('models/King/Common.js')
+  assert.equal(classifyBusinessCode(-32002), BUSINESS_CODE.RATE_LIMITED, '-32002 与 -30107 是同一个意思')
+  const { decideGame } = await load('models/King/Api/Fallback.js')
+  const decision = decideGame({ code: -32002, returnMsg: '操作太频繁' }, { id: '363138606' })
+  assert.equal(decision.action, 'rate-limit')
+  assert.equal(decision.persist, false, '这类限流几分钟就松，停满 12 小时会把能查的时间一起停掉')
+  assert.match(decision.error.message, /-32002/)
+})
+
+test('常用英雄拿到非 0 业务码就报真原因，不再一律说「去开陌生人可见」', () => {
+  const src = read('models', 'King', 'Codex', 'Heroes.js')
+  assert.match(src, /classifyBusinessCode\(code\) !== BUSINESS_CODE\.SUCCESS/, '非 0 业务码要往上抛')
+  assert.match(src, /error\.code = code/, '把码挂在错误上，isHiddenError 之类的判据才认得')
+  const fallback = read('models', 'King', 'Api', 'Fallback.js')
+  assert.match(fallback, /persist === false/, '短退避的频控不该走 markRateLimited')
+  assert.match(fallback, /busyUntil\.set/, '要记住退避到什么时候，别一直撞')
+})

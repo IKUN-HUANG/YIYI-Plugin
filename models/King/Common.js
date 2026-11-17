@@ -38,6 +38,8 @@ export function cleanText (value) {
 export const CODE_SUCCESS = 0
 /** -30107 太频繁：这个号要静默一阵子，继续撞只会更久 */
 export const CODE_RATE_LIMITED = -30107
+/** -32002 操作太频繁：表单主机（`/play/*`）的限流码，跟 -30107 一个意思、两种写法 */
+export const CODE_RATE_LIMITED_BUSY = -32002
 /** -30003 登录态失效：必须重新扫码 */
 export const CODE_ACCOUNT_INVALID = -30003
 /** -10107 主页被藏：对方关了主页可见范围，重试无意义 */
@@ -159,7 +161,7 @@ export function classifyBusinessCode (code) {
   const num = Number(code)
   if (num === CODE_SUCCESS) return BUSINESS_CODE.SUCCESS
   if (Number.isNaN(num)) return BUSINESS_CODE.NONE
-  if (num === CODE_RATE_LIMITED) return BUSINESS_CODE.RATE_LIMITED
+  if (num === CODE_RATE_LIMITED || num === CODE_RATE_LIMITED_BUSY) return BUSINESS_CODE.RATE_LIMITED
   /** -10103 也算「被藏」：它只是藏的是比赛详情，处理方式一样（别重试、别当故障） */
   if (num === CODE_PROFILE_HIDDEN || num === CODE_BATTLE_HIDDEN) return BUSINESS_CODE.PROFILE_HIDDEN
   if (num === 0) return BUSINESS_CODE.SUCCESS

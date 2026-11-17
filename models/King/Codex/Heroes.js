@@ -7,7 +7,7 @@ import { autoSize, textWidth } from '#yiyi.utils'
 import { imageUris, localIcon } from '../Card.js'
 import { getGameHeroList, getSeasonUsuallyHeroList, CAMP_REFERER } from '../Api.js'
 import { createLogger } from '#yiyi.utils'
-import { toText } from '../Common.js'
+import { toText, CampError, classifyBusinessCode, describeError, BUSINESS_CODE } from '../Common.js'
 import { HeroIconUri } from '../Icon.js'
 import { HonorBadgeOf } from './HonorBase.js'
 import { MY_HEROES_MAX, MY_HEROES_TOP, MY_HERO_NAME_BASE, MY_HERO_NAME_MIN, MY_HERO_NAME_ROOM, MY_HERO_SUB_GAP, MY_HERO_SUB_SIZE, SKILLED_NAME, SKILLED_ICON } from './Consts.js'
@@ -194,6 +194,14 @@ export function buildMyHeroesView (list = [], { limit = MY_HEROES_TOP, seasonNam
 export async function readMyHeroes (ctx) {
   const opts = { accountId: toText(ctx?.account?.id) }
   const answer = await getGameHeroList({ friendUserId: campIdOf(ctx), roleId: toText(ctx?.roleId) }, opts)
+  /** 非 0 业务码一律往上抛：以前这里当成「空列表」，卡片就变成「去开陌生人可见」，
+   *  限流（-32002）、被藏（-10107）、认错角色，全被这句假原因盖掉了 */
+  const code = Number(answer?.code)
+  if (code && classifyBusinessCode(code) !== BUSINESS_CODE.SUCCESS) {
+    const error = new CampError(`营地没给这个角色的英雄数据（${describeError(answer?.raw)}）`)
+    error.code = code
+    throw error
+  }
   const played = HeroRowsOf(answer?.data)
   const ownCount = Number(answer?.data?.hasData?.heroNum) || played.length
 

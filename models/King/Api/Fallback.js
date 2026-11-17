@@ -19,12 +19,42 @@ import {
   describeError,
   hiddenScopeHint,
   CODE_ROLE_UNKNOWN,
+  CODE_RATE_LIMITED,
   BUSINESS_CODE
 } from '../Common.js'
 import { markAuthInvalid, markRateLimited, silenceLeftMs } from '../Auth.js'
 import { PROFILE_ENDPOINT } from './Endpoints.js'
 
 const log = createLogger('营地接口')
+
+/**
+ * 表单主机那种「操作太频繁」的退避时长：营地这类限流一般几分钟就松，
+ * 停满 `rateLimitHours`（默认 12 小时）会把能查的时间一起停掉，所以只在本进程里退避。
+ */
+const BUSY_COOLDOWN_MS = 5 * 60 * 1000
+
+/** `账号:端点` → 退避到什么时候（毫秒时间戳）；进程重启就清空，营地那头也早恢复了 */
+const busyUntil = new Map()
+
+/**
+ * 退避表的键：一个号在一个接口上被限流，不影响它查别的接口
+ * @param {string} id 账号 ID
+ * @param {string} endpoint 接口路径
+ * @returns {string} 键
+ */
+function busyKey (id, endpoint) {
+  return `${id}:${endpoint}`
+}
+
+/**
+ * 这个号在这个接口上还要退避多久
+ * @param {string} id 账号 ID
+ * @param {string} endpoint 接口路径
+ * @returns {number} 剩余毫秒，没在退避给 0
+ */
+function busyLeftMs (id, endpoint) {
+  return Math.max(0, (Number(busyUntil.get(busyKey(id, endpoint))) || 0) - Date.now())
+}
 
 /** 同一条业务错误十分钟只吵一次：营地抽风时能刷满整个日志文件 */
 const warned = new Map()
@@ -93,7 +123,7 @@ export function decideMain (raw, account, endpoint = PROFILE_ENDPOINT) {
   const who = toText(account?.id) || toText(account?.userId)
 
   if (classifyBusinessCode(code) === BUSINESS_CODE.RATE_LIMITED) {
-    return { action: 'rate-limit', error: new RateLimitError(`营地操作太频繁(-30107)，该账号已暂停，稍后再试`) }
+    return { action: 'rate-limit', code, error: new RateLimitError(`营地操作太频繁(${code})，该账号已暂停，稍后再试`) }
   }
 
   if (isDefiniteAuthFailure(code, msg)) {
@@ -144,7 +174,17 @@ export function decideGame (raw, account) {
   }
 
   if (isSuspectedAuthFailure(code, msg)) {
-    return { action: 'retry', mark: false, error: new AuthAccountError(`账号 ${who} 这次没查成（${describeError(raw)}）`) }
+    return { action: 'retry', mark: false, error: new AuthAccountError(`账号 ${who} 这次没查完（${describeError(raw)}）`) }
+  }
+
+  if (classifyBusinessCode(code) === BUSINESS_CODE.RATE_LIMITED) {
+    /** 表单主机的限流（-32002 操作太频繁）：号还能用，只是这个接口这会儿不给查 —— 短退避，别停号 */
+    return {
+      action: 'rate-limit',
+      code,
+      persist: false,
+      error: new RateLimitError(`营地这个接口这会儿限流了（${code} ${msg || '操作太频繁'}），过几分钟再试`)
+    }
   }
 
   warnBusinessOnce(`game:${code}:${who}`, `账号 ${who} 的接口返回 ${describeError(raw)}`)
@@ -170,10 +210,19 @@ export async function runWithCandidates ({ endpoint, candidates = [], execute, d
   let lastError = null
   let cooledDown = 0
 
+  let busyWait = 0
+
   for (const account of candidates) {
+    const id = toText(account?.id) || toText(account?.userId)
     const waitMs = silenceLeftMs(account)
     if (waitMs > 0) {
       cooledDown += 1
+      continue
+    }
+    /** 正在短退避的号直接跳过：刚被限流的接口这会儿再问，只会把限流续上 */
+    const busyLeft = busyLeftMs(id, endpoint)
+    if (busyLeft > 0) {
+      busyWait = busyWait ? Math.min(busyWait, busyLeft) : busyLeft
       continue
     }
 
@@ -184,10 +233,17 @@ export async function runWithCandidates ({ endpoint, candidates = [], execute, d
       if (decision.action === 'return') return { raw, account }
 
       if (decision.action === 'rate-limit') {
-        const id = toText(account?.id) || toText(account?.userId)
-        markRateLimited(id, `-30107 ${endpoint}`)
-        notifyRateLimit(account, `-30107 ${endpoint}`)
-        const limitError = decision.error || new RateLimitError('营地操作太频繁(-30107)，该账号已暂停，稍后再试')
+        const code = Number(decision.code) || CODE_RATE_LIMITED
+        const reason = `${code} ${endpoint}`
+        if (decision.persist === false) {
+          /** 表单主机的「操作太频繁」来得快去得也快：只在本进程里退避几分钟，不按小时停号 */
+          busyUntil.set(busyKey(id, endpoint), Date.now() + BUSY_COOLDOWN_MS)
+          warnBusinessOnce(`busy:${code}:${id}:${endpoint}`, `账号 ${id} 的 ${endpoint} 被限流（${reason}）：退避 ${BUSY_COOLDOWN_MS / 60000} 分钟，不停号`)
+        } else {
+          markRateLimited(id, reason)
+          notifyRateLimit(account, reason)
+        }
+        const limitError = decision.error || new RateLimitError(`营地操作太频繁(${code})，该账号已暂停，稍后再试`)
         /** 把账号挂在错误上：门面（`Api.js`）要按号记日志，这里不说出去那边就不知道是谁被限了 */
         limitError.accountId = id
         throw limitError
@@ -208,6 +264,9 @@ export async function runWithCandidates ({ endpoint, candidates = [], execute, d
   }
 
   if (lastError) throw lastError
+  if (busyWait > 0) {
+    throw new RateLimitError(`营地这个接口限流了，约 ${describeWait(busyWait)}后恢复，请稍后再试`)
+  }
   if (cooledDown) {
     const waitMs = Math.min(...candidates.map(account => silenceLeftMs(account)).filter(ms => ms > 0))
     throw new RateLimitError(`营地暂时不能查，约 ${describeWait(waitMs)}后恢复，请稍后再试`)

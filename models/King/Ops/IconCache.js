@@ -30,7 +30,7 @@ const inflight = new Set()
  * @param {string} key 文件名（不含后缀）
  * @returns {boolean} 有给 true
  */
-export function iconExistsIn (dir, key) {
+function iconExistsIn (dir, key) {
   return ICON_EXTS.some(ext => fs.existsSync(path.join(dir, `${key}${ext}`)))
 }
 
