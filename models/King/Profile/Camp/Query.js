@@ -45,6 +45,10 @@ export async function findCampProfile ({ candidates, campSelf, query, campId }) 
     if (query.roleId) add(query.campUserId, query.roleId, true)
     /** 认出来是营地号：查它自己的主页、让它自己报名下的角色（targetRoleId 不传） */
     if (campSelf) add(campSelf, '', true)
+    /** resolveCampQuery 把「不像角色 ID」的那串判成了营地号（别人家的号，不在任何登录信息里）：
+     *  那就按营地号查它自己的主页 —— 这正是用户发「#王者营地 1833067081」时想要的。
+     *  不算 trusted：万一这串其实是角色 ID，砸了不该记「对方藏了主页」。 */
+    if (query.campUserId) add(query.campUserId, '')
     /** 兜底：这个号自己的营地号 + 目标当角色。这一路是**猜**的（把 ID 当角色）：
      *  砸了只说明这串数字不是营地号，不能当成「对方藏了主页」去记 24 小时名单 */
     add(own, campId)

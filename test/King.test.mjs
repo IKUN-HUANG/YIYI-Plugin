@@ -118,3 +118,26 @@ test('常用英雄被限流就退回主页生涯前 5：主表仍优先，被藏
   const flow = read('models', 'King', 'Codex', 'Flows.js')
   assert.match(flow, /loaded\.scope === 'career'/, '卡片说明要跟着换')
 })
+
+test('营地给的对局段位名是「查那一下时」的：星数超大段上限一律按王者算，否则会拼出「星耀II 50星」', async () => {
+  const { RankBandOfStars } = await load('models/King/Trend.js')
+  const king = RankBandOfStars('至尊星耀II', 50)
+  assert.equal(king.name, '王者', '星耀单档最多 5 颗星，50 星只可能是王者')
+  assert.equal(king.fixed, true)
+  assert.equal(RankBandOfStars('至尊星耀II', 5).jobShort, '星耀II', '没超上限就照原样，小段位要带出来')
+  assert.equal(RankBandOfStars('最强王者', 52).jobShort, '王者')
+  assert.equal(RankBandOfStars('永恒钻石III', 4).jobShort, '钻石III')
+})
+
+test('最近 30 把全画出来：上赛季的王者 50 星按王者标注，不许串成「星耀II 50星」', async () => {
+  const { campRankTrendOf } = await load('models/King/Gallery/Trend.js')
+  const list = [
+    { dtEventTime: 3000, roleJobName: '至尊星耀II', stars: 2 },
+    { dtEventTime: 2000, roleJobName: '至尊星耀II', stars: 4 },
+    { dtEventTime: 1000, roleJobName: '至尊星耀II', stars: 50 }
+  ]
+  const points = campRankTrendOf(list)
+  assert.deepEqual(points.map(item => item.stars), [50, 4, 2], '一条都不许切掉，最近 30 把全画')
+  assert.deepEqual(points.map(item => item.jobShort), ['王者', '星耀II', '星耀II'], '50 星那局是王者，名字要跟着改判')
+  assert.equal(points[0].jobName, '王者', 'jobName 也换掉，拼「最高 X 星」时才不会又串回星耀')
+})

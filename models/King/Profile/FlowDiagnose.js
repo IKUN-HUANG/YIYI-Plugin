@@ -6,7 +6,7 @@
  */
 import { kingReply, kingHint, kingGuard, kingAuthTip, kingLog } from '../Say.js'
 import { getProfile } from '../Api.js'
-import { resolveBind, accountForRole, accountOwnsRole, setBind, listAccounts, campAccountValueOf, queryAccountsFor } from '../Auth.js'
+import { resolveBind, accountForRole, accountOwnsRole, setBind, listAccounts, campAccountValueOf, queryAccountsFor, rememberCampUser } from '../Auth.js'
 import { toText, maskUserId, isProfileHiddenCode, describeError, isUsableAuth } from '../Common.js'
 import { DIAGNOSE_MAX } from './Consts.js'
 import { mapProfile } from './Map.js'
@@ -70,17 +70,12 @@ async function diagnoseTarget (e) {
   const queryUser = query.roleId ? query.campUserId : campSelf
   const queryRole = query.roleId || ''
 
-  /** 连这个角色属于哪个营地号都认不出来：别拿角色ID 当营地号乱试，直接告诉他怎么办 */
-  if (!queryUser) {
-    return {
-      done: await kingReply(e, [
-        `诊断：「${who}」这个角色没认出来是哪个营地号。`,
-        '用这个角色本人的号发一次「#王者QQ扫码」再试，我就能认出来。'
-      ].join('\n'))
-    }
-  }
+  /** 认不出这串数字属于哪个营地号：直接把它当营地号试一轮（「#我的营地」就是这么查的），
+   *  试不出来再按角色 ID 试一轮 —— 早先这里直接收工，用户看到的是「没认出来是哪个营地号」，
+   *  跟「#我的营地」给的 -10107 说法对不上，等于诊断没诊断。 */
+  const askUser = queryUser || campId
 
-  return { e, owner, bind, campId, campSelf, queryUser, queryRole, who, tries, picked }
+  return { e, owner, bind, campId, campSelf, queryUser: askUser, queryRole, who, tries, picked }
 }
 
 /**
@@ -107,8 +102,17 @@ async function diagnoseProbe (ctx) {
       const code = Number(result?.code)
       if (isProfileHiddenCode(result) || (Number.isFinite(code) && code !== 0)) continue
       const mapped = mapProfile(result)
-      if (!mapped.role.roleId) continue
-      hit.push({ account, roleId: toText(mapped.role.roleId) })
+      /** 指定了「要查哪个角色」时，回来的角色必须就是它 —— 营地有时不理 targetRoleId，
+       *  直接把查询号自己的主页回给你，那不叫查到。按营地号查（没指定角色）时不设这道卡：
+       *  营地号名下本来就有好几个角色，取它自己报的那个即可。 */
+      const wantRole = toText(queryRole)
+      if (wantRole && toText(mapped.role.roleId) !== wantRole) {
+        kingLog.info(`诊断：${maskUserId(id)} 回的是角色 ${maskUserId(mapped.role.roleId)}，不是要查的 ${maskUserId(wantRole)}，不算查到`)
+        continue
+      }
+      /** 按营地号查通时把「角色 → 营地号」记下来：不然这里改完绑定，下一次「#我的营地」
+       *  又拿角色 ID 猜营地号，白挨一轮 -1013/-10107。 */
+      hit.push({ account, roleId: toText(mapped.role.roleId), campUser: wantRole ? '' : toText(queryUser) })
     } catch (error) {
       kingLog.info(`诊断试号失败（${maskUserId(id)}）：${toText(error?.message) || describeError(error)}`)
     }
@@ -129,7 +133,9 @@ async function diagnoseProbe (ctx) {
         if (isProfileHiddenCode(result) || (Number.isFinite(code) && code !== 0)) continue
         const mapped = mapProfile(result)
         if (!mapped.role.roleId) continue
-        hit.push({ account, roleId: toText(mapped.role.roleId) })
+        /** 按营地号查通时把「角色 → 营地号」记下来：不然这里改完绑定，下一次「#我的营地」
+       *  又拿角色 ID 猜营地号，白挨一轮 -1013/-10107。 */
+      hit.push({ account, roleId: toText(mapped.role.roleId), campUser: wantRole ? '' : toText(queryUser) })
       } catch (error) {
         kingLog.info(`诊断（当角色 ID 再试一次）失败（${maskUserId(id)}）：${toText(error?.message) || describeError(error)}`)
       }
@@ -159,6 +165,7 @@ async function diagnoseVerdict (ctx, hit, badAuth) {
 
   const right = hit.find(item => accountOwnsRole(item.account, campId, owner)) || hit[0]
   const rightId = toText(right.account.id)
+  if (right.campUser) rememberCampUser(owner, toText(right.roleId), right.campUser)
   const liveRoleId = toText(right.roleId) || toText(campId)
   /** 只有「换号才查得到」或「绑定里存的是营地号」才需要改绑定，好好的绑定别乱动 */
   if ((rightId === toText(picked?.id) && !campSelf) || bind.from !== 'user') {

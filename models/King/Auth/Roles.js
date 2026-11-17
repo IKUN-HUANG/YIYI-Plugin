@@ -378,8 +378,13 @@ export function campQueryOf (value, owner = '') {
   if (proven) return { campUserId: proven, roleId: wanted }
 
   for (const id of accountsOwningRole(wanted, owner)) {
+    /**
+     * 号已经从池子里删掉（登录态失效被清理）也要认：角色名册里这一桶的键就是营地号本身，
+     * 找不到账号对象也不能把「角色 → 营地号」这条已知映射丢掉 —— 丢了就会拿角色 ID 当营地号
+     * 去查战绩，营地回「code 0 + 空列表」，卡片就成了「没查到战绩」。
+     */
     const account = findAccount(id)
-    const userId = toText(account?.userId) || toText(account?.id)
+    const userId = toText(account?.userId) || toText(account?.id) || toText(id)
     if (userId) return { campUserId: userId, roleId: wanted }
   }
 

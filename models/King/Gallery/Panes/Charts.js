@@ -84,8 +84,13 @@ export function campSeasonRankTrend (RankPoints, view, chartWidth) {
   const topOf = list => list.reduce((top, item) => (item.value >= (top?.value ?? -1) ? item : top), null)
   const seasonTop = topOf(RankSeason)
   const liveTop = topOf(RankLine)
+  /** 名字跟着那一局自己的段位走：营地给每局记的段位名是「查这一下时」的，上赛季王者 50 星那局
+     现在写着「至尊星耀II」；按星数改判过（fixed）的点要用它自己的名字，不能又被赛季记录的名字盖一遍，
+     否则又拼出「星耀II 50星」。没改判的点才按老规矩统一成赛季记录那套命名。 */
   const upBest = seasonTop && liveTop && Number(liveTop.value) > Number(seasonTop.value)
-    ? { ...liveTop, jobName: seasonTop.jobName || liveTop.jobName, jobShort: seasonTop.jobShort || liveTop.jobShort }
+    ? (liveTop.fixed
+        ? liveTop
+        : { ...liveTop, jobName: seasonTop.jobName || liveTop.jobName, jobShort: seasonTop.jobShort || liveTop.jobShort })
     : (seasonTop || liveTop)
 
   return { RankLive, RankSeason, RankTrend, RankLine, upMarks, upSvg, upFirst, upLast, upBest, seasonTop, liveTop }

@@ -7,7 +7,7 @@ import { toText } from '../Common.js'
 import { stripAtText } from '../Target.js'
 import { ARCHIVE_KEEP_DAYS } from '../Archive.js'
 import { toInt } from '#yiyi.utils'
-import { PEAK_RESET_GAP, RANK_BANDS, ROMAN, TREND_DEFAULT_DAYS, TREND_MAX_POINTS } from './Consts.js'
+import { PEAK_RESET_GAP, RANK_BANDS, RANK_BAND_STAR_CAP, ROMAN, TREND_DEFAULT_DAYS, TREND_MAX_POINTS } from './Consts.js'
 
 
 /**
@@ -49,7 +49,7 @@ export function isPeakReset (prev, next) {
  * @param {string} jobName 营地段位名（如「永恒钻石II」「最强王者」）
  * @returns {{re: RegExp, band: number, name: string, Tiers: number, offset: number, roman: number, pos: number, ordinal: number}|null} band 1-7 越大越高，roman 是小段位罗马数字（王者段为 0），pos 是段内第几档，ordinal = offset + pos 才是可比的阶梯序号；认不出这个段位名时给 null
  */
-export function RankBandInfo (jobName) {
+function RankBandInfo (jobName) {
   const name = toText(jobName).trim()
   if (!name) return null
   for (const item of RANK_BANDS) {
@@ -60,6 +60,26 @@ export function RankBandInfo (jobName) {
     return { ...item, roman, pos, ordinal: item.offset + pos }
   }
   return null
+}
+
+/**
+ * 按「段位名 + 星数」定这一局到底是哪个段：营地只写查询那一刻的段位名（赛季末上王者的局
+ * 现在显示成「至尊星耀II」），但星数不会骗人 —— 星耀/钻石单档最多 5 颗星，星数超过所在大段
+ * 的上限就一定在王者段。返回的 `jobShort` 带小段位（星耀II / 王者），比只给大段名好认。
+ *
+ * @param {string} jobName 营地段位名（如「至尊星耀II」「最强王者」）
+ * @param {number|string} stars 这一局的星数
+ * @returns {{band: number, name: string, jobShort: string, ordinal: number, fixed: boolean}|null} 认不出段位名时给 null；`fixed` 表示按星数把它改判成王者了
+ */
+export function RankBandOfStars (jobName, stars) {
+  const info = RankBandInfo(jobName)
+  if (!info) return null
+  const count = Number(stars) || 0
+  const cap = RANK_BAND_STAR_CAP[info.band]
+  const king = cap !== undefined && count > cap
+  if (king) return { band: 7, name: '王者', jobShort: '王者', ordinal: 24, fixed: true }
+  const roman = info.roman ? ['', 'I', 'II', 'III', 'IV', 'V'][info.roman] : ''
+  return { band: info.band, name: info.name, jobShort: `${info.name}${roman}`, ordinal: info.ordinal, fixed: false }
 }
 
 /**
@@ -78,7 +98,7 @@ function RankBand (jobName) {
  * @param {string} jobName 营地段位名
  * @returns {string} 大段名（「永恒钻石II」→「钻石」）；认不出时取原文前两个字，空的给「未知」
  */
-export function RankBandShort (jobName) {
+function RankBandShort (jobName) {
   const info = RankBandInfo(jobName)
   if (info) return info.name
   return toText(jobName).slice(0, 2) || '未知'

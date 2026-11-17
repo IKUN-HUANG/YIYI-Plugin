@@ -9,7 +9,7 @@ import { refreshAccount } from '../Login.js'
 import { kingReply, kingGuard, kingAuthTip } from '../Say.js'
 import { getProfile } from '../Api.js'
 import { accountArgOf, resolveTarget } from './Args.js'
-import { setDefaultAccount, removeAccount, usableAccounts, campAccountValueOf, findAccount } from '../Auth.js'
+import { setDefaultAccount, removeAccount, usableAccounts, campAccountValueOf, findAccount, queryAccountsFor } from '../Auth.js'
 
 /** 这一片的日志出口（前缀与账号统一） */
 const log = createLogger('王者账号')
@@ -97,10 +97,16 @@ export async function kingCheckAccount (e) {
  * @returns {Promise<{roleId: string, roleName?: string, serverName?: string, campUser?: string, roles?: Array<object>}>} `roleId` 为空表示「是营地号但没查出角色」
  */
 export async function resolveCampBindValue (value, owner) {
-  const campUser = campAccountValueOf(value, owner)
-  if (!campUser) return { roleId: toText(value) }
+  /** 先当**营地号**看：用户手里只有营地 App 里那串营地ID，角色 ID 是查通主页才拿得到的东西。
+   *  池里认得的直接查；不认得的（别人家的营地号）也现查一次 —— 9~10 位数字当营地号试一轮，
+   *  查不通才轮到「它可能是角色 ID」。 */
+  const known = campAccountValueOf(value, owner)
+  const guess = known || (/^\d{9,10}$/.test(toText(value)) ? toText(value) : '')
+  const campUser = guess
 
-  const account = usableAccounts(owner).find(isUsableAuth) || findAccount(campUser)
+  /** 自己没有可用号也能查：绑定是「我想看谁」，借公共号池里能用的号查一次主页即可（不写谁的号） */
+  const account = usableAccounts(owner).find(isUsableAuth) || findAccount(campUser) ||
+    queryAccountsFor({ owner, byUser: owner, limit: 1 })[0]
   if (!account) return { roleId: '', campUser }
 
   try {

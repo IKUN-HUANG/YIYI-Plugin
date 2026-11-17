@@ -4,7 +4,7 @@
  * @module models/Account/Bind
  */
 import { createLogger } from '#yiyi.utils'
-import { campAccountValueOf, setBind, delBind, resolveBind, findAccount, defaultAccountId, usableAccounts, rememberRoles, accountsOwningRole, silenceLeftMs } from '../Auth.js'
+import { campAccountValueOf, setBind, delBind, resolveBind, findAccount, defaultAccountId, usableAccounts, rememberRoles, rememberCampUser, accountsOwningRole, silenceLeftMs } from '../Auth.js'
 import { roleInfoOf } from '../Auth/Roles.js'
 import { toText, cleanText, maskUserId, normRoleId } from '../Common.js'
 import { kingReply, kingGuard, kingAuthTip } from '../Say.js'
@@ -35,7 +35,10 @@ export async function kingBindRole (e) {
    */
   const resolved = await resolveCampBindValue(given, owner)
   const givenIsCamp = Boolean(resolved.campUser) || Boolean(campAccountValueOf(given, owner))
-  if (!resolved.roleId && givenIsCamp) {
+  /** 营地号优先、角色 ID 其次：占位绑定（只记了营地号、还没读出角色）让位给已经认得的角色，
+   *  免得把「账号池里明明知道是谁的角色 ID」也当成营地号存下来。 */
+  const knownRole = resolved.roleId ? '' : toText(roleInfoOf(given).roleId)
+  if (!resolved.roleId && givenIsCamp && !knownRole) {
     const kept = setBind(owner, { roleId: given, roleName: '', serverName: '', accountId: resolved.campUser || '', byUser: owner })
     if (!kept.ok) return kingReply(e, kept.reason)
     log.mark(`营地号绑定：${maskUserId(owner)} → 营地号 ${maskUserId(given)}（没读出角色，等查通再换）`)
@@ -46,9 +49,14 @@ export async function kingBindRole (e) {
     ].join('\n'))
   }
 
-  const roleId = resolved.roleId
-  const info = resolved.roleName ? { roleId, roleName: cleanText(resolved.roleName), serverName: cleanText(resolved.serverName), accountId: owner } : roleInfoOf(roleId)
+  const roleId = resolved.roleId || knownRole || ''
+  /** 借公共号池查通的，别把归属记成「用户自己的号」：accountId 留空，等他自己扫码再补 */
+  const info = resolved.roleName
+    ? { roleId, roleName: cleanText(resolved.roleName), serverName: cleanText(resolved.serverName), accountId: resolved.campUser ? '' : owner }
+    : roleInfoOf(roleId)
   if (resolved.roles && resolved.roles.length) rememberRoles(owner, resolved.campUser, resolved.roles)
+  /** 按营地号查通的：把「这个角色在这个营地号下」记死，下次「#我的营地」直接用，不必再猜 */
+  if (resolved.campUser && roleId) rememberCampUser(owner, roleId, resolved.campUser)
   const mine = accountsOwningRole(roleId, owner)
   const usable = usableAccounts(owner)
   const done = setBind(owner, {
@@ -62,15 +70,25 @@ export async function kingBindRole (e) {
 
   log.mark(`营地ID绑定：${maskUserId(owner)} → ${maskUserId(roleId)}${givenIsCamp ? `（发来的是营地号 ${maskUserId(given)}，已换成角色 ID）` : ''}`)
 
-  const lines = [`已经绑定营地角色 ${roleId}${info.roleName ? `（${info.roleName}${info.serverName ? ` · ${info.serverName}` : ''}）` : ''}`]
+  /** 这串数字在不在任何登录信息里、营地理不理它，决定这句话能不能说「已经绑定」：
+     全都查不到时只能老实说「先记下了」，别让人以为营地已经认了这个角色（后续查数据会一直报 -10107） */
+  const verified = Boolean(info.accountId) || Boolean(resolved.campUser && info.roleName)
+  const lines = [verified
+    ? `已经绑定营地角色 ${roleId}${info.roleName ? `（${info.roleName}${info.serverName ? ` · ${info.serverName}` : ''}）` : ''}`
+    : `先按角色 ID ${roleId} 记下了 —— 这串数字我这边还没查通（营地没认它、也不在任何登录信息里），名字和区服先空着`]
 
-  if (givenIsCamp) lines.push(`${given} 是营地号，营地这次给了它名下这个角色，我就按角色 ID 存了 —— 往后查主页、推送都用它`)
+  /** 只有「真拿营地号查出角色」才这么说；认成营地号却没读出角色的那种走上面的占位绑定 */
+  if (resolved.roleId && resolved.campUser) lines.push(`${given} 是营地号，营地这次给了它名下这个角色，我就按角色 ID 存了 —— 往后查主页、推送都用它`)
 
-  lines.push(info.accountId
+  lines.push(resolved.campUser && !info.accountId
+    ? `查的时候借了别人的登录信息，查询不受影响；想开推送就自己发「#王者QQ扫码」把 ${given} 登进来`
+    : info.accountId
     ? (info.accountId === owner
         ? '这个角色就在你自己扫码存下的登录信息里，查数据、开推送都用它'
         : `这个角色在 ${info.accountId} 扫码存下的登录信息里，手动查询我会优先用它（营地ID 是别的号也能绑）`)
-    : '这个 ID 我还没在任何登录信息里见过，先按营地账号去试着查；要是查不到，发「#王者QQ扫码」把营地号扫进来我就能认出它')
+    : verified
+      ? '这个 ID 我还没在任何登录信息里见过，先按角色 ID 记下；哪天有人扫码带来它的归属，绑定会自动补齐'
+      : '营地 ID 和角色 ID 都是 9～10 位，我看着一样，先按角色 ID 存了；要是这串其实是营地号，发「#王者营地」我按营地号查一次，查通就换成真角色 ID')
 
   lines.push(mine.length || usable.length
     ? '上下线与战绩推送会定时检查，只用你自己扫码存下的号；已经能查到的角色，发「#开启王者战绩推送」就会推到本群'

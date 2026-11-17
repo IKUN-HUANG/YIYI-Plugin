@@ -7,7 +7,7 @@ import { createLogger } from '#yiyi.utils'
 import { getBattleList } from '../Api.js'
 import { toText } from '../Common.js'
 import { CAMP_PEAK_TREND_GAMES, CAMP_RANK_TREND_GAMES, CAMP_TREND_POINTS, CAMP_TREND_TTL_MS, campTrendCache } from './Consts.js'
-import { RankBandInfo, RankBandShort, thin, PEAK_RESET_GAP } from '../Trend.js'
+import { RankBandOfStars, thin, PEAK_RESET_GAP } from '../Trend.js'
 import { jobShortOf, trendDayLabel } from './Util.js'
 
 /** 这一片的日志出口（前缀与图鉴统一） */
@@ -41,13 +41,29 @@ export function campTrendOf (gameTrend = [], { startTime = 0, endTime = 0 } = {}
         /** 营地每个点还带着当时的巅峰分：营地卡「本赛季巅峰(最高)」拿它取最大值 */
         score: Number(item.score) || 0,
         jobName: toText(item.jobName),
-        jobShort: jobShortOf(item.jobName),
+        /** 星数超过所在大段上限的一律改判王者：营地写的段位名是「查这一下时」的，不是比赛当时的 */
+        jobShort: RankBandOfStars(item.jobName, stars)?.jobShort || jobShortOf(item.jobName),
         jobColor: toText(item.jobColor),
-        mark: `${jobShortOf(item.jobName)} ${stars}★`
+        mark: `${RankBandOfStars(item.jobName, stars)?.jobShort || jobShortOf(item.jobName)} ${stars}★`
       }
     })
     .filter(item => Number.isFinite(item.value) && (!from || !to || !item.at || (item.at >= from && item.at <= to)))
     .sort((a, b) => a.at - b.at)
+}
+
+/** 战绩列表 → 时间正序的最近 N 把（接口本来就是新的在前，这里再兜一次底）。
+ *
+ * @param {object[]} list 战绩列表
+ * @param {number} games 只看最近多少把
+ * @returns {object[]} 正序的原始对局（未抽稀）
+ */
+function campRankRows (list = [], games = CAMP_RANK_TREND_GAMES) {
+  const max = Math.max(2, Number(games) || CAMP_RANK_TREND_GAMES)
+  return (Array.isArray(list) ? list : [])
+    .filter(item => item && typeof item === 'object')
+    .sort((a, b) => (Number(b.dtEventTime) || 0) - (Number(a.dtEventTime) || 0))
+    .slice(0, max)
+    .sort((a, b) => (Number(a.dtEventTime) || 0) - (Number(b.dtEventTime) || 0))
 }
 
 /**
@@ -55,39 +71,31 @@ export function campTrendOf (gameTrend = [], { startTime = 0, endTime = 0 } = {}
  * 列表是新的在前：先按时间倒序取最近 games 把（营地一页正好 30 条），再翻成正序画图；每条对局一个点。
  * 纵轴用「阶梯序号 × 100 + 星数」：同一大段里一颗星就是 1，升一个大段正好
  * 100 的台阶 —— 直接拿星数当纵轴的话，星耀 I 3 星升到王者 0 星会画成掉到 0。
- * 赛季重置 / 换角色（阶梯序号一次退两档以上）只留最后一段，否则图上会出现一条垂直断崖。
+ * 30 把全画出来，不按赛季重置切段：营地给每局记的段位名是「查这一下时」的，
+ * 切段只会把上赛季的王者成绩藏起来；名字按每局星数改判（见 `RankBandOfStars`）后，
+ * 图上那条从王者掉到星耀的断崖正是赛季重置本身，读者看得懂。
+ *
  * @param {object[]} list morebattlelist（option=1）的 list，新的在前
  * @param {{games?: number, pointCap?: number}} opts games = 只看最近多少把；pointCap = 图上最多几个点
  * @returns {object[]} 按时间正序的走势点（最多 pointCap 个）：{at, label（月.日）, value（阶梯序号×100 + 星数）, stars, jobName, jobShort, mark}；同一纵轴值的点会被合并，没有有效点给空数组
  */
 export function campRankTrendOf (list = [], { games = CAMP_RANK_TREND_GAMES, pointCap = CAMP_TREND_POINTS } = {}) {
-  const max = Math.max(2, Number(games) || CAMP_RANK_TREND_GAMES)
   const maxPoints = Math.max(2, Number(pointCap) || CAMP_TREND_POINTS)
-  const rows = (Array.isArray(list) ? list : [])
-    .filter(item => item && typeof item === 'object')
-    /** 先倒序取最近 max 把（接口本来就是倒序，这里再兜一次底），再翻成正序 */
-    .sort((a, b) => (Number(b.dtEventTime) || 0) - (Number(a.dtEventTime) || 0))
-    .slice(0, max)
-    .sort((a, b) => (Number(a.dtEventTime) || 0) - (Number(b.dtEventTime) || 0))
-
-  let start = 0
-  for (let index = 1; index < rows.length; index += 1) {
-    const prev = RankBandInfo(rows[index - 1]?.roleJobName)
-    const next = RankBandInfo(rows[index]?.roleJobName)
-    if (prev && next && next.ordinal - prev.ordinal <= -2) start = index
-  }
+  const rows = campRankRows(list, games)
 
   const draw = []
-  for (const item of rows.slice(start)) {
+  for (const item of rows) {
     const jobName = toText(item.roleJobName).trim()
-    const info = RankBandInfo(jobName)
     const stars = Number(item.stars) || 0
+    const info = RankBandOfStars(jobName, stars)
     const at = Number(item.dtEventTime) || 0
     const value = (info?.ordinal || 0) * 100 + stars
     /** 星数没动的局（勇者积分攒满前、或是别人代打）不单独记点，否则一串平线 */
     if (draw.length && draw[draw.length - 1].value === value) continue
-    const jobShort = info ? RankBandShort(jobName) : (jobName.slice(0, 2) || '未知')
-    draw.push({ at, label: trendDayLabel(at), value, stars, jobName, jobShort, mark: `${jobShort} ${stars}★` })
+    const jobShort = info?.jobShort || (jobName.slice(0, 2) || '未知')
+    /** 营地给的名字是「查这一下时」的，改判过的那一局连名字一起换掉，后面拼「最高 X 星」才不会又串回去 */
+    const showName = info?.fixed ? info.name : jobName
+    draw.push({ at, label: trendDayLabel(at), value, stars, jobName: showName, jobShort, fixed: Boolean(info?.fixed), mark: `${jobShort} ${stars}★` })
   }
   return thin(draw, maxPoints)
 }
