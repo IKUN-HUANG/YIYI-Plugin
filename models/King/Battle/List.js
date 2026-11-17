@@ -13,7 +13,7 @@ import { readCache, writeCache } from '../Store.js'
 
 
 import { toText, isProfileHiddenCode, describeProfileDenied, describeError, RateLimitError, AuthAccountError } from '../Common.js'
-import { kingIconBase64 } from '../Icon.js'
+import { HeroIconByName, kingIconBase64 } from '../Icon.js'
 import { resolveCampQuery, cleanName } from '../Profile.js'
 import { isRankedBattle } from '../Archive.js'
 import { HeroNameOf, HeroNameById } from '../External.js'
@@ -184,7 +184,11 @@ export async function kingBattleList (e) {
     }
 
     const mapped = slice.map(mapBattleItem)
-    const icons = await imageUris(mapped.map(item => item.HeroIcon), { referer: CAMP_REFERER, limit: 5, width: 96, height: 96 })
+    /**
+   * 头像先查本地（dataURI 直接可用，不出网），本地没有才回落营地原图 —— 这是「本地优先」的唯一入口，
+   * 别在这里直接塞 item.HeroIcon，否则新英雄上线后每翻一页都要为同一张图跑一次外网
+   */
+  const icons = await imageUris(mapped.map(item => HeroIconByName(item.HeroName, item.HeroIcon)), { referer: CAMP_REFERER, limit: 5, width: 96, height: 96 })
 
     const wins = mapped.filter(item => item.win).length
     /** 连胜看的是整段列表（不只当前页），所以拿没切片的 list 数 */

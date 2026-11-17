@@ -9,6 +9,7 @@ import { filterArchive } from '../Archive.js'
 /** 拆分时漏掉的：`describeError` 用在三条 warn/error 兜底里，缺了它一进错误分支就 ReferenceError */
 import { describeError } from '../Common.js'
 import { imageUri, imageUris, logoUri, renderKing, renderKingWithoutEvent } from '../Card.js'
+import { HeroIconByName } from '../Icon.js'
 import { percentText } from '../Field.js'
 import { groupPushOn, groupPushText } from '../GroupPush.js'
 import { normalizeName } from '../Profile.js'
@@ -84,7 +85,8 @@ export async function groupReportView ({ rows = [], period = 'weekly', from = 0,
   const sorted = [...rows].sort((a, b) => b.total - a.total || b.wins - a.wins)
   const view = sorted.slice(0, REPORT_MAX_ROWS)
   const avatars = await imageUris(view.map(row => reportFaceUri(row)), { referer: CAMP_REFERER, width: 96, height: 96, limit: 6 })
-  const HeroIcons = await imageUris(view.map(row => toText(row.HeroTop?.HeroIcon)), { referer: CAMP_REFERER, width: 64, height: 64, limit: 6 })
+  /** 本国最强英雄的图标：同样本地优先，本地没有才回落营地原图 */
+  const HeroIcons = await imageUris(view.map(row => HeroIconByName(row.HeroTop?.HeroName, toText(row.HeroTop?.HeroIcon))), { referer: CAMP_REFERER, width: 64, height: 64, limit: 6 })
 
   const totals = sorted.reduce((acc, row) => {
     acc.battles += row.total

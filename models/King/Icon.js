@@ -1,5 +1,6 @@
 /**
  * @file 营地图标落地：本地图优先，其次用营地给的原图，最后才落官方 CDN。
+ * 本地没有、只能回落远程图时，顺手把那张图存进本地（`cacheIconLater`），下次就不用再出网。
  * 只管「一个组 + 一个 id（或一个中文名）→ 一段能直接塞进模板的图片地址」；
  * 不下载图、不生成对照表（那是 TEST/Tools/fetch-king-icons.mjs 的事），也不管卡片排版。
  *
@@ -11,6 +12,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { resourcesDir, bufferToDataUri } from '#yiyi.utils'
+import { cacheIconLater } from './Ops/IconCache.js'
 
 /** 装备 / 召唤师技能这两组：营地给了 id 也给了图，所以两种都能查 */
 const KING_GEAR_GROUPS = ['equip', 'skill']
@@ -193,7 +195,12 @@ export function gearBase64 (group, id) {
 export function gearUri (group, id, url = '') {
   const kind = gearGroup(group)
   const gearId = toGearId(id) || gearIdFromUrl(url)
-  return gearBase64(kind, gearId) || String(url || '').trim() || (gearId && CDN[kind] ? CDN[kind](gearId) : '')
+  const local = gearBase64(kind, gearId)
+  if (local) return local
+  const remote = String(url || '').trim() || (gearId && CDN[kind] ? CDN[kind](gearId) : '')
+  /** 回落远程图的那一次顺手存本地：官网换图 / 新装备第一次出现时，下次就零外网 */
+  if (remote) cacheIconLater(iconDir(kind), gearId, remote)
+  return remote
 }
 
 /**
@@ -216,7 +223,10 @@ export function gearCount (group) {
 export function HeroIconUri (ename, url = '') {
   const key = toIconKey(ename)
   const local = key ? kingIconBase64('hero', key) : ''
-  return local || String(url || '').trim() || (key ? `${HERO_IMG_BASE}/${key}/${key}.jpg` : '')
+  if (local) return local
+  const remote = String(url || '').trim() || (key ? `${HERO_IMG_BASE}/${key}/${key}.jpg` : '')
+  if (remote) cacheIconLater(iconDir('hero'), key, remote)
+  return remote
 }
 
 /**
@@ -232,10 +242,9 @@ export function HeroSkillUri (url = '', ename = '', step = '') {
   const local = key ? kingIconBase64('heroskill', key) : ''
   if (local) return local
 
-  const remote = String(url || '').trim()
-  if (remote) return remote
-  const hero = toIconKey(ename)
-  return hero && step !== '' ? `${HERO_IMG_BASE}/${hero}/${hero}${step}0.png` : ''
+  const remote = String(url || '').trim() || (toIconKey(ename) && step !== '' ? `${HERO_IMG_BASE}/${toIconKey(ename)}/${toIconKey(ename)}${step}0.png` : '')
+  if (remote) cacheIconLater(iconDir('heroskill'), key || (toIconKey(ename) && step !== '' ? `${toIconKey(ename)}${step}0` : ''), remote)
+  return remote
 }
 
 /**
@@ -247,7 +256,11 @@ export function HeroSkillUri (url = '', ename = '', step = '') {
  */
 export function SkinIconUri (id, url = '') {
   const key = toIconKey(id)
-  return (key ? kingIconBase64('skin', key) : '') || String(url || '').trim()
+  const local = key ? kingIconBase64('skin', key) : ''
+  if (local) return local
+  const remote = String(url || '').trim()
+  if (remote) cacheIconLater(iconDir('skin'), key, remote)
+  return remote
 }
 
 let namesCache = null

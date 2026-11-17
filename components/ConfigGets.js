@@ -235,6 +235,12 @@ export default {
   /** 缓存目录每天清一遍的 cron，默认 5:30（6 段，带秒） */
   get kingCacheSweepCron () { return this.kingCron('cacheSweepCron') },
 
+  /** 官网数据（英雄名 / 缺失图标）每天自动同步的开关，默认开 */
+  get kingIconSync () { return this.king.iconSync !== false },
+
+  /** 官网数据自动同步的时刻（`HH:MM`，默认 05:00） */
+  get kingIconSyncTime () { return String(this.king.iconSyncTime || '05:00').trim() },
+
   /** 群日报的 cron（6 段，带秒） */
   get kingGroupDailyReportCron () { return this.kingCron('groupDailyReportCron') },
 

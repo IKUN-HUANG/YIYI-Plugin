@@ -2,7 +2,7 @@
  * @file 王者指令面——65 条指令全部在这里注册：正则决定「用户这么说该进哪个功能」，方法体只做「先回生成提示 → 转调」，不放任何取数与算数。
  * @module apps/King
  */
-import { kingAck, dropKingAck, kingNews, kingNewsDetail, kingHeroList, kingHero, kingItem, kingPower, kingLogin, cancelKingLogin, kingUseAccount, kingDelAccount, kingCheckAccount, kingAccount, kingBindRole, kingBindHelp, kingUnbindRole, kingMyCamp, kingDiagnose, kingSwitchRole, kingHideRole, kingRestoreRole, kingBattleList, kingBattleDetail, kingRank, kingRankRefresh, kingGroupReport, kingGroupReportPush, kingGroupReportStatus, kingGroupReportTick, kingPushSwitch, kingPushStatus, kingGroupPush, kingPushTick, kingWhoIsPlaying, kingWatchSwitch, kingWatchTest, kingOps, kingOpsClearCache, kingCacheSweep, kingBootCacheSweep, kingKeepAliveTick, kingTier, kingHeroRecord, kingCompare, kingNewsPush, kingSkinPush, kingAlertTick, kingCleanInvalid, kingBackup, kingRestore, kingBlacklist, kingRankTrend, kingPeakTrend, kingSkinCodex, kingSkinMissing, kingMyHeroes, kingExportCsv, kingUserStats, kingHiddenList, kingHiddenClear, parsePeriod, kingReply, AT_HEAD, AT_TAIL } from '#yiyi.king'
+import { kingAck, dropKingAck, kingNews, kingNewsDetail, kingHeroList, kingHero, kingItem, kingPower, kingLogin, cancelKingLogin, kingUseAccount, kingDelAccount, kingCheckAccount, kingAccount, kingBindRole, kingBindHelp, kingUnbindRole, kingMyCamp, kingDiagnose, kingSwitchRole, kingHideRole, kingRestoreRole, kingBattleList, kingBattleDetail, kingRank, kingRankRefresh, kingGroupReport, kingGroupReportPush, kingGroupReportStatus, kingGroupReportTick, kingPushSwitch, kingPushStatus, kingGroupPush, kingPushTick, kingWhoIsPlaying, kingWatchSwitch, kingWatchTest, kingOps, kingOpsClearCache, kingSyncIconsNow, kingCacheSweep, kingBootCacheSweep, kingKeepAliveTick, kingTier, kingHeroRecord, kingCompare, kingNewsPush, kingSkinPush, kingAlertTick, kingCleanInvalid, kingBackup, kingRestore, kingBlacklist, kingRankTrend, kingPeakTrend, kingSkinCodex, kingSkinMissing, kingMyHeroes, kingExportCsv, kingUserStats, kingHiddenList, kingHiddenClear, startKingIconSync, parsePeriod, kingReply, AT_HEAD, AT_TAIL } from '#yiyi.king'
 import { Config, gateRules } from '#yiyi.components'
 import { afterLoaded } from '#yiyi.utils'
 
@@ -64,6 +64,7 @@ const RULES = [
   { reg: '^#?(?:谁在(?:打游戏|打王者|玩王者|上号|排位|玩农)|王者(?:荣耀|农药)?(?:在线(?:列表|状态)?|状态)|在线列表|农批在线|在线农批)$', fnc: 'whoIsPlaying' },
   { reg: '^#?王者(?:荣耀|农药)?(?:运维|运行状态)$', fnc: 'ops' },
   { reg: '^#?王者(?:荣耀|农药)?清理缓存$', fnc: 'opsClearCache' },
+  { reg: '^#?王者(?:荣耀|农药)?同步图标$', fnc: 'opsSyncIcons' },
   { reg: AT_HEAD + '#?王者(?:荣耀|农药)?战绩(?:\\s*\\d+)?' + AT_TAIL, fnc: 'battleList' },
   { reg: AT_HEAD + '#?(?:王者(?:荣耀|农药)?(?:我的)?(?:营地|主页)|我的营地|我的主页)(?:\\s+\\S+)?' + AT_TAIL, fnc: 'myCamp' },
   { reg: '^#?王者(?:荣耀|农药)?诊断$', fnc: 'diagnose' },
@@ -315,6 +316,10 @@ export class King extends plugin {
     return kingOpsClearCache(e)
   }
 
+  async opsSyncIcons (e) {
+    return kingSyncIconsNow(e)
+  }
+
   async opsCleanInvalid (e) {
     return kingCleanInvalid(e)
   }
@@ -432,3 +437,4 @@ for (const rule of RULES) {
  * 公开表跟游戏版本走（旧表比没有更糟）。登记在 `afterLoaded()` 里，日志才落在版本横幅后面。
  */
 afterLoaded(kingBootCacheSweep)
+afterLoaded(startKingIconSync)

@@ -9,6 +9,7 @@ import opsDefault from './Ops/Flows.js'
 export * from './Ops/Consts.js'
 export * from './Ops/Report.js'
 export * from './Ops/Cache.js'
+export * from './Ops/Sync.js'
 export * from './Ops/Backup.js'
 export * from './Ops/Flows.js'
 /**
