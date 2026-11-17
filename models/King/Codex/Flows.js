@@ -247,7 +247,9 @@ export async function kingMyHeroes (e) {
 
     const loaded = await readMyHeroes(ctx)
     if (!loaded.list.length) {
-      return kingReply(e, '没拿到英雄数据，去王者营地把「陌生人可见」打开再试')
+      return kingReply(e, loaded.scope === 'career'
+        ? '营地这会儿在限流，主页也没给出英雄数据，过几分钟再试'
+        : '没拿到英雄数据，去王者营地把「陌生人可见」打开再试')
     }
 
     const view = buildMyHeroesView(loaded.list, {
@@ -266,7 +268,9 @@ export async function kingMyHeroes (e) {
       ownerText: ownerTextOf(e, ctx.owner),
       ...view,
       rows,
-      note: `场次与胜率是生涯累计；战力列是${view.powerLabel === '战力' ? '当前战力（历史接口没拿到）' : '历史最高战力'}`
+      note: loaded.scope === 'career'
+        ? `营地这个接口在限流，这里展示的是主页的生涯前 5；场次与胜率是生涯累计，战力列是${view.powerLabel === '战力' ? '当前战力（历史接口没拿到）' : '历史最高战力'}`
+        : `场次与胜率是生涯累计；战力列是${view.powerLabel === '战力' ? '当前战力（历史接口没拿到）' : '历史最高战力'}`
     })
   } catch (error) {
     if (isHiddenError(error)) return kingReply(e, '这个号把资料藏起来了，英雄数据看不到')

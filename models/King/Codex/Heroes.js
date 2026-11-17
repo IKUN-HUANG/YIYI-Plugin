@@ -5,9 +5,9 @@
  */
 import { autoSize, textWidth } from '#yiyi.utils'
 import { imageUris, localIcon } from '../Card.js'
-import { getGameHeroList, getSeasonUsuallyHeroList, CAMP_REFERER } from '../Api.js'
+import { getGameHeroList, getProfileHeroList, getSeasonUsuallyHeroList, CAMP_REFERER } from '../Api.js'
 import { createLogger } from '#yiyi.utils'
-import { toText, CampError, classifyBusinessCode, describeError, BUSINESS_CODE } from '../Common.js'
+import { toText, CampError, RateLimitError, classifyBusinessCode, describeError, BUSINESS_CODE } from '../Common.js'
 import { HeroIconUri } from '../Icon.js'
 import { HonorBadgeOf } from './HonorBase.js'
 import { MY_HEROES_MAX, MY_HEROES_TOP, MY_HERO_NAME_BASE, MY_HERO_NAME_MIN, MY_HERO_NAME_ROOM, MY_HERO_SUB_GAP, MY_HERO_SUB_SIZE, SKILLED_NAME, SKILLED_ICON } from './Consts.js'
@@ -178,6 +178,67 @@ export function buildMyHeroesView (list = [], { limit = MY_HEROES_TOP, seasonNam
 }
 
 /**
+ * 主页英雄列表（`/game/profile/herolist`）的行摊平：营地把它裹在 `basicInfo` 里，
+ * 场次/胜率/战力/熟练度都齐，但没有 `heroTypes`（定位那行靠名字里的括号补）。
+ * 只给前 5 个，是「生涯累计」口径，跟 h5getHerolist 的 playNum / winNum 同一套数。
+ *
+ * @param {*} data 接口给的 data（`{ heroList: [{ basicInfo, honorTitle }] }`）
+ * @returns {Array<object>} 摊平后的行，字段名对齐 `HeroRowOf`
+ */
+function careerRowsOf (data) {
+  const list = Array.isArray(data?.heroList) ? data.heroList : []
+  return list
+    .map(item => {
+      const basic = item?.basicInfo && typeof item.basicInfo === 'object' ? item.basicInfo : item
+      const heroId = toText(basic?.heroId)
+      if (!heroId) return null
+      return {
+        heroId,
+        heroName: toText(basic?.title ?? basic?.alias),
+        heroIcon: toText(basic?.heroIcon),
+        playNum: Number(basic?.playNum) || 0,
+        winNum: Number(basic?.winNum) || 0,
+        winRate: toText(basic?.winRate),
+        heroFightPower: Number(basic?.heroFightPower) || 0,
+        skilledLevel: Number(basic?.skilledLevel) || 0
+      }
+    })
+    .filter(Boolean)
+}
+
+/**
+ * 常用英雄的主表：先走 `/play/h5getherolist`（全量、带 winNum 能算总胜率）；
+ * 它被营地按来源限流（-32002）时退回主页的生涯前 5（`/game/profile/herolist`），
+ * 至少还能出图。被藏（-10107）与登录态失效（-30107）照旧往上抛，不用假数据盖掉真原因。
+ *
+ * @param {*} ctx kingContext 的结果
+ * @param {object} opts 请求选项（`{ accountId }`）
+ * @returns {Promise<{played: Array<object>, ownCount: number, scope: string}>} `scope` 是 `all` 或 `career`
+ */
+async function loadMyHeroRows (ctx, opts) {
+  try {
+    const answer = await getGameHeroList({ friendUserId: campIdOf(ctx), roleId: toText(ctx?.roleId) }, opts)
+    /** 非 0 业务码一律往上抛：以前这里当成「空列表」，卡片就变成「去开陌生人可见」，
+     *  限流（-32002）、被藏（-10107）、认错角色，全被这句假原因盖掉了 */
+    const code = Number(answer?.code)
+    if (code && classifyBusinessCode(code) !== BUSINESS_CODE.SUCCESS) {
+      const error = new CampError(`营地没给这个角色的英雄数据（${describeError(answer?.raw)}）`)
+      error.code = code
+      throw error
+    }
+    const played = HeroRowsOf(answer?.data)
+    return { played, ownCount: Number(answer?.data?.hasData?.heroNum) || played.length, scope: 'all' }
+  } catch (error) {
+    const throttled = error instanceof RateLimitError || classifyBusinessCode(error?.code) === BUSINESS_CODE.RATE_LIMITED
+    if (!throttled) throw error
+    log.info(`常用英雄主表被限流，改走主页生涯前 5：${toText(error?.message) || '未知原因'}`)
+    const res = await getProfileHeroList({ targetUserId: campIdOf(ctx), targetRoleId: toText(ctx?.roleId) }, opts)
+    const played = careerRowsOf(res?.data)
+    return { played, ownCount: played.length, scope: 'career' }
+  }
+}
+
+/**
  * 常用英雄 = 两次请求：
  *   ① `h5getHerolist` 拿全量英雄（生涯累计的 playNum / winNum / 胜率，营地那页的口径）
  *   ② `getseasonusaullyHerolist`（seasonId=0 即「历史赛季」）拿历史最高战力 + 拿最高战力时的称号
@@ -193,17 +254,7 @@ export function buildMyHeroesView (list = [], { limit = MY_HEROES_TOP, seasonNam
  */
 export async function readMyHeroes (ctx) {
   const opts = { accountId: toText(ctx?.account?.id) }
-  const answer = await getGameHeroList({ friendUserId: campIdOf(ctx), roleId: toText(ctx?.roleId) }, opts)
-  /** 非 0 业务码一律往上抛：以前这里当成「空列表」，卡片就变成「去开陌生人可见」，
-   *  限流（-32002）、被藏（-10107）、认错角色，全被这句假原因盖掉了 */
-  const code = Number(answer?.code)
-  if (code && classifyBusinessCode(code) !== BUSINESS_CODE.SUCCESS) {
-    const error = new CampError(`营地没给这个角色的英雄数据（${describeError(answer?.raw)}）`)
-    error.code = code
-    throw error
-  }
-  const played = HeroRowsOf(answer?.data)
-  const ownCount = Number(answer?.data?.hasData?.heroNum) || played.length
+  const { played, ownCount, scope } = await loadMyHeroRows(ctx, opts)
 
   const history = new Map()
   let historyOK = false
@@ -238,7 +289,7 @@ export async function readMyHeroes (ctx) {
     }
   })
 
-  return { list, ownCount, powerLabel: historyOK ? '最高战力' : '战力' }
+  return { list, ownCount, scope, powerLabel: historyOK ? '最高战力' : '战力' }
 }
 
 /** 英雄头像：本地图优先，取不到再退回营地给的横版图 */

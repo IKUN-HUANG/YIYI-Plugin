@@ -107,3 +107,14 @@ test('常用英雄拿到非 0 业务码就报真原因，不再一律说「去�
   assert.match(fallback, /persist === false/, '短退避的频控不该走 markRateLimited')
   assert.match(fallback, /busyUntil\.set/, '要记住退避到什么时候，别一直撞')
 })
+
+test('常用英雄被限流就退回主页生涯前 5：主表仍优先，被藏/登录态失效照旧往上抛', () => {
+  const src = read('models', 'King', 'Codex', 'Heroes.js')
+  assert.match(src, /getProfileHeroList\(\{ targetUserId: campIdOf\(ctx\)/, '限流时要打主页英雄列表')
+  assert.match(src, /error instanceof RateLimitError/, '-32002 这类限流才兜底')
+  assert.match(src, /if \(!throttled\) throw error/, '被藏（-10107）与登录态失效（-30107）不许用假数据盖掉')
+  assert.match(src, /const basic = item\?\.basicInfo/, '主页接口的行裹在 basicInfo 里，要摊平')
+  assert.match(src, /scope: 'career'/, '要标出这次是生涯前 5，卡片文案才分得清')
+  const flow = read('models', 'King', 'Codex', 'Flows.js')
+  assert.match(flow, /loaded\.scope === 'career'/, '卡片说明要跟着换')
+})
