@@ -84,6 +84,7 @@ async function remoteSize (url) {
       return null
     }
   } catch {
+    /** 图床不认 HEAD（405 / 直接抛）：下面退回 GET，只取响应头再取消正文 */
   }
 
   try {
