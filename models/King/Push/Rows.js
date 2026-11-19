@@ -10,6 +10,7 @@ import { resolveEvaluate } from '../Field.js'
 import { kingIconBase64 } from '../Icon.js'
 import { cleanName, normalizeName } from '../Profile.js'
 import { durationCompact, durationText } from './Items.js'
+import { RankBandOfStars } from '../Trend/Util.js'
 
 /**
  * 按对局时间顺序算当前连胜或连败：从最新一局往回数，结果一变就停
@@ -88,16 +89,23 @@ export function formatScoreDelta (item = {}, prev = null) {
   const stars = truncInt(item?.stars)
   const prevRank = cleanName(prev?.roleJobName)
   const prevStars = truncInt(prev?.stars)
+  const win = truncInt(item?.gameresult) === 1
 
   if (prevRank && prevRank !== rank) {
-    const tone = Math.abs(prevStars) > 0 || rank ? (rank > prevRank ? 'up' : 'down') : 'flat'
+    /** 大段 / 小段变了就按段位阶梯比高低 —— 名字字符串比大小（「钻石II」>「王者」）纯属胡来 */
+    const tone = RankBandOfStars(rank, stars).ordinal > RankBandOfStars(prevRank, prevStars).ordinal ? 'up' : 'down'
     return { tone, text: `段位 ${prevRank} → ${rank}` }
   }
 
-  if (!prev || !prevRank || prevStars <= 0) return { tone: 'flat', text: `${rank} ${stars} 星` }
+  if (!prev || !prevRank || prevStars <= 0 || stars <= 0) return { tone: 'flat', text: `${rank} ${stars} 星` }
 
+  /** 营地每条只带「查这一刻」的段位名，星数不是连续底数：换过 roleJob（小段变了）、或者
+   *  赢了一局却算出掉星（数据自相矛盾）时，只报现状不报涨跌 —— 宁可不显示，也不能给个错的 -3 */
+  const job = truncInt(item?.roleJob)
+  const prevJob = truncInt(prev?.roleJob)
   const diff = stars - prevStars
-  if (!diff) return { tone: 'flat', text: `${rank} ${stars} 星` }
+  const sane = Math.abs(diff) <= 5 && (win ? diff > 0 : diff < 0) && !(job && prevJob && job !== prevJob)
+  if (!diff || !sane) return { tone: 'flat', text: `${rank} ${stars} 星` }
   return { tone: diff > 0 ? 'up' : 'down', text: `${rank} ${stars} 星（${diff > 0 ? '+' : ''}${diff}）` }
 }
 
