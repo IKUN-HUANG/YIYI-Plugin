@@ -11,6 +11,7 @@ import { kingIconBase64 } from '../Icon.js'
 import { cleanName, normalizeName } from '../Profile.js'
 import { durationCompact, durationText } from './Items.js'
 import { RankBandOfStars } from '../Trend/Util.js'
+import { KING_LOW_STAR_TITLE, KING_ROLE_JOB, stepRankNameBack } from './Rank.js'
 
 /**
  * 按对局时间顺序算当前连胜或连败：从最新一局往回数，结果一变就停
@@ -91,18 +92,38 @@ export function formatScoreDelta (item = {}, prev = null) {
   const prevStars = truncInt(prev?.stars)
   const win = truncInt(item?.gameresult) === 1
 
-  if (prevRank && prevRank !== rank) {
-    /** 大段 / 小段变了就按段位阶梯比高低 —— 名字字符串比大小（「钻石II」>「王者」）纯属胡来 */
-    const tone = RankBandOfStars(rank, stars).ordinal > RankBandOfStars(prevRank, prevStars).ordinal ? 'up' : 'down'
-    return { tone, text: `段位 ${prevRank} → ${rank}` }
+  const job = truncInt(item?.roleJob)
+  const prevJob = truncInt(prev?.roleJob)
+
+  /** 段位动了（名字不同，或 roleJob 编号不同——营地整批共用一个名字时名字不会变）。
+   *  方向只看**这一局的胜负**：星数跨段不可比，升段后接着赢、终点星数反而更大，
+   *  只比首尾星数会把「星耀I 3星 → 王者 4星」播成掉段。 */
+  if ((prevRank && prevRank !== rank) || (job && prevJob && job !== prevJob)) {
+    const tone = win ? 'up' : 'down'
+    /** 升到王者：编号从星耀那一段（22..26）跳到 16，营地的名字常还停在星耀 I */
+    if (win && job === KING_ROLE_JOB && prevJob && prevJob !== KING_ROLE_JOB) {
+      return { tone: 'up', text: `段位 ${prevRank || rank} → ${KING_LOW_STAR_TITLE}（${stars} 星）` }
+    }
+    /** 掉出王者：编号从 16 回到星耀 V，名字一般已经刷成「至尊星耀V」 */
+    if (!win && prevJob === KING_ROLE_JOB && job && job !== KING_ROLE_JOB) {
+      return { tone: 'down', text: `段位 ${KING_LOW_STAR_TITLE} → ${rank}（${stars} 星）` }
+    }
+    if (!prevRank || prevRank === rank) {
+      const back = stepRankNameBack(rank, job, prevJob)
+      if (back && back !== rank) return { tone, text: `段位 ${back} → ${rank}（${stars} 星）` }
+      return { tone: 'flat', text: `${rank} ${stars} 星` }
+    }
+    /** 名字都不同时按段位阶梯比高低；名字指向的方向跟这一局胜负对不上，说明有一边的名字是
+     *  「查询那一刻」的快照（输了一局却显示段位往上走），只报现状，不给一对矛盾的名字 */
+    const higher = RankBandOfStars(rank, stars).ordinal > RankBandOfStars(prevRank, prevStars).ordinal
+    if (higher !== win) return { tone: 'flat', text: `${rank} ${stars} 星` }
+    return { tone: higher ? 'up' : 'down', text: `段位 ${prevRank} → ${rank}` }
   }
 
   if (!prev || !prevRank || prevStars <= 0 || stars <= 0) return { tone: 'flat', text: `${rank} ${stars} 星` }
 
   /** 营地每条只带「查这一刻」的段位名，星数不是连续底数：换过 roleJob（小段变了）、或者
    *  赢了一局却算出掉星（数据自相矛盾）时，只报现状不报涨跌 —— 宁可不显示，也不能给个错的 -3 */
-  const job = truncInt(item?.roleJob)
-  const prevJob = truncInt(prev?.roleJob)
   const diff = stars - prevStars
   const sane = Math.abs(diff) <= 5 && (win ? diff > 0 : diff < 0) && !(job && prevJob && job !== prevJob)
   if (!diff || !sane) return { tone: 'flat', text: `${rank} ${stars} 星` }

@@ -32,13 +32,13 @@ const RANK_BAND_NAMES = ['倔强青铜', '秩序白银', '荣耀黄金', '尊贵
 const SMALL_RANK_ROMAN = ['I', 'II', 'III', 'IV', 'V']
 
 /** 当前赛季王者段的 roleJob 编号：最强/非凡/无双/绝世/至圣/荣耀王者统一是 16 */
-const KING_ROLE_JOB = 16
+export const KING_ROLE_JOB = 16
 
 /** 编号差多少算跨了大段。与 `Trend/Consts.js` 的 JUMP_TOLERANCE 同口径 */
 const CROSS_BAND_JOB_GAP = 3
 
 /** 刚升到王者、名字还滞后的那几颗星，称号固定是「最强王者」 */
-const KING_LOW_STAR_TITLE = '最强王者'
+export const KING_LOW_STAR_TITLE = '最强王者'
 const KING_LOW_STAR_MAX = 8
 
 /**
@@ -100,7 +100,7 @@ export function resolveBattleRankName (item = {}, prev = null) {
  * @param {number|string} jobOld 较旧一局 roleJob 编号
  * @returns {string} 较旧一局的段位名；推不出来给空串
  */
-function stepRankNameBack (nameNew, jobNew, jobOld) {
+export function stepRankNameBack (nameNew, jobNew, jobOld) {
   const band = rankBandOf(nameNew)
   const newer = truncInt(jobNew)
   const older = truncInt(jobOld)

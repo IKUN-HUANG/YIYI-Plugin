@@ -5,7 +5,7 @@
  */
 import { autoSize, textWidth } from '#yiyi.utils'
 import { imageUris, localIcon } from '../Card.js'
-import { getGameHeroList, getProfileHeroList, getSeasonUsuallyHeroList, CAMP_REFERER } from '../Api.js'
+import { getCareerHeroList, getGameHeroList, getProfileHeroList, getSeasonUsuallyHeroList, CAMP_REFERER } from '../Api.js'
 import { createLogger } from '#yiyi.utils'
 import { toText, CampError, RateLimitError, classifyBusinessCode, describeError, BUSINESS_CODE } from '../Common.js'
 import { HeroIconUri } from '../Icon.js'
@@ -207,6 +207,72 @@ function careerRowsOf (data) {
 }
 
 /**
+ * 生涯英雄表里那条分享链接带的 roleId：这个接口会**忽略** roleId、回登录账号自己的默认角色，
+ * 所以每行都拿 `frequencyHeroUrl` 里的 roleId 核对一遍，对不上就整份不用。
+ *
+ * @param {string} url `frequencyHeroUrl`
+ * @returns {string} 链接里的 roleId；解析不出来给空串
+ */
+function roleIdOfShareUrl (url) {
+  const text = toText(url)
+  if (!text) return ''
+  try {
+    return toText(new URL(text).searchParams.get('roleId'))
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * 生涯英雄表（`/game/itempage/herolist`）的行摊平。
+ *
+ * 每条的 `playNum / winNum / failNum` 是**生涯累计**（跟主页前 5 同一套口径），
+ * 三条必须自洽（`winNum + failNum === playNum`）：对不上说明这行是残缺的，整份作废交给下一条路。
+ * `notOwnedFlag !== 0` 是「没拥有但用限免/体验打过」的英雄，场次照样算生涯，不能丢。
+ *
+ * @param {*} data 接口给的 data（`{ heroData: [...] }`）
+ * @param {string} roleId 期望的角色 ID
+ * @returns {{played: Array<object>, ownCount: number}|null} 一行都没有时给 null
+ */
+function careerPageRowsOf (data, roleId) {
+  const list = Array.isArray(data?.heroData) ? data.heroData : []
+  if (!list.length) return null
+  const want = toText(roleId)
+  const seen = new Set()
+  const played = []
+  let ownCount = 0
+  for (const hero of list) {
+    const heroId = toText(hero?.heroId)
+    if (!/^\d+$/.test(heroId) || seen.has(heroId)) continue
+    const playNum = Number(hero?.playNum) || 0
+    const winNum = Number(hero?.winNum) || 0
+    const failNum = Number(hero?.failNum) || 0
+    const owned = Number(hero?.notOwnedFlag) === 0
+    if (owned) ownCount += 1
+    if (!owned && playNum === 0) continue
+    if (playNum < 0 || winNum < 0 || failNum < 0 || winNum + failNum !== playNum) {
+      throw new CampError('营地给的生涯场次对不上（胜场 + 负场 ≠ 总场），这次先不用它')
+    }
+    const urlRoleId = roleIdOfShareUrl(hero?.frequencyHeroUrl)
+    if (want && urlRoleId && urlRoleId !== want) {
+      throw new CampError('营地回的是另一个角色的英雄数据，这次先不用它')
+    }
+    seen.add(heroId)
+    played.push({
+      heroId,
+      heroName: toText(hero?.heroName),
+      heroIcon: toText(hero?.heroIcon ?? hero?.url),
+      heroTypes: hero?.heroTypes,
+      playNum,
+      winNum,
+      heroFightPower: Number(hero?.heroFightPower) || 0,
+      skilledLevel: Number(hero?.skilledLevel) || 0
+    })
+  }
+  return played.length ? { played, ownCount } : null
+}
+
+/**
  * 常用英雄的主表：先走 `/play/h5getherolist`（全量、带 winNum 能算总胜率）；
  * 它被营地按来源限流（-32002）时退回主页的生涯前 5（`/game/profile/herolist`），
  * 至少还能出图。被藏（-10107）与登录态失效（-30107）照旧往上抛，不用假数据盖掉真原因。
@@ -216,8 +282,30 @@ function careerRowsOf (data) {
  * @returns {Promise<{played: Array<object>, ownCount: number, scope: string}>} `scope` 是 `all` 或 `career`
  */
 async function loadMyHeroRows (ctx, opts) {
+  const roleId = toText(ctx?.roleId)
+  /** ① 生涯英雄表：一次给全量、不走被限流的游戏侧配额，跟营地 App「我的英雄」同一套数 */
   try {
-    const answer = await getGameHeroList({ friendUserId: campIdOf(ctx), roleId: toText(ctx?.roleId) }, opts)
+    const answer = await getCareerHeroList({ targetUserId: campIdOf(ctx), roleId }, opts)
+    const code = Number(answer?.code)
+    if (code && classifyBusinessCode(code) === BUSINESS_CODE.PROFILE_HIDDEN) {
+      const error = new CampError(`营地没给这个角色的英雄数据（${describeError(answer?.raw)}）`)
+      error.code = code
+      throw error
+    }
+    const career = code && classifyBusinessCode(code) !== BUSINESS_CODE.SUCCESS
+      ? null
+      : careerPageRowsOf(answer?.data, roleId)
+    if (career) return { played: career.played, ownCount: career.ownCount, scope: 'all' }
+    log.info(`生涯英雄表没给出行（业务码 ${toText(code) || '无'}），改走 h5 全量表`)
+  } catch (error) {
+    /** 号码把战绩藏了就是藏了，换接口绕过去只会给出半份假数据 */
+    if (classifyBusinessCode(error?.code) === BUSINESS_CODE.PROFILE_HIDDEN) throw error
+    log.info(`生涯英雄表取不到，改走 h5 全量表：${toText(error?.message) || '未知原因'}`)
+  }
+
+  /** ② h5 全量表：被营地按来源限流（-32002）时再退 */
+  try {
+    const answer = await getGameHeroList({ friendUserId: campIdOf(ctx), roleId }, opts)
     /** 非 0 业务码一律往上抛：以前这里当成「空列表」，卡片就变成「去开陌生人可见」，
      *  限流（-32002）、被藏（-10107）、认错角色，全被这句假原因盖掉了 */
     const code = Number(answer?.code)

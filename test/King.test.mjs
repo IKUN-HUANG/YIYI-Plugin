@@ -178,3 +178,62 @@ test('升王者那局名字会慢一拍：赢了、名字没变、星数变小�
   assert.equal(resolveBattleRankName(item, null), '至尊星耀I', '没有前一场就不猜')
   assert.equal(resolveBattleRankName({ ...item, roleJob: 25 }, prev), '至尊星耀I', '编号没到 16 不算王者')
 })
+
+test('跨段的方向只看这一局胜负：升段后接着赢、终点星数反而更大，也不能播成掉段', async () => {
+  const { formatScoreDelta } = await load('models/King/Push/Rows.js')
+  /** 2026-10 上游实测那组：星耀I 3星 → 王者 4星，星数变大了，但这是升段 */
+  const up = formatScoreDelta(
+    { roleJobName: '最强王者', roleJob: 16, stars: 4, gameresult: 1 },
+    { roleJobName: '至尊星耀I', roleJob: 26, stars: 3, gameresult: 1 }
+  )
+  assert.equal(up.tone, 'up', '这是升段')
+  assert.equal(up.text, '段位 至尊星耀I → 最强王者（4 星）', '两边段位都要写全')
+
+  /** 营地把名字停在星耀 I 没刷新时，也得判成升王者 */
+  const stale = formatScoreDelta(
+    { roleJobName: '至尊星耀I', roleJob: 16, stars: 4, gameresult: 1 },
+    { roleJobName: '至尊星耀I', roleJob: 26, stars: 3, gameresult: 1 }
+  )
+  assert.equal(stale.tone, 'up')
+  assert.equal(stale.text, '段位 至尊星耀I → 最强王者（4 星）')
+
+  const down = formatScoreDelta(
+    { roleJobName: '至尊星耀V', roleJob: 22, stars: 4, gameresult: 2 },
+    { roleJobName: '最强王者', roleJob: 16, stars: 0, gameresult: 2 }
+  )
+  assert.equal(down.tone, 'down', '掉出王者就是掉段')
+  assert.equal(down.text, '段位 最强王者 → 至尊星耀V（4 星）')
+})
+
+test('同一大段里换小段：星数不可比，改报两边小段名', async () => {
+  const { formatScoreDelta } = await load('models/King/Push/Rows.js')
+  const out = formatScoreDelta(
+    { roleJobName: '永恒钻石II', roleJob: 14, stars: 2, gameresult: 1 },
+    { roleJobName: '永恒钻石II', roleJob: 13, stars: 4, gameresult: 1 }
+  )
+  assert.equal(out.tone, 'up')
+  assert.equal(out.text, '段位 永恒钻石III → 永恒钻石II（2 星）', '小段变了就不许拿星数相减')
+
+  /** 同一小段、星数自相矛盾（赢了却少了 3 星）时仍旧只报现状 */
+  const flat = formatScoreDelta(
+    { roleJobName: '永恒钻石II', roleJob: 13, stars: 2, gameresult: 1 },
+    { roleJobName: '永恒钻石II', roleJob: 13, stars: 5, gameresult: 2 }
+  )
+  assert.equal(flat.tone, 'flat')
+  assert.equal(flat.text, '永恒钻石II 2 星')
+})
+
+test('常用英雄主表改走生涯全量表（/game/itempage/herolist），h5 那份只在它取不到时兜底', async () => {
+  const src = read('models/King/Codex/Heroes.js')
+  assert.match(src, /getCareerHeroList\(\{ targetUserId: campIdOf\(ctx\), roleId \}/, '先把生涯全量表拿出来')
+  assert.match(src, /const career = code && classifyBusinessCode\(code\) !== BUSINESS_CODE\.SUCCESS/, '业务码非 0 不当成「空列表」')
+  assert.match(src, /if \(career\) return \{ played: career\.played, ownCount: career\.ownCount, scope: 'all' \}/, '拿到就是全量，口径与 h5 一致')
+  assert.match(src, /生涯英雄表没给出行（业务码/, '没给数据时说清楚为什么改道')
+  assert.match(src, /const code = Number\(answer\?\.code\)\n    if \(code && classifyBusinessCode\(code\) === BUSINESS_CODE\.PROFILE_HIDDEN\)/, '被藏就直接报，不许绕去别的接口拿半份假数据')
+  assert.match(src, /winNum \+ failNum !== playNum/, '胜场 + 负场 必须等于总场，不然整份作废')
+  assert.match(src, /roleIdOfShareUrl\(hero\?\.frequencyHeroUrl\)/, '这个接口会忽略 roleId 回登录号自己的角色，要按链接里的 roleId 核对')
+
+  const api = read('models/King/Api/Profile.js')
+  assert.match(api, /export async function getCareerHeroList/, '端点包一层，别到处抄路径')
+  assert.match(api, /targetUserId: toText\(targetUserId\)/, '主站接口要带 targetUserId')
+})

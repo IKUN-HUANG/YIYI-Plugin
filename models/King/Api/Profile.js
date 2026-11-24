@@ -34,6 +34,25 @@ export async function getProfile (targetUserId, opts = {}) {
 }
 
 /**
+ * 「我的英雄」全量生涯表（营地 App 那页的口径）。
+ *
+ * 一次给该角色的全部英雄：`heroData` 里每条的 `playNum / winNum / failNum` 是**生涯累计**，
+ * `notOwnedFlag` 是「没拥有但这局用过（限免/体验）」的标记，`frequencyHeroUrl` 里带真实 roleId。
+ * 比 `/play/h5getherolist` 稳：那条按来源限流（-32002），这条不占那个配额。
+ *
+ * @param {object} [params] targetUserId（营地号）/ roleId（角色 ID）/ recommendPrivacy（固定 0）
+ * @param {object} [opts={}] 请求选项（`{ accountId }`）
+ * @returns {Promise<object|null>} 营地原始 data
+ */
+export async function getCareerHeroList ({ targetUserId, roleId, recommendPrivacy = 0 } = {}, opts = {}) {
+  return call('careerHeroList', {
+    targetUserId: toText(targetUserId),
+    roleId: toText(roleId),
+    recommendPrivacy
+  }, opts)
+}
+
+/**
  * 主页英雄列表（常用 / 熟练度）。
  *
  * @param {object} [params] targetUserId（营地号）/ targetRoleId
