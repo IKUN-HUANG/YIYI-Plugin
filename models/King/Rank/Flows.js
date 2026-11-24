@@ -3,7 +3,7 @@
  *
  * @module models/rank/Flows
  */
-import { kingReply, kingGuard, kingBindTip, kingGroupNoBindTip, kingLog } from '../Say.js'
+import { kingBindGuide, kingReply, kingGuard, kingGroupNoBindTip, kingLog } from '../Say.js'
 import { kingAuthFail } from '../Account.js'
 import { estimateSeconds } from '../Api.js'
 import { toText } from '../Common.js'
@@ -89,7 +89,7 @@ export async function kingRankRefresh (e) {
   if (!targets.length) {
     return kingReply(e, rawTargets.length
       ? '绑定的角色都被藏起来了，榜单上没有他们；发「#王者恢复角色n」放回一个再来刷新'
-      : kingBindTip())
+      : kingBindGuide(e))
   }
 
   try {

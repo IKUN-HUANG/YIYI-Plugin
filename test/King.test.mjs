@@ -141,3 +141,40 @@ test('最近 30 把全画出来：上赛季的王者 50 星按王者标注，不
   assert.deepEqual(points.map(item => item.jobShort), ['王者', '星耀II', '星耀II'], '50 星那局是王者，名字要跟着改判')
   assert.equal(points[0].jobName, '王者', 'jobName 也换掉，拼「最高 X 星」时才不会又串回星耀')
 })
+
+test('营地把一整批对局都写成同一个段位名（查询时刻的），逐局名要按 roleJob 编号推回去', async () => {
+  const { resolveBatchRankNames } = await load('models/King/Push/Rank.js')
+  /** 真实样本：11-19 连打七局，roleJobName 全是「永恒钻石II」，roleJob 才逐局不同（倒序，最新在前） */
+  const list = [
+    { roleJobName: '永恒钻石II', roleJob: 14, stars: 2, gameresult: 1 },
+    { roleJobName: '永恒钻石II', roleJob: 13, stars: 5, gameresult: 2 },
+    { roleJobName: '永恒钻石II', roleJob: 13, stars: 4, gameresult: 1 },
+    { roleJobName: '永恒钻石II', roleJob: 13, stars: 1, gameresult: 1 },
+    { roleJobName: '永恒钻石II', roleJob: 21, stars: 4, gameresult: 1 },
+    { roleJobName: '永恒钻石II', roleJob: 21, stars: 1, gameresult: 1 },
+    { roleJobName: '永恒钻石II', roleJob: 20, stars: 3, gameresult: 1 }
+  ]
+  const names = resolveBatchRankNames(list)
+  assert.equal(names[0], '永恒钻石II', '最新一局的名字是查询时刻的，可信')
+  assert.equal(names[1], '永恒钻石III', '编号 14 → 13 退一档小段：钻石II 往回是钻石III')
+  assert.equal(names[3], '永恒钻石III', '编号没变就是同一小段，照抄上一个名字')
+  assert.equal(names[4], '', '编号 13 → 21 大跳又不在端点，推不出来就留空，交给原来的保守文案')
+  assert.equal(names.length, list.length, '一条都不许少')
+
+  /** 跨大段停在端点才能推：星耀 V 往回是钻石 I */
+  const across = resolveBatchRankNames([
+    { roleJobName: '至尊星耀V', roleJob: 22, stars: 0 },
+    { roleJobName: '至尊星耀V', roleJob: 15, stars: 4 }
+  ])
+  assert.equal(across[1], '永恒钻石I', '较新那局停在「星耀 V」端点，往回就是上一大段的 I')
+})
+
+test('升王者那局名字会慢一拍：赢了、名字没变、星数变小、编号已经是 16 → 名字改成最强王者', async () => {
+  const { resolveBattleRankName } = await load('models/King/Push/Rank.js')
+  const item = { roleJobName: '至尊星耀I', roleJob: 16, stars: 3, gameresult: 1 }
+  const prev = { roleJobName: '至尊星耀I', stars: 5, gameresult: 1 }
+  assert.equal(resolveBattleRankName(item, prev), '最强王者', '这是升王者那一局')
+  assert.equal(resolveBattleRankName({ ...item, gameresult: 2 }, prev), '至尊星耀I', '输了就不是升段')
+  assert.equal(resolveBattleRankName(item, null), '至尊星耀I', '没有前一场就不猜')
+  assert.equal(resolveBattleRankName({ ...item, roleJob: 25 }, prev), '至尊星耀I', '编号没到 16 不算王者')
+})

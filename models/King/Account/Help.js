@@ -6,6 +6,7 @@
  */
 import { kingReply, kingGuard } from '../Say.js'
 import { logoUri, renderKing } from '../Card.js'
+import { sendCampMiniapp } from '../Miniapp.js'
 
 /** 说明卡的标题（图片卡与文字兜底共用同一份，改一处两边都对） */
 export const BIND_HELP_TITLE = '王者荣耀 · 绑定 ≠ 扫码'
@@ -67,6 +68,9 @@ export function bindHelpView () {
  */
 export async function kingBindHelp (e) {
   if (!(await kingGuard(e))) return false
+
+  /** 先把「点开就能进营地」的小程序卡摆在前面，再给说明卡：卡片发不出去也不影响说明卡 */
+  await sendCampMiniapp(e)
 
   const view = bindHelpView()
   const out = await renderKing(e, 'BindHelp', view)

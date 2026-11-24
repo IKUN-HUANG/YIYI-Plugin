@@ -7,6 +7,7 @@ import { isRankedBattle, isRankedGaming, parseBattleTime } from '../Archive.js'
 import { cleanName } from '../Profile.js'
 import { IDLE_BACKOFF_MAX, PUSH_DETAIL_MAX, STREAK_MILESTONES, STREAK_MIN } from './Consts.js'
 import { compactBattleItem, pendingDetails } from './Items.js'
+import { resolveBatchRankNames } from './Rank.js'
 import { isSubActive, resolveNextCheck, sessionSummary } from './Rounds.js'
 import { battleRow, calcStreak, formatBattleText, formatGamingText, formatOnlineText, gamingRow, onlineRow, pickNewBattles } from './Rows.js'
 import { isFlagOn } from './Store.js'
@@ -47,6 +48,8 @@ export function planPush (sub = {}, { state = null, info = null, now = Date.now(
 
   if (info && list.length && !seeded) {
     const fresh = pickNewBattles(list, sub)
+    /** 营地整批只给一个段位名（查询时刻的当前段位），逐局按 roleJob 编号推回去再写文案，见 `Rank.js` */
+    const rankNames = resolveBatchRankNames(list)
     const streak = calcStreak(list)
     const milestone = battleOn && streak.type === 'win' && streak.count >= STREAK_MIN && STREAK_MILESTONES.includes(streak.count) && toText(sub.lastStreak) !== String(streak.count)
       ? `🔥 ${streak.count} 连胜`
@@ -56,9 +59,12 @@ export function planPush (sub = {}, { state = null, info = null, now = Date.now(
       /** prev 找的是筛过之后的前一场（上一把排位 / 巅峰），这样巅峰分和星数的变化才对得上 */
       const position = list.indexOf(item)
       const prev = position >= 0 ? list[position + 1] : null
+      /** 校正只改文案用的副本，不动 list 本身（连胜和游标还要按原数据算） */
+      const itemText = rankNames[position] ? { ...item, roleJobName: rankNames[position] } : item
+      const prevText = prev && rankNames[position + 1] ? { ...prev, roleJobName: rankNames[position + 1] } : prev
       const extra = index === fresh.length - 1 ? milestone : ''
-      messages.push(formatBattleText(item, prev, who, extra))
-      rows.push(battleRow(item, prev, who, extra))
+      messages.push(formatBattleText(itemText, prevText, who, extra))
+      rows.push(battleRow(itemText, prevText, who, extra))
 
       const gameSeq = toText(item?.gameSeq)
       if (!battleOn || !gameSeq || queued.has(gameSeq)) return

@@ -8,7 +8,7 @@ import { resolveBind } from '../Auth.js'
 import { GROUP_ALERT_LABEL, GROUP_PUSH_BULK_MAX, clearGroupPushMuted, groupPushText, isGroupPushMuted, setGroupAlert, setGroupPushAuto, setGroupPushMuted } from '../GroupPush.js'
 import { campRoleName, cleanName, normalizeName, resolveCampQuery } from '../Profile.js'
 import { expandRankTargets, groupRankTargets, memberIdsOf } from '../Rank.js'
-import { kingBindTip, kingGroupNoBindTip, kingGuard, kingLog, kingOn, kingPushOwnAuthTip, kingReply } from '../Say.js'
+import { kingBindGuide, kingGroupNoBindTip, kingGuard, kingLog, kingOn, kingPushOwnAuthTip, kingReply } from '../Say.js'
 import { pushAccountFor } from '../Auth/Roles.js'
 import { PUSH_FLAG_TEXT } from './Consts.js'
 import { sendBattleDetailCard, sendGroupText } from './Send.js'
@@ -183,7 +183,7 @@ export async function kingPushSwitch (e) {
   if (!account) return kingReply(e, kingPushOwnAuthTip())
 
   const campId = toText(bind.roleId) || toText(account.userId)
-  if (!campId) return kingReply(e, kingBindTip())
+  if (!campId) return kingBindGuide(e)
 
   const query = await resolveCampQuery(campId, { owner: e.user_id, byUser: bind.byUser })
   const data = loadPushData()
