@@ -1,0 +1,39 @@
+{
+  "note": "roleJob 编号 → 段位名。营地返回的 roleJobName 是「查询那一刻」的名字，同一批对局全一样，逐局只能靠这个表 + 编号推。weak=true 的条目是推断出来的（证据只有一次升段序列），只用来排高低，不给文案起名。",
+  "bands": [
+    "倔强青铜",
+    "秩序白银",
+    "荣耀黄金",
+    "尊贵铂金",
+    "永恒钻石",
+    "至尊星耀",
+    "王者"
+  ],
+  "jobs": {
+    "16": {
+      "band": 7,
+      "subtitles": [
+        [0, "最强王者"],
+        [10, "非凡王者"],
+        [20, "无双王者"],
+        [30, "绝世王者"],
+        [40, "至圣王者"],
+        [50, "荣耀王者"]
+      ],
+      "evidence": "24302 场王者对局按「每 10 星换称号」核对，命中 84.2%；名字滞后的那 16% 正好差一档"
+    },
+    "17": { "band": 3, "small": "IV", "name": "荣耀黄金IV", "weak": true, "evidence": "参照实现 utils/rankTrend.js 的实测注释" },
+    "19": { "band": 3, "small": "III", "name": "荣耀黄金III", "weak": true, "evidence": "参照实现 utils/rankTrend.js 的实测注释" },
+    "2": { "band": 1, "small": "II", "name": "倔强青铜II", "weak": true, "evidence": "参照实现 utils/rankTrend.js 的实测注释" },
+    "20": { "band": 5, "small": "V", "name": "永恒钻石V", "evidence": "线上实测 getBattleList 回 20 + 永恒钻石V" },
+    "21": { "band": 5, "small": "IV", "name": "永恒钻石IV", "weak": true, "evidence": "4359681734 的升段序列 21 → 13" },
+    "13": { "band": 5, "small": "III", "name": "永恒钻石III", "weak": true, "evidence": "4359681734 的升段序列 21 → 13 → 14" },
+    "14": { "band": 5, "small": "II", "name": "永恒钻石II", "weak": true, "evidence": "4359681734 的升段序列 13 → 14 → 15" },
+    "15": { "band": 5, "small": "I", "name": "永恒钻石I", "weak": true, "evidence": "4359681734 的升段序列 14 → 15 → 22（星耀V）" },
+    "22": { "band": 6, "small": "V", "name": "至尊星耀V", "evidence": "278614723 逐局名字 22=星耀V（同批还给了 23/24）" },
+    "23": { "band": 6, "small": "IV", "name": "至尊星耀IV", "evidence": "278614723 逐局名字 23=星耀IV" },
+    "24": { "band": 6, "small": "III", "name": "至尊星耀III", "evidence": "278614723 逐局名字 24=星耀III" },
+    "25": { "band": 6, "small": "II", "name": "至尊星耀II", "evidence": "278614723 逐局名字 25=星耀II" },
+    "26": { "band": 6, "small": "I", "name": "至尊星耀I", "evidence": "2668185284 跨段那一批 26=星耀I，下一局 16" }
+  }
+}

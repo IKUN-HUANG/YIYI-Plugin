@@ -12,7 +12,55 @@
  *
  * @module models/King/Push/Rank
  */
-import { toText, truncInt } from '#yiyi.utils'
+import fs from 'node:fs'
+import path from 'node:path'
+import { resourcesDir, toText, truncInt } from '#yiyi.utils'
+
+/** 编号对照表：`resources/Icon/King/Meta/RankJobs.json`，由归档逐局核对得出 */
+const RANK_JOBS_FILE = path.join(resourcesDir, 'Icon', 'King', 'Meta', 'RankJobs.json')
+
+/** 表只读一次，读坏了也只是这几条校正失效，不影响出卡 */
+let jobsCache = null
+
+/**
+ * 读编号对照表（读一次就记住）。文件不在或不是合法 JSON 时给空表，调用方退回按名字推。
+ *
+ * @returns {Record<string, object>} `roleJob` → `{ band, name, subtitles, weak }`
+ */
+function jobsTable () {
+  if (jobsCache) return jobsCache
+  jobsCache = {}
+  try {
+    const parsed = JSON.parse(fs.readFileSync(RANK_JOBS_FILE, 'utf8'))
+    if (parsed && typeof parsed.jobs === 'object' && parsed.jobs) jobsCache = parsed.jobs
+  } catch (error) {
+    jobsCache = {}
+  }
+  return jobsCache
+}
+
+/**
+ * 按 `roleJob` 编号 + 星数给出该局的段位名。
+ *
+ * 表里 `weak: true` 的条目是从一次升段序列推断的，只用来排高低，不拿来起名 —— 宁可留空，
+ * 不写错名字。
+ *
+ * @param {number|string} job 这一局的 `roleJob`
+ * @param {number|string} stars 这一局的星数
+ * @returns {string} 段位名；表里没有、或只有推断条目时给空串
+ */
+export function rankNameOfJob (job, stars) {
+  const hit = jobsTable()[toText(job)]
+  if (!hit || hit.weak) return ''
+  if (Array.isArray(hit.subtitles) && hit.subtitles.length) {
+    let name = toText(hit.subtitles[0]?.[1])
+    for (const pair of hit.subtitles) {
+      if (truncInt(stars) >= truncInt(pair?.[0])) name = toText(pair?.[1])
+    }
+    return name
+  }
+  return toText(hit.name)
+}
 
 /** 大段层级表，顺序有讲究：「荣耀黄金」与「荣耀王者」都含「荣耀」，黄金必须排在王者前面先命中 */
 const RANK_BANDS = [
@@ -168,6 +216,12 @@ export function resolveBatchRankNames (list = []) {
     names[index] = name
     if (!name) break
     newer = index
+  }
+
+  /** 表里有确切条目的（王者 16、星耀 22..26）直接按编号 + 星数起名，比按名字逐级回退准 */
+  for (let index = 0; index < arr.length; index += 1) {
+    const exact = rankNameOfJob(arr[index]?.roleJob, arr[index]?.stars)
+    if (exact) names[index] = exact
   }
   return names
 }

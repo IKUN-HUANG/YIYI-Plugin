@@ -237,3 +237,24 @@ test('常用英雄主表改走生涯全量表（/game/itempage/herolist），h5 
   assert.match(api, /export async function getCareerHeroList/, '端点包一层，别到处抄路径')
   assert.match(api, /targetUserId: toText\(targetUserId\)/, '主站接口要带 targetUserId')
 })
+
+test('编号对照表：编号 + 星数就能给出段位名，推断条目只排高低不起名', async () => {
+  const { rankNameOfJob, resolveBatchRankNames } = await load('models/King/Push/Rank.js')
+  assert.equal(rankNameOfJob(16, 3), '最强王者')
+  assert.equal(rankNameOfJob(16, 9), '最强王者')
+  assert.equal(rankNameOfJob(16, 10), '非凡王者', '每 10 星换一档称号')
+  assert.equal(rankNameOfJob(16, 46), '至圣王者')
+  assert.equal(rankNameOfJob(16, 50), '荣耀王者')
+  assert.equal(rankNameOfJob('26', 4), '至尊星耀I')
+  assert.equal(rankNameOfJob('22', 3), '至尊星耀V')
+  assert.equal(rankNameOfJob('21', 4), '', '钻石那几个编号是推断的，不拿来起名')
+  assert.equal(rankNameOfJob('999', 4), '')
+
+  /** 一批里名字全是「非凡王者」（查询那一刻的快照），逐局要按编号纠正 */
+  const list = [
+    { roleJob: 16, roleJobName: '非凡王者', stars: 10, gameresult: 1 },
+    { roleJob: 16, roleJobName: '非凡王者', stars: 8, gameresult: 1 },
+    { roleJob: 16, roleJobName: '非凡王者', stars: 6, gameresult: 1 }
+  ]
+  assert.deepEqual(resolveBatchRankNames(list), ['非凡王者', '最强王者', '最强王者'])
+})
