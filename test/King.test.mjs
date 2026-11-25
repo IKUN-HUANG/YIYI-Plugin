@@ -300,3 +300,69 @@ test('主体这一场营地不给看时当场换人：同一轮里让同场的�
   assert.equal(data.pushList['1'].pendingDetail.length, 0, '被判死的这一位不再重试')
   assert.equal(data.pushList['2'].pendingDetail.length, 0, '出了图的那一位不用再留')
 })
+
+test('到期提醒只发到真正有他的群，并且每条之间按 500 毫秒隔开', async () => {
+  const { sharedGroupIdsOf, notifyExpiringLogins, expireNoticeText, EXPIRE_NOTICE_GAP_MS } = await load('models/King/Account/Expiry.js')
+  assert.equal(EXPIRE_NOTICE_GAP_MS, 500, '间隔写死在 500 毫秒')
+
+  const group = (id, members) => ({
+    group_id: id,
+    /** 成员列表里没有这个人：`pickMember` 那种「没这个人也造一个」的接口一律不认 */
+    pickMember: () => ({ user_id: '3084126527' }),
+    getMemberMap: async () => new Map(members.map(qq => [qq, { user_id: qq }]))
+  })
+  const groups = [group('10001', ['3084126527', '1']), group('10002', ['2']), group('10003', ['3084126527'])]
+
+  assert.deepEqual(await sharedGroupIdsOf('3084126527', groups), ['10001', '10003'], '只认成员列表里确切有的那两个群')
+
+  const now = Date.parse('2026-11-25T08:00:00.000Z')
+  const account = { id: '462084368', ownerId: '3084126527', loginExpireAt: '2026-11-27T08:00:00.000Z' }
+  const text = expireNoticeText(account, now)
+  assert.match(text, /462084368/)
+  assert.match(text, /还有 2 天到期/)
+  assert.match(text, /#王者QQ扫码/)
+
+  const sent = []
+  const marked = []
+  const out = await notifyExpiringLogins({
+    now,
+    gap: 0,
+    groups,
+    accounts: [account],
+    send: async (groupId, qq) => { sent.push(`${groupId}:${qq}`); return true },
+    mark: (id, patch) => { marked.push({ id, patch }); return { ok: true } }
+  })
+  assert.deepEqual(sent, ['10001:3084126527', '10003:3084126527'], '两个共同群各发一条，非成员群不碰')
+  assert.equal(out.sent, 2)
+  assert.equal(out.failed, 0)
+  assert.equal(marked.length, 1, '发出去了才记账，一天不会重复提醒')
+  assert.equal(marked[0].id, '462084368')
+})
+
+test('一个群都没发成时不记账，下一轮还会再试', async () => {
+  const { notifyExpiringLogins } = await load('models/King/Account/Expiry.js')
+  const now = Date.parse('2026-11-25T08:00:00.000Z')
+  const account = { id: '462084368', ownerId: '3084126527', loginExpireAt: '2026-11-27T08:00:00.000Z' }
+  let marked = 0
+  const out = await notifyExpiringLogins({
+    now,
+    gap: 0,
+    groups: [{ group_id: '10001', getMemberMap: async () => new Map([['3084126527', {}]]) }],
+    accounts: [account],
+    send: async () => false,
+    mark: () => { marked += 1; return { ok: true } }
+  })
+  assert.equal(out.sent, 0)
+  assert.equal(out.failed, 1)
+  assert.equal(marked, 0, '一条都没发成，别记账')
+})
+
+test('扫码换回来的有效期存进 loginExpireAt，没给有效期的平台留空', async () => {
+  const { buildAccountFromLogin } = await load('models/King/Login/Device.js')
+  const now = Date.now()
+  const qq = buildAccountFromLogin({ userId: '462084368', token: 't', userKey: 'k' }, 'qq', 2592000)
+  const at = Date.parse(qq.loginExpireAt)
+  assert.ok(Number.isFinite(at), 'QQ 这条要存到期时间')
+  assert.ok(at > now + 29 * 86400000 && at < now + 31 * 86400000, '30 天有效期算得对')
+  assert.equal(buildAccountFromLogin({ userId: '1', token: 't' }, 'wechat').loginExpireAt, '', '微信那边没给有效期就别瞎编')
+})

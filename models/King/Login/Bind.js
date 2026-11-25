@@ -102,14 +102,14 @@ export async function bindOwnCamp (ownerId, account) {
  *
  * @param {object} options
  * @param {string} options.ownerId 谁的号（发起扫码的 QQ）
- * @param {object} options.payload 换令牌接口的返回（里面有 data）
+ * @param {object} options.payload 换令牌接口的返回（里面有 `data`；QQ 那条路还会带上 `expiresIn`）
  * @param {string} options.platform 'qq' / 'wechat'
  * @param {object} options.log 调用方的 logger（各自打自己的名字）
  * @param {string} options.label 日志里的平台名（QQ / 微信）
  * @returns {Promise<{done: object}>} `done` 就是要回给用户的那条状态
  */
 export async function settleLoginAccount ({ ownerId = '', payload = {}, platform = 'qq', log = null, label = 'QQ' } = {}) {
-  const added = addAccount(normalizeAccount(buildAccountFromLogin(payload?.data, platform)), { ownerId })
+  const added = addAccount(normalizeAccount(buildAccountFromLogin(payload?.data, platform, payload?.expiresIn)), { ownerId })
   if (!added.ok) return { done: statusResult('error', toText(added.reason) || '登录信息保存失败') }
   log?.mark?.(`${label}扫码登录成功，入库 ${maskUserId(added.account.id)}`)
   const bound = await bindOwnCamp(ownerId, added.account)

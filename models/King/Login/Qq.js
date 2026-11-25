@@ -228,8 +228,10 @@ export async function startQQLogin ({ ownerId = '' } = {}) {
     if (state.canceled) return settle(statusResult('canceled', '登录已取消，请重新扫码'))
     if (captured.code) {
       try {
-        const payload = await loginByTokens(await exchangeCode(captured.code))
-        const { done } = await settleLoginAccount({ ownerId, payload, platform: 'qq', log, label: 'QQ' })
+        const tokens = await exchangeCode(captured.code)
+        const payload = await loginByTokens(tokens)
+        /** `expiresIn` 是 QQ 互联给的 access_token 有效期（秒），营地登录态跟着它一起到期 —— 一路带到入库那步存下来 */
+        const { done } = await settleLoginAccount({ ownerId, payload: { ...payload, expiresIn: tokens?.expiresIn }, platform: 'qq', log, label: 'QQ' })
         return settle(done)
       } catch (error) {
         log.warn(`QQ 扫码换登录信息失败：${previewValue(toText(error?.message), 200)}`)

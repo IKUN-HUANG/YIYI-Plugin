@@ -10,7 +10,8 @@ const log = createLogger('王者保活')
 /**
  * 登录态保活：每天拿最轻的接口戳一下所有可用号，触不到的号会在 Auth 那边打上失效标记，
  * 运维卡和推送都会跟着少用它（所以这里只驱逐、不报错）。
- * @returns {Promise<{ total: number, ok: number, fail: number }>} 本轮统计：总号数 / 成功数 / 失败数（个）
+ * 顺带做「快到期」提醒：剩余不足 3 天的号，去主人的共同群里艾特他（每条间隔 500 毫秒）。
+ * @returns {Promise<{ total: number, ok: number, fail: number, notice: object }>} 本轮统计：总号数 / 成功数 / 失败数 / 到期提醒统计
  */
 export async function kingKeepAliveTick () {
   return hotLockRun('king.keepalive.tick', async () => {
@@ -32,6 +33,17 @@ export async function kingKeepAliveTick () {
     }
 
     log.info(`保活：${accounts.length} 个号，成功 ${ok}，失败 ${fail}`)
-    return { total: accounts.length, ok, fail }
+
+    /** 保活只能「发现失效」，救不回来：营地 token 跟着扫码换来的 access_token 一起到期，
+     *  每天戳也续不上。所以在到期前就去共同群艾特主人，别等推送突然不出图才来问 */
+    let notice = { accounts: 0, groups: 0, sent: 0, failed: 0 }
+    try {
+      const { notifyExpiringLogins } = await import('./Account/Expiry.js')
+      notice = await notifyExpiringLogins()
+    } catch (error) {
+      log.warn(`到期提醒没发出去：${error.message}`)
+    }
+
+    return { total: accounts.length, ok, fail, notice }
   })
 }

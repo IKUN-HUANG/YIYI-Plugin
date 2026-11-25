@@ -200,10 +200,13 @@ export function decryptEncodeRes (encodeRes) {
  *
  * @param {object} data 登录接口返回的 `data`
  * @param {string} platform `qq` / `wechat`（决定 userAgent 与几个平台字段）
+ * @param {number} [expiresIn=0] 换回来的 access_token 有效期（秒）；0 表示这个平台没给
  * @returns {object} 号池里存的那份账号记录（字段已归一成字符串）
  */
-export function buildAccountFromLogin (data, platform) {
+export function buildAccountFromLogin (data, platform, expiresIn = 0) {
   const payload = decryptEncodeRes(data?.encodeRes)
+  const now = Date.now()
+  const seconds = Number(expiresIn) || 0
   return {
     userId: toText(data?.userId),
     token: toText(data?.token),
@@ -213,7 +216,9 @@ export function buildAccountFromLogin (data, platform) {
     platform: toText(platform) || 'wechat',
     nick: toText(pickValue(data?.nickname, data?.snsnickname || data?.userName)),
     avatar: toText(data?.avatar || data?.icon || data?.bigAvatar),
-    loginAt: new Date().toISOString()
+    loginAt: new Date(now).toISOString(),
+    /** 营地登录态跟着 QQ/微信换回来的 access_token 走（实测 30 天，每天戳也续不上），存下来才能在到期前提醒 */
+    loginExpireAt: seconds > 0 ? new Date(now + seconds * 1000).toISOString() : ''
   }
 }
 
