@@ -144,7 +144,7 @@ export function decideMain (raw, account, endpoint = PROFILE_ENDPOINT) {
   /** -1013 别混进「业务错误」这个大筐：它不是说不出原因，是「这个 ID 对不上角色」——
    *  多半把营地号当角色 ID 用了，日志里得把这句说清楚，别让人以为是被藏了 */
   if (Number(code) === CODE_ROLE_UNKNOWN) {
-    warnBusinessOnce(`role:${who}`, `账号 ${who} 认不出这个角色（-1013 ${toText(msg) || '获取用户角色信息失败'}）：这个 ID 可能不是角色 ID，或者这个角色不归这个营地号`)
+    warnBusinessOnce(`role:${who}:${endpoint}`, `账号 ${who} 在 ${endpoint} 认不出这个角色（-1013 ${toText(msg) || '获取用户角色信息失败'}）：这个 ID 可能不是角色 ID，或者这个角色不归这个营地号`)
     return { action: 'return' }
   }
 

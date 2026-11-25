@@ -81,11 +81,12 @@ export function canSendDetail (item = {}, entry = {}) {
  * 返回 { pick: Set('人-场'), skip: Set('人-场') }，位置是 queued 里的下标。
  *
  * @param {Array<object>} [queued] 排队中的详情项
- * @returns {{pick: Set<string>, skip: Set<string>} 本轮挑中的与直接放弃的，键是「位置:详情序号」}
+ * @returns {{pick: Set<string>, skip: Set<string>, hold: Set<string>} 本轮挑中的、直接放弃的、让同场其他人先候着等主体结果，键是「位置:详情序号」}
  */
 export function planDetailSends (queued = [], { now = Date.now(), seen = detailSeen, ttl = DETAIL_DEDUPE_TTL, canSend = canSendDetail } = {}) {
   const pick = new Set()
   const skip = new Set()
+  const hold = new Set()
   const groups = new Map()
 
   queued.forEach((item, itemIndex) => {
@@ -115,10 +116,14 @@ export function planDetailSends (queued = [], { now = Date.now(), seen = detailS
       }
     }
     pick.add(chosen)
-    for (const item of list) if (item !== chosen) skip.add(item)
+    /**
+     * 同场没被选中的那几位**不能直接作废**：主体这一场要是拿不到（营地明确不给看，`dead`），
+     * 整场就再也没人出图了。所以先留着，等主体真发出去以后靠 `markDetailSeen` 的 TTL 把它们自然丢掉。
+     */
+    for (const item of list) if (item !== chosen) hold.add(item)
   }
 
-  return { pick, skip }
+  return { pick, skip, hold }
 }
 
 /**
@@ -171,8 +176,11 @@ export async function flushPushQueue (groupId, queued = [], { data, sendCard, se
    * 一个群一轮最多出一张战报图（detailCap）：同一时刻结束了好几场也只出一张，
    * 评分为王、先来先排，剩下的原样留在 pendingDetail 里等下一轮，不丢也不刷屏。
    */
-  const { pick, skip } = planDetailSends(queued, { now, canSend })
-  const hold = new Set(orderDetailPicks(queued, pick).slice(Math.max(1, truncInt(detailCap) || PUSH_DETAIL_PER_ROUND)))
+  const { pick, skip, hold } = planDetailSends(queued, { now, canSend })
+  /** 同场候补（`hold`）不进 deferred：它们不是被限流挡住，是在等主体这一场的结果 */
+  const capHold = new Set(orderDetailPicks(queued, pick).slice(Math.max(1, truncInt(detailCap) || PUSH_DETAIL_PER_ROUND)))
+  /** 主体这一场判死后，同场的候补**这一轮就放开**：不用等下一圈，用户那边看着是同一秒出的图 */
+  const released = new Set()
 
   for (let qi = 0; qi < queued.length; qi += 1) {
     const item = queued[qi]
@@ -181,23 +189,32 @@ export async function flushPushQueue (groupId, queued = [], { data, sendCard, se
     for (let index = 0; index < details.length; index += 1) {
       const entry = details[index]
       if (skip.has(`${qi}:${index}`)) continue
-      if (hold.has(`${qi}:${index}`)) {
+      if (hold.has(`${qi}:${index}`) && !released.has(detailKeyOf(entry))) {
+        remain.push(entry)
+        continue
+      }
+      if (capHold.has(`${qi}:${index}`)) {
         remain.push(entry)
         card.deferred = truncInt(card.deferred) + 1
         continue
       }
-      let sent = false
+      let result = { sent: false, dead: false, reason: '' }
       if (typeof sendDetail === 'function') {
         try {
-          sent = await sendDetail(groupId, item.campId, entry, item.qq)
+          const out = await sendDetail(groupId, item.campId, entry, item.qq)
+          result = typeof out === 'boolean' ? { sent: out, dead: false, reason: '' } : { sent: Boolean(out?.sent), dead: Boolean(out?.dead), reason: toText(out?.reason) }
         } catch (error) {
           log.warn(`群 ${groupId} 战报图发送失败：${toText(error?.message) || describeError(error)}`)
-          sent = false
         }
       }
-      if (sent) {
+      if (result.sent) {
         card.imaged += 1
         markDetailSeen(entry, now)
+      } else if (result.dead) {
+        /** 这个人这一场营地就是不给看：别占着重试次数，让同场的候补下一轮顶上 */
+        card.dropped = truncInt(card.dropped) + 1
+        released.add(detailKeyOf(entry))
+        log.info(`群 ${groupId} 战报图换人（${result.reason || 'hidden'}）：这位的详情营地不给看，改让同场的其他人出图`)
       } else if (truncInt(entry.tries) + 1 < PUSH_DETAIL_MAX_TRIES) remain.push({ ...entry, tries: truncInt(entry.tries) + 1 })
       if (index < details.length - 1) await pause(REQUEST_INTERVAL)
     }

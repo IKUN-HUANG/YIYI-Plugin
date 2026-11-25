@@ -45,25 +45,35 @@ export async function sendGroupText (groupId, text) {
  * @param {string} campId 营地号
  * @param {object} [entry] 详情项
  * @param {string} [qq=""] QQ 号
- * @returns {Promise<boolean> 是否发出去了}
+ * @returns {Promise<{sent: boolean, dead: boolean, reason: string}>} 发没发出去、这条路以后还值不值得试、原因
  */
 export async function sendBattleDetailCard (groupId, campId, entry = {}, qq = '') {
   const id = toText(groupId)
   const roleId = toText(campId)
   const item = mapBattleItem(entry?.item || {})
-  if (!id || !roleId || !item.gameSeq) return false
+  const miss = reason => ({ sent: false, dead: false, reason })
+  if (!id || !roleId || !item.gameSeq) return miss('bad-args')
 
   const account = pushAccountFor({ owner: qq, roleId })
-  if (!account) return false
+  if (!account) return miss('no-account')
 
   const query = await resolveCampQuery(roleId, { owner: qq })
   const built = await buildBattleDetailCard({ account, campId: roleId, campUserId: query.campUserId, item, index: Math.max(1, truncInt(entry?.index)) })
   if (!built.ok) {
-    kingLog.info(`战报图先欠着（${built.reason}）：${maskUserId(roleId)} 第 ${item.gameSeq} 场`)
-    return false
+    /**
+     * `dead` 与「先欠着」得分开：营地明确说「这场详情不给看」（-10103 这类 `retry === false`）
+     * 时，这个人的这一场再怎么重试也一样，得让同场的其他人顶上；
+     * 而「还没落库」「限流」这类要留着下一轮再试，别把别人的机会也一起按死。
+     */
+    const dead = built.retry === false && Boolean(built.code)
+    const reason = toText(built.reason) || 'unknown'
+    if (dead) kingLog.info(`战报图换人（${reason} ${built.code}）：${maskUserId(roleId)} 第 ${item.gameSeq} 场的详情营地不给看`)
+    else kingLog.info(`战报图先欠着（${reason}）：${maskUserId(roleId)} 第 ${item.gameSeq} 场`)
+    return { sent: false, dead, reason }
   }
 
   const image = await renderKingWithoutEvent('BattleDetail', built.view)
-  if (!image) return false
-  return sendGroupImage(id, image, log)
+  if (!image) return miss('render')
+  const ok = await sendGroupImage(id, image, log)
+  return ok ? { sent: true, dead: false, reason: '' } : miss('send')
 }

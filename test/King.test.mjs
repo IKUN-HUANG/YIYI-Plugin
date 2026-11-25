@@ -258,3 +258,45 @@ test('编号对照表：编号 + 星数就能给出段位名，推断条目只�
   ]
   assert.deepEqual(resolveBatchRankNames(list), ['非凡王者', '最强王者', '最强王者'])
 })
+
+test('同一场对局只出一张图：没被选中的同场人不作废，先候着', async () => {
+  const { planDetailSends } = await load('models/King/Push/Detail.js')
+  const row = (seq, grade) => ({ gameSeq: seq, tries: 0, index: 1, gradeGame: grade, item: { gameSeq: seq, gradeGame: grade } })
+  const queued = [
+    { qq: '1', campId: '10', details: [row('s1', 11.3)] },
+    { qq: '2', campId: '20', details: [row('s1', 6.3), row('s2', 9.9)] }
+  ]
+  const { pick, skip, hold } = planDetailSends(queued, { now: 0, seen: new Map(), canSend: () => true })
+  assert.deepEqual([...pick].sort(), ['0:0', '1:1'], '两个 gameSeq 各挑一位')
+  assert.deepEqual([...hold], ['1:0'], '同场评分低的先候着，不许直接作废')
+  assert.equal(skip.size, 0, '没有该直接放弃的')
+})
+
+test('主体这一场营地不给看时当场换人：同一轮里让同场的其他人出图', async () => {
+  /** 推送循环会打日志（换人、放弃都要留痕），单测里给一个静音桩，别为了日志给生产代码加开关 */
+  globalThis.logger ??= { info () {}, mark () {}, warn () {}, error () {} }
+  const { flushPushQueue } = await load('models/King/Push/Detail.js')
+  const row = (seq, grade) => ({ gameSeq: seq, tries: 0, index: 1, gradeGame: grade, item: { gameSeq: seq, gradeGame: grade } })
+  const queued = [
+    { qq: '1', campId: '10', sub: {}, patch: { pendingDetail: [] }, details: [row('s1', 11.3)] },
+    { qq: '2', campId: '20', sub: {}, patch: { pendingDetail: [] }, details: [row('s1', 6.3)] }
+  ]
+  const data = { pushList: { 1: { campId: '10' }, 2: { campId: '20' } } }
+  const tried = []
+  const card = await flushPushQueue('99', queued, {
+    data,
+    sendCard: async () => true,
+    sendDetail: async (groupId, campId) => {
+      tried.push(campId)
+      return campId === '10' ? { sent: false, dead: true, reason: 'hidden' } : { sent: true, dead: false, reason: '' }
+    },
+    save: () => {},
+    sleep: async () => {},
+    now: 0
+  })
+  assert.deepEqual(tried, ['10', '20'], '主体判死后紧接着试同场的下一位')
+  assert.equal(card.imaged, 1, '这一场照样出了一张图')
+  assert.equal(card.dropped, 1, '被藏的那一位要记一笔，别悄悄吞掉')
+  assert.equal(data.pushList['1'].pendingDetail.length, 0, '被判死的这一位不再重试')
+  assert.equal(data.pushList['2'].pendingDetail.length, 0, '出了图的那一位不用再留')
+})

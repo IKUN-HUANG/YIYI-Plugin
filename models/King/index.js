@@ -67,6 +67,6 @@ export { botOf, adapterName, capabilities, routeCard, backendVersion, verifyOnSe
 export { iconSizeIn, saveIconFrom, cacheIconLater } from './Ops/IconCache.js'
 export { campCard } from './Profile/FlowCard.js'
 export { campGather } from './Profile/FlowGather.js'
-export { KING_ROLE_JOB, KING_LOW_STAR_TITLE, resolveBattleRankName, stepRankNameBack, resolveBatchRankNames } from './Push/Rank.js'
+export { rankNameOfJob, KING_ROLE_JOB, KING_LOW_STAR_TITLE, resolveBattleRankName, stepRankNameBack, resolveBatchRankNames } from './Push/Rank.js'
 export { ensureSubForUser, seedCursor } from './Push/Sub.js'
 export { RankView, RankSectionLabel, RankSections } from './View/Rank.js'
