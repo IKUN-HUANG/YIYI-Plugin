@@ -20,7 +20,7 @@ const ACCOUNT_FIELDS = [
   'cClientVersionName', 'cCurrentGameId', 'cGameId', 'cGzip', 'cIsArm64',
   'cSupportArm64', 'cSystem', 'cSystemVersionCode', 'cSystemVersionName',
   'cpuHardware', 'tinkerId', 'publicKey', 'platform', 'nick', 'avatar',
-  'roleId', 'roleName', 'roleLevel', 'serverName', 'loginExpireAt', 'invalidAt', 'invalidReason',
+  'roleId', 'roleName', 'roleLevel', 'serverName', 'loginExpireAt', 'loginExpireFrom', 'invalidAt', 'invalidReason',
   /** 上次「快到期了」提醒的时刻：同一个号一天只提醒一次，别把群刷满 */
   'expiryNoticedAt'
 ]

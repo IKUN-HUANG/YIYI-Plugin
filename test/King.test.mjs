@@ -366,3 +366,23 @@ test('扫码换回来的有效期存进 loginExpireAt，没给有效期的平台
   assert.ok(at > now + 29 * 86400000 && at < now + 31 * 86400000, '30 天有效期算得对')
   assert.equal(buildAccountFromLogin({ userId: '1', token: 't' }, 'wechat').loginExpireAt, '', '微信那边没给有效期就别瞎编')
 })
+
+test('老档没有到期时间就补一个推算值，标成 estimate，真扫码来的不覆盖', async () => {
+  const { backfillLoginExpiry, TOKEN_TTL_DAYS } = await load('models/King/Account/Expiry.js')
+  const now = Date.parse('2026-11-25T09:00:00.000Z')
+  const day = 86400000
+  const accounts = [
+    { id: '1', loginAt: new Date(now - day).toISOString() },
+    { id: '2', loginAt: new Date(now - 2 * day).toISOString(), loginExpireAt: new Date(now + 28 * day).toISOString(), loginExpireFrom: 'login' },
+    { id: '3', loginAt: new Date(now - 40 * day).toISOString() },
+    { id: '4' }
+  ]
+  const wrote = []
+  const filled = backfillLoginExpiry({ now, accounts, patch: (id, patch) => { wrote.push({ id, patch }); return { ok: true } } })
+  assert.equal(filled, 1, '只补「有 loginAt、没到期时间、还没过期」的那一个')
+  assert.equal(wrote.length, 1)
+  assert.equal(wrote[0].id, '1')
+  assert.equal(wrote[0].patch.loginExpireFrom, 'estimate')
+  const at = Date.parse(wrote[0].patch.loginExpireAt)
+  assert.equal(at, now - day + TOKEN_TTL_DAYS * day, '按 loginAt + 30 天算')
+})

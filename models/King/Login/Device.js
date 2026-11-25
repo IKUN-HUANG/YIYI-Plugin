@@ -218,7 +218,9 @@ export function buildAccountFromLogin (data, platform, expiresIn = 0) {
     avatar: toText(data?.avatar || data?.icon || data?.bigAvatar),
     loginAt: new Date(now).toISOString(),
     /** 营地登录态跟着 QQ/微信换回来的 access_token 走（实测 30 天，每天戳也续不上），存下来才能在到期前提醒 */
-    loginExpireAt: seconds > 0 ? new Date(now + seconds * 1000).toISOString() : ''
+    loginExpireAt: seconds > 0 ? new Date(now + seconds * 1000).toISOString() : '',
+    /** `login` = 扫码回包给的真有效期；空串 = 不知道（老档、微信那条路），保活时按 loginAt 推算成 `estimate` */
+    loginExpireFrom: seconds > 0 ? 'login' : ''
   }
 }
 

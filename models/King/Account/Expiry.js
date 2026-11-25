@@ -72,6 +72,29 @@ export function expiringAccounts ({ now = Date.now(), days = EXPIRE_NOTICE_DAYS 
 }
 
 /**
+ * 把「没存到期时间、但有 loginAt」的老档按 `loginAt + 30 天` 回填进盘，标 `loginExpireFrom: 'estimate'`。
+ *
+ * 为什么要回填而不是只在读取时算：运维卡、号列表、排障日志都直接读这个字段，
+ * 只在代码里推算等于「只有我这里知道」，别人看数据仍是空的。回填后记着来源，将来真扫码再被 `login` 覆盖。
+ *
+ * @param {{now?: number, accounts?: object[], patch?: Function}} [options] 当前时间戳、账号清单与记账方式（后两个供单测注入）
+ * @returns {number} 回填了几个号
+ */
+export function backfillLoginExpiry ({ now = Date.now(), accounts = null, patch = patchAccount } = {}) {
+  let done = 0
+  for (const account of (Array.isArray(accounts) ? accounts : listAccounts())) {
+    if (toText(account?.loginExpireFrom) === 'login' || toText(account?.loginExpireAt)) continue
+    const at = loginExpireMsOf(account)
+    if (!at) continue
+    /** 已经过期的老档不补：补上去也是一条早就失效的日期，没有信息量 */
+    if (at <= now) continue
+    const ret = patch(account?.id, { loginExpireAt: new Date(at).toISOString(), loginExpireFrom: 'estimate' })
+    if (ret?.ok) done += 1
+  }
+  return done
+}
+
+/**
  * 机器人所在的群。各框架把这份清单放在不同字段里，能拿到哪个用哪个，都拿不到就当没有群。
  *
  * @returns {object[]} 群对象列表

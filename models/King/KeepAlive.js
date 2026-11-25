@@ -38,7 +38,10 @@ export async function kingKeepAliveTick () {
      *  每天戳也续不上。所以在到期前就去共同群艾特主人，别等推送突然不出图才来问 */
     let notice = { accounts: 0, groups: 0, sent: 0, failed: 0 }
     try {
-      const { notifyExpiringLogins } = await import('./Account/Expiry.js')
+      const { backfillLoginExpiry, notifyExpiringLogins } = await import('./Account/Expiry.js')
+      /** 老档（这次改动之前扫的）没有到期时间：先按 loginAt + 30 天补上，标注是推算值 */
+      const filled = backfillLoginExpiry()
+      if (filled) log.info(`补给 ${filled} 个老号一个推算的到期时间（来源标 estimate，真扫码后会被覆盖）`)
       notice = await notifyExpiringLogins()
     } catch (error) {
       log.warn(`到期提醒没发出去：${error.message}`)
